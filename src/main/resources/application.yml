@@ -38,18 +38,18 @@ elasticsearch:
   host: localhost
   port: 9200
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
-      should-unregister-on-shutdown: true
-      registry-fetch-interval-seconds: 5
-  instance:
-    preferIpAddress: true
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-    lease-renewal-interval-in-seconds: 10
-    metadata-map:
-      startup: ${random.int}
+#eureka:
+#  client:
+#    serviceUrl:
+#      defaultZone: http://localhost:8761/eureka/
+#      should-unregister-on-shutdown: true
+#      registry-fetch-interval-seconds: 5
+#  instance:
+#    preferIpAddress: true
+#    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+#    lease-renewal-interval-in-seconds: 10
+#    metadata-map:
+#      startup: ${random.int}
 
 ssm:
   mode: develop
