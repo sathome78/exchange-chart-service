@@ -4,7 +4,7 @@ spring:
   profiles:
     active: local
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true
     username: root
     password: root
@@ -26,13 +26,17 @@ spring:
     restart:
       enabled: true
   redis:
-    host: 172.50.50.100
+    host: localhost
     port: 6379
   rabbitmq:
     username: developer
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
+
+elasticsearch:
+  host: localhost
+  port: 9200
 
 eureka:
   client:

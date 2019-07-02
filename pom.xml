@@ -67,6 +67,11 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>7.2.0</version>
+        </dependency>
+        <dependency>
             <groupId>me.exrates</groupId>
             <artifactId>ssm-integration</artifactId>
             <version>1.0.2</version>
@@ -86,6 +91,11 @@
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.9</version>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
