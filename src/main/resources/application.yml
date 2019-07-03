@@ -17,11 +17,6 @@ spring:
       minimum-idle: 5
       maximum-pool-size: 10
       validation-timeout: 5000
-    ssm:
-      password-path:
-    jpa:
-      hibernate:
-        ddl-auto: none
   devtools:
     restart:
       enabled: true
@@ -33,6 +28,8 @@ spring:
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
+    tradestopic: CHART_DATA_QUEUE
+
 
 elasticsearch:
   host: localhost
@@ -50,9 +47,6 @@ elasticsearch:
 #    lease-renewal-interval-in-seconds: 10
 #    metadata-map:
 #      startup: ${random.int}
-
-ssm:
-  mode: develop
 
 server:
   port: 8060
