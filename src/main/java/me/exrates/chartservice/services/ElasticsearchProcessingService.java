@@ -1,16 +1,21 @@
 package me.exrates.chartservice.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.CandlesDataDto;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ElasticsearchProcessingService {
 
-    void send(CandleModel model, String pairName);
+    boolean exist(String pairName, LocalDateTime dateTime);
 
-    List<CandleModel> get(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
+    CandleModel get(String pairName, LocalDateTime dateTime);
+
+    void insert(CandleModel model, String pairName);
+
+    void update(CandleModel model, String pairName);
+
+    long deleteAll();
+
+    List<CandleModel> getByQuery(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
 }
