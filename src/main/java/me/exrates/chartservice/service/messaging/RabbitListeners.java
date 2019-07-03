@@ -11,7 +11,7 @@ public class RabbitListeners {
 
 
     @RabbitListener(queues = "${spring.rabbitmq.tradestopic}")
-    public void worker1(TradeDataDto message) {
+    public void recieveTrade(TradeDataDto message) {
         System.out.println("income message !!!");
         System.out.println(message);
         /*handle messages here*/
