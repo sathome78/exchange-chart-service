@@ -14,5 +14,4 @@ public class CandleModel {
     private BigDecimal lowRate;
     private BigDecimal volume;
     private LocalDateTime candleOpenTime;
-
 }
