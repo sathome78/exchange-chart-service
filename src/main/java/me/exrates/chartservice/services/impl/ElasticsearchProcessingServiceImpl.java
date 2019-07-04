@@ -21,21 +21,22 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.toList;
 
 @Log4j2
 @Service
@@ -43,7 +44,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm");
 
-    private static final String INDEX = "chart";
+    private static final String ALL = "_all";
 
     private final RestHighLevelClient client;
     private final ObjectMapper mapper;
@@ -60,8 +61,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public boolean exist(String pairName, LocalDateTime dateTime) {
+        final String index = prepareIndex(pairName);
+        final String id = prepareId(dateTime);
+
         try {
-            GetRequest request = new GetRequest(INDEX, pairName, dateTime.format(FORMATTER));
+            GetRequest request = new GetRequest(index, id);
 
             return client.existsSource(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
@@ -72,8 +76,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public CandleModel get(String pairName, LocalDateTime dateTime) {
+        final String index = prepareIndex(pairName);
+        final String id = prepareId(dateTime);
+
         try {
-            GetRequest request = new GetRequest(INDEX, pairName, dateTime.format(FORMATTER));
+            GetRequest request = new GetRequest(index, id);
 
             GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
@@ -91,7 +98,12 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             if (isNull(sourceString)) {
                 return;
             }
-            IndexRequest request = new IndexRequest(INDEX, pairName, model.getCandleOpenTime().format(FORMATTER))
+
+            final String index = prepareIndex(pairName);
+            final String id = prepareId(model.getCandleOpenTime());
+
+            IndexRequest request = new IndexRequest(index)
+                    .id(id)
                     .source(sourceString, XContentType.JSON);
 
             IndexResponse response;
@@ -115,7 +127,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             if (isNull(sourceString)) {
                 return;
             }
-            UpdateRequest request = new UpdateRequest(INDEX, pairName, model.getCandleOpenTime().format(FORMATTER))
+
+            final String index = prepareIndex(pairName);
+            final String id = prepareId(model.getCandleOpenTime());
+
+            UpdateRequest request = new UpdateRequest(index, id)
                     .doc(sourceString, XContentType.JSON);
 
             UpdateResponse response;
@@ -132,19 +148,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         });
     }
 
-    private String getSourceString(final CandleModel model) {
-        try {
-            return mapper.writeValueAsString(model);
-        } catch (JsonProcessingException ex) {
-            log.error("Problem with writing model object to string", ex);
-            return null;
-        }
-    }
-
     @Override
     public long deleteAll() {
         try {
-            DeleteByQueryRequest deleteByQueryRequest = new DeleteByQueryRequest(INDEX);
+            DeleteByQueryRequest deleteByQueryRequest = new DeleteByQueryRequest(ALL)
+                    .setQuery(QueryBuilders.matchAllQuery());
 
             BulkByScrollResponse response = client.deleteByQuery(deleteByQueryRequest, RequestOptions.DEFAULT);
 
@@ -158,11 +166,14 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public List<CandleModel> getByQuery(LocalDateTime fromDate, LocalDateTime toDate, String pairName) {
+        final String index = prepareIndex(pairName);
+
         try {
-            SearchRequest request = new SearchRequest()
+            SearchRequest request = new SearchRequest(index)
                     .source(new SearchSourceBuilder()
-                            .query(QueryBuilders.typeQuery(pairName))
-                            .query(QueryBuilders.rangeQuery("candleOpenTime").from(fromDate).to(toDate)));
+                            .query(QueryBuilders.rangeQuery("time_in_millis")
+                                    .gte(Timestamp.valueOf(fromDate).getTime())
+                                    .lt(Timestamp.valueOf(toDate).getTime())));
 
             SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
@@ -175,24 +186,33 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     private List<CandleModel> getSearchResult(SearchResponse response) {
-        SearchHit[] searchHit = response.getHits().getHits();
+        return Arrays.stream(response.getHits().getHits())
+                .map(hit -> {
+                    try {
+                        return mapper.readValue(hit.getSourceAsString(), CandleModel.class);
+                    } catch (IOException ex) {
+                        log.warn("Problem with read model object from string", ex);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(toList());
+    }
 
-        List<CandleModel> chartData = new ArrayList<>();
-
-        if (searchHit.length > 0) {
-            Arrays.stream(searchHit)
-                    .forEach(hit -> {
-                                CandleModel candleMadel;
-                                try {
-                                    candleMadel = mapper.readValue(hit.getSourceAsString(), CandleModel.class);
-                                } catch (IOException ex) {
-                                    log.warn("Problem with read model object from string", ex);
-                                    return;
-                                }
-                                chartData.add(candleMadel);
-                            }
-                    );
+    private String getSourceString(final CandleModel model) {
+        try {
+            return mapper.writeValueAsString(model);
+        } catch (JsonProcessingException ex) {
+            log.error("Problem with writing model object to string", ex);
+            return null;
         }
-        return chartData;
+    }
+
+    private String prepareIndex(String pairName) {
+        return pairName.replace("/", "_").toLowerCase();
+    }
+
+    private String prepareId(LocalDateTime dateTime) {
+        return dateTime.format(FORMATTER);
     }
 }
