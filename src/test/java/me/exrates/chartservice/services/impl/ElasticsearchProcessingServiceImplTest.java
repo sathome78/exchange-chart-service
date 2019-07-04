@@ -10,8 +10,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -32,10 +34,12 @@ public class ElasticsearchProcessingServiceImplTest {
     private ElasticsearchProcessingService processingService;
 
     @Test
-    public void endToEnd() {
+    public void endToEnd() throws Exception {
         boolean exist = processingService.exist(BTC_USD, NOW);
 
         assertFalse(exist);
+
+        TimeUnit.SECONDS.sleep(1);
 
         CandleModel candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -48,9 +52,13 @@ public class ElasticsearchProcessingServiceImplTest {
 
         processingService.insert(candleModel, BTC_USD);
 
+        TimeUnit.SECONDS.sleep(1);
+
         exist = processingService.exist(BTC_USD, NOW);
 
         assertTrue(exist);
+
+        TimeUnit.SECONDS.sleep(1);
 
         CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW);
 
@@ -61,6 +69,9 @@ public class ElasticsearchProcessingServiceImplTest {
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getLowRate()));
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getVolume()));
         assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
+        assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
+
+        TimeUnit.SECONDS.sleep(1);
 
         candleModel = CandleModel.builder()
                 .openRate(BigDecimal.ZERO)
@@ -73,6 +84,8 @@ public class ElasticsearchProcessingServiceImplTest {
 
         processingService.update(candleModel, BTC_USD);
 
+        TimeUnit.SECONDS.sleep(1);
+
         CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW);
 
         assertNotNull(updatedCandleModel);
@@ -82,12 +95,17 @@ public class ElasticsearchProcessingServiceImplTest {
         assertEquals(0, BigDecimal.ONE.compareTo(updatedCandleModel.getLowRate()));
         assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getVolume()));
         assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
+        assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
+
+        TimeUnit.SECONDS.sleep(1);
 
         List<CandleModel> models = processingService.getByQuery(FROM_DATE, TO_DATE, BTC_USD);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(1, models.size());
+
+        TimeUnit.SECONDS.sleep(1);
 
         candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -100,6 +118,8 @@ public class ElasticsearchProcessingServiceImplTest {
 
         processingService.insert(candleModel, BTC_USD);
 
+        TimeUnit.SECONDS.sleep(1);
+
         candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
@@ -111,14 +131,18 @@ public class ElasticsearchProcessingServiceImplTest {
 
         processingService.insert(candleModel, BTC_USD);
 
+        TimeUnit.SECONDS.sleep(1);
+
         models = processingService.getByQuery(FROM_DATE, TO_DATE, BTC_USD);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(2, models.size());
 
+        TimeUnit.SECONDS.sleep(1);
+
         long deletedCount = processingService.deleteAll();
 
-        assertEquals(2L, deletedCount);
+        assertEquals(3L, deletedCount);
     }
 }
