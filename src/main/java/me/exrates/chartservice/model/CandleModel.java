@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
+import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBefore;
+
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)
 @NoArgsConstructor
@@ -33,4 +35,18 @@ public class CandleModel {
     public long getTimeInMillis() {
         return Timestamp.valueOf(candleOpenTime).getTime();
     }
+    private LocalDateTime lastTradeTime;
+
+    public static CandleModel newCandleFromTrade(TradeDataDto dto) {
+        return CandleModel.builder()
+                .candleOpenTime(getNearestTimeBefore(30, dto.getTradeDate()))
+                .openRate(dto.getExrate())
+                .closeRate(dto.getExrate())
+                .highRate(dto.getExrate())
+                .lowRate(dto.getExrate())
+                .volume(dto.getAmountBase())
+                .lastTradeTime(dto.getTradeDate())
+                .build();
+    }
 }
+
