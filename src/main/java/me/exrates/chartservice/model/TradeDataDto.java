@@ -20,4 +20,13 @@ public class TradeDataDto {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime tradeDate;
+
+    public TradeDataDto(OrderDto order) {
+        this.orderId = order.getId();
+        this.pairName = order.getCurrencyPairName();
+        this.exrate = order.getExRate();
+        this.amountBase = order.getAmountBase();
+        this.amountConvert = order.getAmountConvert();
+        this.tradeDate = order.getDateAcception();
+    }
 }

@@ -13,9 +13,13 @@ public interface ElasticsearchProcessingService {
 
     void insert(CandleModel model, String pairName);
 
+    void batchInsert(List<CandleModel> models, String pairName);
+
     void update(CandleModel model, String pairName);
 
     long deleteAll();
+
+    long deleteByIndex(String index);
 
     List<CandleModel> getByQuery(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
 }

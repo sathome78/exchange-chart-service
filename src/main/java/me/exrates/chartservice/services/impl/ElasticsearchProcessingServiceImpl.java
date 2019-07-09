@@ -121,6 +121,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
+    public void batchInsert(List<CandleModel> models, String pairName) {
+        models.forEach(model -> this.insert(model, pairName));
+    }
+
+    @Override
     public void update(CandleModel model, String pairName) {
         xSync.execute(pairName, () -> {
             String sourceString = getSourceString(model);
@@ -150,8 +155,13 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public long deleteAll() {
+        return this.deleteByIndex(ALL);
+    }
+
+    @Override
+    public long deleteByIndex(String index) {
         try {
-            DeleteByQueryRequest deleteByQueryRequest = new DeleteByQueryRequest(ALL)
+            DeleteByQueryRequest deleteByQueryRequest = new DeleteByQueryRequest(index)
                     .setQuery(QueryBuilders.matchAllQuery());
 
             BulkByScrollResponse response = client.deleteByQuery(deleteByQueryRequest, RequestOptions.DEFAULT);
