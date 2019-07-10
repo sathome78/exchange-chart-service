@@ -48,15 +48,12 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     private final RestHighLevelClient client;
     private final ObjectMapper mapper;
-    private final XSync<String> xSync;
 
     @Autowired
     public ElasticsearchProcessingServiceImpl(RestHighLevelClient client,
-                                              @Qualifier("jsonMapper") ObjectMapper mapper,
-                                              XSync<String> xSync) {
+                                              @Qualifier("jsonMapper") ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
-        this.xSync = xSync;
     }
 
     @Override
@@ -93,31 +90,28 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public void insert(CandleModel model, String pairName) {
-        xSync.execute(pairName, () -> {
-            String sourceString = getSourceString(model);
-            if (isNull(sourceString)) {
-                return;
-            }
+        String sourceString = getSourceString(model);
+        if (isNull(sourceString)) {
+            return;
+        }
+        final String index = prepareIndex(pairName);
+        final String id = prepareId(model.getCandleOpenTime());
 
-            final String index = prepareIndex(pairName);
-            final String id = prepareId(model.getCandleOpenTime());
+        IndexRequest request = new IndexRequest(index)
+                .id(id)
+                .source(sourceString, XContentType.JSON);
 
-            IndexRequest request = new IndexRequest(index)
-                    .id(id)
-                    .source(sourceString, XContentType.JSON);
+        IndexResponse response;
+        try {
+            response = client.index(request, RequestOptions.DEFAULT);
+        } catch (IOException ex) {
+            log.error("Problem with getting response from elasticsearch cluster", ex);
+            return;
+        }
 
-            IndexResponse response;
-            try {
-                response = client.index(request, RequestOptions.DEFAULT);
-            } catch (IOException ex) {
-                log.error("Problem with getting response from elasticsearch cluster", ex);
-                return;
-            }
-
-            if (response.getResult() != DocWriteResponse.Result.CREATED) {
-                log.warn("Source have not created in elasticsearch cluster");
-            }
-        });
+        if (response.getResult() != DocWriteResponse.Result.CREATED) {
+            log.warn("Source have not created in elasticsearch cluster");
+        }
     }
 
     @Override
@@ -127,30 +121,27 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public void update(CandleModel model, String pairName) {
-        xSync.execute(pairName, () -> {
-            String sourceString = getSourceString(model);
-            if (isNull(sourceString)) {
-                return;
-            }
+        String sourceString = getSourceString(model);
+        if (isNull(sourceString)) {
+            return;
+        }
+        final String index = prepareIndex(pairName);
+        final String id = prepareId(model.getCandleOpenTime());
 
-            final String index = prepareIndex(pairName);
-            final String id = prepareId(model.getCandleOpenTime());
-
-            UpdateRequest request = new UpdateRequest(index, id)
+        UpdateRequest request = new UpdateRequest(index, id)
                     .doc(sourceString, XContentType.JSON);
 
-            UpdateResponse response;
-            try {
-                response = client.update(request, RequestOptions.DEFAULT);
-            } catch (IOException ex) {
-                log.error("Problem with getting response from elasticsearch cluster", ex);
-                return;
-            }
+        UpdateResponse response;
+        try {
+            response = client.update(request, RequestOptions.DEFAULT);
+        } catch (IOException ex) {
+            log.error("Problem with getting response from elasticsearch cluster", ex);
+            return;
+        }
 
-            if (response.getResult() != DocWriteResponse.Result.UPDATED) {
-                log.warn("Source have not updated in elasticsearch cluster");
-            }
-        });
+        if (response.getResult() != DocWriteResponse.Result.UPDATED) {
+            log.warn("Source have not updated in elasticsearch cluster");
+        }
     }
 
     @Override

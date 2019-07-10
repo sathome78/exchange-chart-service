@@ -3,6 +3,7 @@ package me.exrates.chartservice.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
+import me.exrates.chartservice.model.serializers.CurrencyPairDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeSerializer;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 public class TradeDataDto {
 
     private int orderId;
+    @JsonDeserialize(using = CurrencyPairDeserializer.class)
     private String pairName;
     private BigDecimal exrate;
     private BigDecimal amountBase;
