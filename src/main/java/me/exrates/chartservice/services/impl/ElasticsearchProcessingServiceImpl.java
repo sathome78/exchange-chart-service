@@ -94,7 +94,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return;
         }
         final String index = prepareIndex(pairName);
-        final String id = prepareId(model.getTime());
+        final String id = prepareId(model.getCandleOpenTime());
 
         IndexRequest request = new IndexRequest(index)
                 .id(id)
@@ -120,7 +120,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return;
         }
         final String index = prepareIndex(pairName);
-        final String id = prepareId(model.getTime());
+        final String id = prepareId(model.getCandleOpenTime());
 
         UpdateRequest request = new UpdateRequest(index, id)
                     .doc(sourceString, XContentType.JSON);
