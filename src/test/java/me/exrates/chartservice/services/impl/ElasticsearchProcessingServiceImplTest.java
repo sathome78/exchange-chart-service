@@ -12,6 +12,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -107,7 +108,7 @@ public class ElasticsearchProcessingServiceImplTest {
 
         TimeUnit.SECONDS.sleep(1);
 
-        candleModel = CandleModel.builder()
+        CandleModel candleModel1 = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -116,11 +117,7 @@ public class ElasticsearchProcessingServiceImplTest {
                 .candleOpenTime(NOW.plusMinutes(5))
                 .build();
 
-        processingService.insert(candleModel, BTC_USD);
-
-        TimeUnit.SECONDS.sleep(1);
-
-        candleModel = CandleModel.builder()
+        CandleModel candleModel2 = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -129,7 +126,7 @@ public class ElasticsearchProcessingServiceImplTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.insert(candleModel, BTC_USD);
+        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), BTC_USD);
 
         TimeUnit.SECONDS.sleep(1);
 

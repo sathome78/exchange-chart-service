@@ -21,7 +21,7 @@ public class DatabaseConfiguration {
 
     @Value("${datasource.driver-class-name}")
     private String driverClassName;
-    @Value("${datasource.jdbc-url}")
+    @Value("${datasource.url}")
     private String jdbcUrl;
     @Value("${datasource.username}")
     private String user;

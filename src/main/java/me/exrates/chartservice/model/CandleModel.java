@@ -37,7 +37,6 @@ public class CandleModel {
     public long getTimeInMillis() {
         return Timestamp.valueOf(candleOpenTime).getTime();
     }
-    private LocalDateTime lastTradeTime;
 
     public static CandleModel newCandleFromTrade(TradeDataDto dto) {
         return CandleModel.builder()
@@ -51,4 +50,3 @@ public class CandleModel {
                 .build();
     }
 }
-
