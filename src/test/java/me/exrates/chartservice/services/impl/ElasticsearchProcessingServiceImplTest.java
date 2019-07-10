@@ -42,12 +42,12 @@ public class ElasticsearchProcessingServiceImplTest {
         TimeUnit.SECONDS.sleep(1);
 
         CandleModel candleModel = CandleModel.builder()
-                .openRate(BigDecimal.TEN)
-                .closeRate(BigDecimal.TEN)
-                .highRate(BigDecimal.TEN)
-                .lowRate(BigDecimal.TEN)
+                .open(BigDecimal.TEN)
+                .close(BigDecimal.TEN)
+                .high(BigDecimal.TEN)
+                .low(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW)
+                .time(NOW)
                 .build();
 
         processingService.insert(candleModel, BTC_USD);
@@ -63,23 +63,23 @@ public class ElasticsearchProcessingServiceImplTest {
         CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW);
 
         assertNotNull(insertedCandleModel);
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpen()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getClose()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getHigh()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getLow()));
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getVolume()));
-        assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
+        assertEquals(NOW, insertedCandleModel.getTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
 
         TimeUnit.SECONDS.sleep(1);
 
         candleModel = CandleModel.builder()
-                .openRate(BigDecimal.ZERO)
-                .closeRate(BigDecimal.TEN)
-                .highRate(BigDecimal.TEN)
-                .lowRate(BigDecimal.ONE)
+                .open(BigDecimal.ZERO)
+                .close(BigDecimal.TEN)
+                .high(BigDecimal.TEN)
+                .low(BigDecimal.ONE)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW)
+                .time(NOW)
                 .build();
 
         processingService.update(candleModel, BTC_USD);
@@ -89,12 +89,12 @@ public class ElasticsearchProcessingServiceImplTest {
         CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW);
 
         assertNotNull(updatedCandleModel);
-        assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.ONE.compareTo(updatedCandleModel.getLowRate()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpen()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getClose()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getHigh()));
+        assertEquals(0, BigDecimal.ONE.compareTo(updatedCandleModel.getLow()));
         assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getVolume()));
-        assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
+        assertEquals(NOW, updatedCandleModel.getTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
 
         TimeUnit.SECONDS.sleep(1);
@@ -108,12 +108,12 @@ public class ElasticsearchProcessingServiceImplTest {
         TimeUnit.SECONDS.sleep(1);
 
         candleModel = CandleModel.builder()
-                .openRate(BigDecimal.TEN)
-                .closeRate(BigDecimal.TEN)
-                .highRate(BigDecimal.TEN)
-                .lowRate(BigDecimal.TEN)
+                .open(BigDecimal.TEN)
+                .close(BigDecimal.TEN)
+                .high(BigDecimal.TEN)
+                .low(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW.plusMinutes(5))
+                .time(NOW.plusMinutes(5))
                 .build();
 
         processingService.insert(candleModel, BTC_USD);
@@ -121,12 +121,12 @@ public class ElasticsearchProcessingServiceImplTest {
         TimeUnit.SECONDS.sleep(1);
 
         candleModel = CandleModel.builder()
-                .openRate(BigDecimal.TEN)
-                .closeRate(BigDecimal.TEN)
-                .highRate(BigDecimal.TEN)
-                .lowRate(BigDecimal.TEN)
+                .open(BigDecimal.TEN)
+                .close(BigDecimal.TEN)
+                .high(BigDecimal.TEN)
+                .low(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW.plusDays(10))
+                .time(NOW.plusDays(10))
                 .build();
 
         processingService.insert(candleModel, BTC_USD);

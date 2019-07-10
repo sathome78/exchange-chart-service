@@ -1,6 +1,5 @@
 package me.exrates.chartservice.services.impl;
 
-import com.antkorwin.xsync.XSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
@@ -95,7 +94,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return;
         }
         final String index = prepareIndex(pairName);
-        final String id = prepareId(model.getCandleOpenTime());
+        final String id = prepareId(model.getTime());
 
         IndexRequest request = new IndexRequest(index)
                 .id(id)
@@ -121,7 +120,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return;
         }
         final String index = prepareIndex(pairName);
-        final String id = prepareId(model.getCandleOpenTime());
+        final String id = prepareId(model.getTime());
 
         UpdateRequest request = new UpdateRequest(index, id)
                     .doc(sourceString, XContentType.JSON);
