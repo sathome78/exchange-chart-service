@@ -27,6 +27,8 @@ public class CandleModel {
     @JsonProperty("low_rate")
     private BigDecimal lowRate;
     private BigDecimal volume;
+    @JsonProperty("last_trade_time")
+    private LocalDateTime lastTradeTime;
     @JsonProperty("candle_open_time")
     private LocalDateTime candleOpenTime;
     @JsonProperty("time_in_millis")
@@ -35,7 +37,6 @@ public class CandleModel {
     public long getTimeInMillis() {
         return Timestamp.valueOf(candleOpenTime).getTime();
     }
-    private LocalDateTime lastTradeTime;
 
     public static CandleModel newCandleFromTrade(TradeDataDto dto) {
         return CandleModel.builder()
@@ -49,4 +50,3 @@ public class CandleModel {
                 .build();
     }
 }
-

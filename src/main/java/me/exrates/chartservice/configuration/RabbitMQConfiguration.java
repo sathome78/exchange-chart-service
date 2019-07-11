@@ -9,7 +9,7 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 
 @Configuration
-public class RabbitMQConfig implements RabbitListenerConfigurer {
+public class RabbitMQConfiguration implements RabbitListenerConfigurer {
 
     @Bean
     public MappingJackson2MessageConverter jackson2Converter() {
