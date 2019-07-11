@@ -11,6 +11,8 @@ public interface ElasticsearchProcessingService {
 
     CandleModel get(String pairName, LocalDateTime dateTime);
 
+    List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
+
     void insert(CandleModel model, String pairName);
 
     void batchInsert(List<CandleModel> models, String pairName);
@@ -20,6 +22,4 @@ public interface ElasticsearchProcessingService {
     long deleteAll();
 
     long deleteByIndex(String index);
-
-    List<CandleModel> getByQuery(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
 }

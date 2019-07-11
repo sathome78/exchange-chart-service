@@ -1,7 +1,9 @@
 package me.exrates.chartservice.services.impl;
 
+import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.services.ElasticsearchProcessingService;
+import me.exrates.chartservice.model.enums.IntervalType;
+import me.exrates.chartservice.services.ActualCandleDataStorageService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -9,27 +11,26 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
-public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
+public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
+
+    private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     @Autowired
-    private ElasticsearchProcessingService processingService;
+    private ActualCandleDataStorageService storageService;
 
     @Test
-    public void endToEnd() throws Exception {
-        boolean exist = processingService.exist(BTC_USD, NOW);
+    public void endToEnd() {
+        CandleModel candleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
-        assertFalse(exist);
+        assertNull(candleModel);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        CandleModel candleModel = CandleModel.builder()
+        candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -38,17 +39,9 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insert(candleModel, BTC_USD);
+        storageService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        exist = processingService.exist(BTC_USD, NOW);
-
-        assertTrue(exist);
-
-        TimeUnit.SECONDS.sleep(1);
-
-        CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW);
+        CandleModel insertedCandleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
         assertNotNull(insertedCandleModel);
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
@@ -59,8 +52,6 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
         assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
 
-        TimeUnit.SECONDS.sleep(1);
-
         candleModel = CandleModel.builder()
                 .openRate(BigDecimal.ZERO)
                 .closeRate(BigDecimal.TEN)
@@ -70,11 +61,9 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.update(candleModel, BTC_USD);
+        storageService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW);
+        CandleModel updatedCandleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
         assertNotNull(updatedCandleModel);
         assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
@@ -85,15 +74,11 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
         assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
 
-        TimeUnit.SECONDS.sleep(1);
-
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD);
+        List<CandleModel> models = storageService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(1, models.size());
-
-        TimeUnit.SECONDS.sleep(1);
 
         CandleModel candleModel1 = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -113,20 +98,14 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), BTC_USD);
+        storageService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), BTC_USD, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD);
+        models = storageService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(2, models.size());
 
-        TimeUnit.SECONDS.sleep(1);
-
-        long deletedCount = processingService.deleteAll();
-
-        assertEquals(3L, deletedCount);
+        storageService.deleteAll();
     }
 }

@@ -11,11 +11,11 @@ import java.util.stream.IntStream;
 @Getter
 public enum IntervalType {
 
-    MINUTE(ChronoUnit.MINUTES, 30),
-    HOUR(ChronoUnit.HOURS, 1, 4, 12),
-    DAY(ChronoUnit.DAYS, 1, 2, 3),
-    WEEK(ChronoUnit.WEEKS, 1, 3),
-    MONTH(ChronoUnit.MONTHS, 1);
+    MINUTE(ChronoUnit.MINUTES, 5, 15, 30),
+    HOUR(ChronoUnit.HOURS, 1, 6),
+    DAY(ChronoUnit.DAYS, 1),
+    WEEK(ChronoUnit.WEEKS),
+    MONTH(ChronoUnit.MONTHS);
 
     private TemporalUnit correspondingTimeUnit;
 

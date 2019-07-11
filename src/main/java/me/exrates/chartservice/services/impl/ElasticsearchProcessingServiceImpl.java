@@ -37,6 +37,7 @@ import java.util.Objects;
 
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
+import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
 
 @Log4j2
 @Service
@@ -51,7 +52,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Autowired
     public ElasticsearchProcessingServiceImpl(RestHighLevelClient client,
-                                              @Qualifier("jsonMapper") ObjectMapper mapper) {
+                                              @Qualifier(JSON_MAPPER) ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
     }
@@ -85,6 +86,27 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         } catch (IOException ex) {
             log.error("Problem with getting response from elasticsearch cluster", ex);
             return null;
+        }
+    }
+
+    @Override
+    public List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String pairName) {
+        final String index = prepareIndex(pairName);
+
+        try {
+            SearchRequest request = new SearchRequest(index)
+                    .source(new SearchSourceBuilder()
+                            .query(QueryBuilders.rangeQuery("time_in_millis")
+                                    .gte(Timestamp.valueOf(fromDate).getTime())
+                                    .lt(Timestamp.valueOf(toDate).getTime())));
+
+            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+
+            return getSearchResult(response);
+        } catch (IOException ex) {
+            log.warn("Problem with getting response from elasticsearch cluster", ex);
+
+            return Collections.emptyList();
         }
     }
 
@@ -162,27 +184,6 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             log.warn("Problem with getting response from elasticsearch cluster", ex);
 
             return 0L;
-        }
-    }
-
-    @Override
-    public List<CandleModel> getByQuery(LocalDateTime fromDate, LocalDateTime toDate, String pairName) {
-        final String index = prepareIndex(pairName);
-
-        try {
-            SearchRequest request = new SearchRequest(index)
-                    .source(new SearchSourceBuilder()
-                            .query(QueryBuilders.rangeQuery("time_in_millis")
-                                    .gte(Timestamp.valueOf(fromDate).getTime())
-                                    .lt(Timestamp.valueOf(toDate).getTime())));
-
-            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
-
-            return getSearchResult(response);
-        } catch (IOException ex) {
-            log.warn("Problem with getting response from elasticsearch cluster", ex);
-
-            return Collections.emptyList();
         }
     }
 

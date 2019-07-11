@@ -9,10 +9,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CommonConfiguration {
 
+    public static final String JSON_MAPPER = "jsonMapper";
+
     public static final String MODULE_MODE_PRODUCES = "produces";
     public static final String MODULE_MODE_CONSUMES = "consumes";
 
-    @Bean("jsonMapper")
+    @Bean(JSON_MAPPER)
     public ObjectMapper mapper() {
         return new ObjectMapper()
                 .findAndRegisterModules()
