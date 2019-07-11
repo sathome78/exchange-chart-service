@@ -6,6 +6,7 @@ import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
@@ -13,6 +14,7 @@ import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_M
 @Log4j2
 @Profile(MODULE_MODE_CONSUMES)
 @Component
+@DependsOn("cacheDataInitService")
 public class RabbitListeners {
 
     private final TradeDataService tradeDataService;
@@ -24,10 +26,8 @@ public class RabbitListeners {
 
 
     @RabbitListener(queues = "${spring.rabbitmq.tradestopic}")
-    public void recieveTrade(TradeDataDto message) {
-        System.out.println("income message !!!");
-        System.out.println(message);
-        /*handle messages here*/
+    public void receiveTrade(TradeDataDto message) {
+        log.debug("received message {}", message);
         tradeDataService.handleReceivedTrade(message);
     }
 }

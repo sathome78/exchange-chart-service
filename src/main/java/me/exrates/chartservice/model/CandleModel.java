@@ -1,5 +1,6 @@
 package me.exrates.chartservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBefore;
+import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBeforeForMinInterval;
 
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)
@@ -38,9 +39,9 @@ public class CandleModel {
         return Timestamp.valueOf(candleOpenTime).getTime();
     }
 
-    public static CandleModel newCandleFromTrade(TradeDataDto dto) {
+    public static CandleModel newMinimalCandleFromTrade(TradeDataDto dto) {
         return CandleModel.builder()
-                .candleOpenTime(getNearestTimeBefore(30, dto.getTradeDate()))
+                .candleOpenTime(getNearestTimeBeforeForMinInterval(dto.getTradeDate()))
                 .openRate(dto.getExrate())
                 .closeRate(dto.getExrate())
                 .highRate(dto.getExrate())
@@ -48,5 +49,11 @@ public class CandleModel {
                 .volume(dto.getAmountBase())
                 .lastTradeTime(dto.getTradeDate())
                 .build();
+    }
+
+    public CandleModel(BigDecimal highRate, BigDecimal lowRate, BigDecimal volume) {
+        this.highRate = highRate;
+        this.lowRate = lowRate;
+        this.volume = volume;
     }
 }
