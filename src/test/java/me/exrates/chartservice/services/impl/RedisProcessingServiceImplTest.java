@@ -3,7 +3,7 @@ package me.exrates.chartservice.services.impl;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
-import me.exrates.chartservice.services.ActualCandleDataStorageService;
+import me.exrates.chartservice.services.RedisProcessingService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,16 +17,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
+public class RedisProcessingServiceImplTest extends AbstractTest {
 
     private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     @Autowired
-    private ActualCandleDataStorageService storageService;
+    private RedisProcessingService processingService;
 
     @Test
     public void endToEnd() {
-        CandleModel candleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        CandleModel candleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
         assertNull(candleModel);
 
@@ -39,9 +39,9 @@ public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        storageService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
+        processingService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
 
-        CandleModel insertedCandleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
         assertNotNull(insertedCandleModel);
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
@@ -61,9 +61,9 @@ public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        storageService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
+        processingService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
 
-        CandleModel updatedCandleModel = storageService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
 
         assertNotNull(updatedCandleModel);
         assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
@@ -74,7 +74,7 @@ public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
         assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
 
-        List<CandleModel> models = storageService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
+        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
@@ -98,14 +98,14 @@ public class ActualCandleDataStorageServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        storageService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), BTC_USD, DEFAULT_INTERVAL);
+        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), BTC_USD, DEFAULT_INTERVAL);
 
-        models = storageService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
+        models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(2, models.size());
 
-        storageService.deleteAll();
+        processingService.deleteAll();
     }
 }

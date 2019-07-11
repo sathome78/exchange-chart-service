@@ -4,7 +4,7 @@ import com.antkorwin.xsync.XSync;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
-import me.exrates.chartservice.services.ActualCandleDataStorageService;
+import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.stereotype.Service;
@@ -17,14 +17,14 @@ import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBefore;
 public class TradeDataServiceImpl implements TradeDataService {
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
-    private final ActualCandleDataStorageService storageService;
+    private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
 
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
-                                ActualCandleDataStorageService storageService,
+                                RedisProcessingService redisProcessingService,
                                 XSync<String> xSync) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
-        this.storageService = storageService;
+        this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
     }
 

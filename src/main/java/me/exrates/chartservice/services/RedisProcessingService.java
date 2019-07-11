@@ -6,7 +6,7 @@ import me.exrates.chartservice.model.CandleModel;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface ActualCandleDataStorageService {
+public interface RedisProcessingService {
 
     CandleModel get(String pairName, LocalDateTime dateTime, BackDealInterval interval);
 

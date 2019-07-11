@@ -6,7 +6,7 @@ import lombok.Cleanup;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.services.ActualCandleDataStorageService;
+import me.exrates.chartservice.services.RedisProcessingService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,7 +30,7 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.DB_INDEX_
 
 @Log4j2
 @Service
-public class ActualCandleDataStorageServiceImpl implements ActualCandleDataStorageService {
+public class RedisProcessingServiceImpl implements RedisProcessingService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm");
 
@@ -42,9 +42,9 @@ public class ActualCandleDataStorageServiceImpl implements ActualCandleDataStora
     private final ObjectMapper mapper;
 
     @Autowired
-    public ActualCandleDataStorageServiceImpl(@Qualifier(DB_INDEX_MAP) Map<String, Integer> dbIndexMap,
-                                              JedisPool jedisPool,
-                                              @Qualifier(JSON_MAPPER) ObjectMapper mapper) {
+    public RedisProcessingServiceImpl(@Qualifier(DB_INDEX_MAP) Map<String, Integer> dbIndexMap,
+                                      JedisPool jedisPool,
+                                      @Qualifier(JSON_MAPPER) ObjectMapper mapper) {
         this.dbIndexMap = dbIndexMap;
         this.jedisPool = jedisPool;
         this.mapper = mapper;
