@@ -7,6 +7,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.CacheInterface;
+import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.TimeUtils;
@@ -30,14 +31,16 @@ public class TradeDataServiceImpl implements TradeDataService {
     private static final BackDealInterval SMALLEST_INTERVAL = new BackDealInterval("5 MINUTE");
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
-
+    private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
 
     private final CacheInterface cacheInterface;
 
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
-                                XSync<String> xSync, CacheInterface cacheInterface) {
+                                RedisProcessingService redisProcessingService,
+                                XSync<String> xSync) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
+        this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
         this.cacheInterface = cacheInterface;
     }

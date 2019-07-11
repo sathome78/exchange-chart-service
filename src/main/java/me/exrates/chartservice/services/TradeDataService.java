@@ -8,6 +8,7 @@ import me.exrates.chartservice.model.TradeDataDto;
 import java.time.LocalDateTime;
 
 public interface TradeDataService {
+
     CandleModel getCandleForCurrentTime(String pairName, BackDealInterval interval);
 
     CandlesDataDto getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval);

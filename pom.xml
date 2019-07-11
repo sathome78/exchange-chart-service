@@ -133,6 +133,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Redis -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.antkorwin</groupId>
             <artifactId>xsync</artifactId>

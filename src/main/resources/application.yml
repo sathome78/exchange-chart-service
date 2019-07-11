@@ -2,12 +2,11 @@ spring:
   application:
     name: chartservice
   profiles:
-    active: local
+    active:
+      - local
+      - produces
+#      - consumes
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true
-    username: root
-    password: root
     hikari:
       connection-timeout: 1000
       idle-timeout: 180000
@@ -20,9 +19,6 @@ spring:
   devtools:
     restart:
       enabled: true
-  redis:
-    host: localhost
-    port: 6379
   rabbitmq:
     username: developer
     password: eehei4AeJein
@@ -30,6 +26,25 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE
 
+datasource:
+  driver-class-name: com.mysql.cj.jdbc.Driver
+  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: root
+
+redis:
+  host: localhost
+  port: 6379
+  allowed-interval-db-indexes: >
+    5 MINUTE: 1;
+    15 MINUTE: 2;
+    30 MINUTE: 3;
+    1 HOUR: 4;
+    6 HOUR: 5;
+    1 DAY: 6;
+
+ssm:
+  mode: dev
+  path: vLHjSkPJjB6JLVcA
 
 elasticsearch:
   host: localhost

@@ -5,7 +5,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-public class TimeUtils {
+public final class TimeUtils {
 
     private static final BackDealInterval DEFAULT_MIN_INTERVAL = new BackDealInterval("5 MINUTE");
 
