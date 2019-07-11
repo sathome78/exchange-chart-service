@@ -40,7 +40,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         Map<LocalDateTime, List<TradeDataDto>> groupedByTradeDate = orders.stream()
                 .map(TradeDataDto::new)
-                .collect(Collectors.groupingBy(tradeData -> TimeUtils.getNearestTimeBefore(tradeData.getTradeDate())));
+                .collect(Collectors.groupingBy(tradeData -> TimeUtils.getNearestTimeBeforeForMinInterval(tradeData.getTradeDate())));
 
         List<CandleModel> candleModels = groupedByTradeDate.entrySet().stream()
                 .map(entry -> {
