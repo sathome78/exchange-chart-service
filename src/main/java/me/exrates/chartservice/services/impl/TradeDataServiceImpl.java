@@ -6,11 +6,9 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
-import me.exrates.chartservice.services.CacheInterface;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
-import me.exrates.chartservice.utils.TimeUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,15 +32,12 @@ public class TradeDataServiceImpl implements TradeDataService {
     private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
 
-    private final CacheInterface cacheInterface;
-
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
                                 XSync<String> xSync) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
-        this.cacheInterface = cacheInterface;
     }
 
     @Override
@@ -56,7 +51,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private CandleModel getCandle(String pairName, LocalDateTime dateTime, BackDealInterval interval) {
         LocalDateTime candleTime = getNearestBackTimeForBackdealInterval(dateTime, interval);
-        return cacheInterface.getCandle(pairName, candleTime, interval);
+        return redisProcessingService.get(pairName, candleTime, interval);
     }
 
     @Override
@@ -66,12 +61,12 @@ public class TradeDataServiceImpl implements TradeDataService {
         LocalDateTime toTime = getNearestBackTimeForBackdealInterval(to, interval);
         LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(CANDLES_TO_STORE_IN_CACHE, interval);
         if (fromTime.isBefore(oldestCachedCandleTime)) {
-            candleModels = Stream.of(cacheInterface.getCandlesRange(pairName, oldestCachedCandleTime, toTime, interval),
+            candleModels = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, toTime, pairName, interval),
                                      getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, oldestCachedCandleTime.minusSeconds(1), interval))
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
         } else {
-            candleModels = cacheInterface.getCandlesRange(pairName, fromTime, toTime, interval);
+            candleModels = redisProcessingService.getByRange(fromTime, toTime, pairName, interval);
         }
         return new CandlesDataDto(candleModels, pairName, interval);
     }
@@ -104,7 +99,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     private List<CandleModel> getCandlesFromElasticAndAggregateToInterval(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
-        return transformToInterval(interval, elasticsearchProcessingService.getByQuery(from, to, pairName));
+        return transformToInterval(interval, elasticsearchProcessingService.getByRange(from, to, pairName));
     }
 
     /**@param backDealInterval - interval for aggregating candles
