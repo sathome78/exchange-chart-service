@@ -4,10 +4,12 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Log4j2
 @Component
+@DependsOn("cacheDataInitService")
 public class RabbitListeners {
 
     private final TradeDataService tradeDataService;
