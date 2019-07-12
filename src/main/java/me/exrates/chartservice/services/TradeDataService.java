@@ -6,6 +6,7 @@ import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface TradeDataService {
 
@@ -13,5 +14,7 @@ public interface TradeDataService {
 
     CandlesDataDto getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval);
 
-    void handleReceivedTrade(TradeDataDto message);
+
+    void handleReceivedTrades(String pairname, List<TradeDataDto> dto);
+
 }
