@@ -81,16 +81,15 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     }
 
     private void initializeCache(List<CandleModel> models, String key, BackDealInterval interval) {
-        if (isNull(interval)) {
-            return;
-        }
-
         if (interval != DEFAULT_INTERVAL) {
             models = CandleDataConverter.convertByInterval(models, interval);
         }
         redisProcessingService.batchInsertOrUpdate(models, key, interval);
 
         final String nextInterval = nextIntervalMap.get(interval.getInterval());
+        if (isNull(nextInterval)) {
+            return;
+        }
         initializeCache(models, key, new BackDealInterval(nextInterval));
     }
 }
