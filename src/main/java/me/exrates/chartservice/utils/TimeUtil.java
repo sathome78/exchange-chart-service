@@ -1,16 +1,16 @@
 package me.exrates.chartservice.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import me.exrates.chartservice.model.BackDealInterval;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-public final class TimeUtils {
+@NoArgsConstructor(access = AccessLevel.NONE)
+public final class TimeUtil {
 
     private static final BackDealInterval DEFAULT_MIN_INTERVAL = new BackDealInterval("5 MINUTE");
-
-    private TimeUtils() {
-    }
 
     public static LocalDateTime getNearestTimeBeforeForMinInterval(LocalDateTime dateTime) {
         return getNearestBackTimeForBackdealInterval(dateTime, DEFAULT_MIN_INTERVAL);
@@ -35,10 +35,4 @@ public final class TimeUtils {
             }
         }
     }
-
-    /*todo: remove and write tests*/
-    public static void main(String[] args) {
-        System.out.println(getNearestBackTimeForBackdealInterval(LocalDateTime.now(), new BackDealInterval("6 HOUR")));
-    }
-
 }

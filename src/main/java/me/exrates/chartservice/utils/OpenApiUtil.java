@@ -1,5 +1,7 @@
 package me.exrates.chartservice.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.exceptions.CurrencyPairFormatException;
 
@@ -7,10 +9,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Log4j2
-public class OpenApiUtils {
-
-    private OpenApiUtils() {
-    }
+@NoArgsConstructor(access = AccessLevel.NONE)
+public final class OpenApiUtil {
 
     private static final Predicate<String> CURRENCY_PAIR_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9.]{1,8}[_-][a-zA-Z0-9.]{1,8}$").asPredicate();
 

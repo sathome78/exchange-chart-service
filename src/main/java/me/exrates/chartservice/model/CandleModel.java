@@ -1,6 +1,5 @@
 package me.exrates.chartservice.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +10,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBeforeForMinInterval;
+import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)

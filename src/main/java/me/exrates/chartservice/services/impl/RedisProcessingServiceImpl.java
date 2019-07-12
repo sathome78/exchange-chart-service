@@ -7,6 +7,7 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +17,6 @@ import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,8 +31,6 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.DB_INDEX_
 @Log4j2
 @Service
 public class RedisProcessingServiceImpl implements RedisProcessingService {
-
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm");
 
     private static final String KEYS_PATTERN = "*";
 
@@ -51,11 +49,15 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public CandleModel get(String pairName, LocalDateTime dateTime, BackDealInterval interval) {
+    public boolean exists(String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
-        final String key = prepareKey(pairName);
-        final String hashKey = prepareHashKey(dateTime);
+        return jedis.exists(key);
+    }
+
+    @Override
+    public CandleModel get(String key, String hashKey, BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
         if (jedis.hexists(key, hashKey)) {
             try {
@@ -69,16 +71,14 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String pairName, BackDealInterval interval) {
+    public List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
-
-        final String key = prepareKey(pairName);
 
         if (jedis.exists(key)) {
             Map<String, String> valuesMap = jedis.hgetAll(key);
 
             return valuesMap.entrySet().stream()
-                    .map(entry -> Pair.of(LocalDateTime.parse(entry.getKey(), FORMATTER), entry.getValue()))
+                    .map(entry -> Pair.of(RedisGeneratorUtil.generateDate(entry.getKey()), entry.getValue()))
                     .filter(pair -> pair.getKey().isAfter(from) && pair.getKey().isBefore(to))
                     .map(Pair::getValue)
                     .map(value -> {
@@ -96,12 +96,12 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public void batchInsertOrUpdate(List<CandleModel> models, String pairName, BackDealInterval interval) {
-        models.forEach(model -> this.insertOrUpdate(model, pairName, interval));
+    public void batchInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval) {
+        models.forEach(model -> this.insertOrUpdate(model, key, interval));
     }
 
     @Override
-    public void insertOrUpdate(CandleModel model, String pairName, BackDealInterval interval) {
+    public void insertOrUpdate(CandleModel model, String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
         String valueString = getSourceString(model);
@@ -109,8 +109,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
             return;
         }
 
-        final String key = prepareKey(pairName);
-        final String hashKey = prepareHashKey(model.getCandleOpenTime());
+        final String hashKey = RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime());
 
         Long result = jedis.hset(key, hashKey, valueString);
 
@@ -127,12 +126,12 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     public void deleteAll() {
         dbIndexMap.values().stream()
                 .sorted(Comparator.naturalOrder())
-                .forEach(this::deleteByIndex);
+                .forEach(this::deleteByDbIndex);
     }
 
     @Override
-    public void deleteByIndex(int index) {
-        @Cleanup Jedis jedis = getJedis(index);
+    public void deleteByDbIndex(int dbIndex) {
+        @Cleanup Jedis jedis = getJedis(dbIndex);
 
         jedis.keys(KEYS_PATTERN).forEach(jedis::del);
     }
@@ -140,9 +139,9 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     /**
      * Get Jedis instance
      */
-    private Jedis getJedis(int index) {
+    private Jedis getJedis(int dbIndex) {
         Jedis jedisPoolResource = jedisPool.getResource();
-        jedisPoolResource.select(index);
+        jedisPoolResource.select(dbIndex);
         return jedisPoolResource;
     }
 
@@ -153,13 +152,5 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
             log.error("Problem with writing model object to string", ex);
             return null;
         }
-    }
-
-    private String prepareKey(String pairName) {
-        return pairName.replace("/", "_").toLowerCase();
-    }
-
-    private String prepareHashKey(LocalDateTime dateTime) {
-        return dateTime.format(FORMATTER);
     }
 }

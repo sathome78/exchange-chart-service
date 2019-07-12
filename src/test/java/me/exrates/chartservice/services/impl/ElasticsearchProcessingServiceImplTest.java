@@ -2,6 +2,7 @@ package me.exrates.chartservice.services.impl;
 
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
+import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,7 +24,10 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
 
     @Test
     public void endToEnd() throws Exception {
-        boolean exist = processingService.exist(BTC_USD, NOW);
+        final String index = ElasticsearchGeneratorUtil.generateIndex(BTC_USD);
+        final String id = ElasticsearchGeneratorUtil.generateId(NOW);
+
+        boolean exist = processingService.exists(index, id);
 
         assertFalse(exist);
 
@@ -38,17 +42,17 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insert(candleModel, BTC_USD);
+        processingService.insert(candleModel, index);
 
         TimeUnit.SECONDS.sleep(1);
 
-        exist = processingService.exist(BTC_USD, NOW);
+        exist = processingService.exists(index, id);
 
         assertTrue(exist);
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW);
+        CandleModel insertedCandleModel = processingService.get(index, id);
 
         assertNotNull(insertedCandleModel);
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
@@ -70,11 +74,11 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.update(candleModel, BTC_USD);
+        processingService.update(candleModel, index);
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW);
+        CandleModel updatedCandleModel = processingService.get(index, id);
 
         assertNotNull(updatedCandleModel);
         assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
@@ -87,7 +91,7 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
 
         TimeUnit.SECONDS.sleep(1);
 
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD);
+        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, index);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
@@ -113,11 +117,19 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), BTC_USD);
+        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), index);
 
         TimeUnit.SECONDS.sleep(1);
 
-        models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD);
+        models = processingService.getAllByIndex(index);
+
+        assertNotNull(models);
+        assertFalse(models.isEmpty());
+        assertEquals(3, models.size());
+
+        TimeUnit.SECONDS.sleep(1);
+
+        models = processingService.getByRange(FROM_DATE, TO_DATE, index);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
@@ -125,8 +137,21 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
 
         TimeUnit.SECONDS.sleep(1);
 
-        long deletedCount = processingService.deleteAll();
+        List<String> indices = processingService.getAllIndices();
+
+        assertNotNull(indices);
+        assertFalse(indices.isEmpty());
+        assertEquals(1, indices.size());
+        assertEquals(index, indices.get(0));
+
+        TimeUnit.SECONDS.sleep(1);
+
+        long deletedCount = processingService.deleteAllData();
 
         assertEquals(3L, deletedCount);
+
+        TimeUnit.SECONDS.sleep(1);
+
+        processingService.deleteAllIndices();
     }
 }

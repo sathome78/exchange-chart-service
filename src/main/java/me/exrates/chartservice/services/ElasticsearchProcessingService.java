@@ -7,19 +7,27 @@ import java.util.List;
 
 public interface ElasticsearchProcessingService {
 
-    boolean exist(String pairName, LocalDateTime dateTime);
+    List<String> getAllIndices();
 
-    CandleModel get(String pairName, LocalDateTime dateTime);
+    boolean exists(String index, String id);
 
-    List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String pairName);
+    CandleModel get(String index, String id);
 
-    void insert(CandleModel model, String pairName);
+    List<CandleModel> getAllByIndex(String index);
 
-    void batchInsert(List<CandleModel> models, String pairName);
+    List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index);
 
-    void update(CandleModel model, String pairName);
+    void insert(CandleModel model, String index);
 
-    long deleteAll();
+    void batchInsert(List<CandleModel> models, String index);
 
-    long deleteByIndex(String index);
+    void update(CandleModel model, String index);
+
+    long deleteAllData();
+
+    long deleteDataByIndex(String index);
+
+    void deleteAllIndices();
+
+    void deleteIndex(String index);
 }
