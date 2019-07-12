@@ -3,6 +3,7 @@ package me.exrates.chartservice.utils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import me.exrates.chartservice.model.BackDealInterval;
+import me.exrates.chartservice.model.enums.IntervalType;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -10,7 +11,7 @@ import java.time.temporal.ChronoUnit;
 @NoArgsConstructor(access = AccessLevel.NONE)
 public final class TimeUtil {
 
-    private static final BackDealInterval DEFAULT_MIN_INTERVAL = new BackDealInterval("5 MINUTE");
+    private static final BackDealInterval DEFAULT_MIN_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     public static LocalDateTime getNearestTimeBeforeForMinInterval(LocalDateTime dateTime) {
         return getNearestBackTimeForBackdealInterval(dateTime, DEFAULT_MIN_INTERVAL);

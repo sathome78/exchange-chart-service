@@ -45,7 +45,6 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         List<CandleModel> candleModels = groupedByTradeDate.entrySet().stream()
                 .map(entry -> {
-                    final LocalDateTime candleOpenTime = entry.getKey();
                     final List<TradeDataDto> trades = entry.getValue();
 
                     TradeDataDto min = Collections.min(trades, Comparator.comparing(TradeDataDto::getTradeDate));
@@ -60,7 +59,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
                             .highRate(highRate)
                             .lowRate(lowRate)
                             .lastTradeTime(max.getTradeDate())
-                            .candleOpenTime(candleOpenTime)
+                            .candleOpenTime(entry.getKey())
                             .build();
                 })
                 .collect(Collectors.toList());
