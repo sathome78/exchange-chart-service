@@ -28,6 +28,7 @@ public class RabbitListeners {
     @RabbitListener(queues = "${spring.rabbitmq.tradestopic}")
     public void receiveTrade(TradeDataDto message) {
         log.debug("received message {}", message);
+
         tradeDataService.handleReceivedTrade(message);
     }
 }
