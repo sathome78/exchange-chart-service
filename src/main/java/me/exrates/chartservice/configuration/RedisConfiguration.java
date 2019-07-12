@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class RedisConfiguration {
 
     public static final String DB_INDEX_MAP = "dbIndexMap";
+    public static final String NEXT_INTERVAL_MAP = "nextIntervalMap";
 
     @Value("${redis.host}")
     private String host;
@@ -21,6 +22,8 @@ public class RedisConfiguration {
     private int port;
     @Value("${redis.allowed-interval-db-indexes}")
     private String allowedIntervalDbIndexesString;
+    @Value("${redis.next-interval}")
+    private String nextIntervalString;
 
     @Bean
     JedisPool jedisPool() {
@@ -35,7 +38,17 @@ public class RedisConfiguration {
                 .filter(row -> row.length > 1)
                 .collect(Collectors.toMap(
                         key -> key[0].trim(),
-                        row -> Integer.parseInt(row[1].trim())
-                ));
+                        row -> Integer.parseInt(row[1].trim())));
+    }
+
+    @Bean
+    @Qualifier(NEXT_INTERVAL_MAP)
+    public Map<String, String> prepareNextIntervalMap() {
+        return Arrays.stream(nextIntervalString.split(";"))
+                .map(row -> row.split(":"))
+                .filter(row -> row.length > 1)
+                .collect(Collectors.toMap(
+                        key -> key[0].trim(),
+                        row -> row[1].trim()));
     }
 }

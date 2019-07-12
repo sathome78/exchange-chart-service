@@ -8,15 +8,17 @@ import java.util.List;
 
 public interface RedisProcessingService {
 
-    CandleModel get(String pairName, LocalDateTime dateTime, BackDealInterval interval);
+    boolean exists(String key, BackDealInterval interval);
 
-    List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String pairName, BackDealInterval interval);
+    CandleModel get(String key, String hashKey, BackDealInterval interval);
 
-    void batchInsertOrUpdate(List<CandleModel> models, String pairName, BackDealInterval interval);
+    List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval);
 
-    void insertOrUpdate(CandleModel model, String pairName, BackDealInterval interval);
+    void batchInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval);
+
+    void insertOrUpdate(CandleModel model, String key, BackDealInterval interval);
 
     void deleteAll();
 
-    void deleteByIndex(int index);
+    void deleteByDbIndex(int dbIndex);
 }

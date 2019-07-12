@@ -4,6 +4,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -26,7 +27,10 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
 
     @Test
     public void endToEnd() {
-        CandleModel candleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        final String key = RedisGeneratorUtil.generateKey(BTC_USD);
+        final String hashKey = RedisGeneratorUtil.generateHashKey(NOW);
+
+        CandleModel candleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertNull(candleModel);
 
@@ -39,9 +43,9 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
+        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
 
-        CandleModel insertedCandleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        CandleModel insertedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(insertedCandleModel);
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
@@ -61,9 +65,9 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insertOrUpdate(candleModel, BTC_USD, DEFAULT_INTERVAL);
+        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
 
-        CandleModel updatedCandleModel = processingService.get(BTC_USD, NOW, DEFAULT_INTERVAL);
+        CandleModel updatedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(updatedCandleModel);
         assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
@@ -74,7 +78,7 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
         assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
 
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
+        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
@@ -98,9 +102,9 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), BTC_USD, DEFAULT_INTERVAL);
+        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
 
-        models = processingService.getByRange(FROM_DATE, TO_DATE, BTC_USD, DEFAULT_INTERVAL);
+        models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
