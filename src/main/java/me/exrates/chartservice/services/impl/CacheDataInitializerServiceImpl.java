@@ -66,7 +66,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     private void initializeCache() {
         log.debug("--> Start process of initialize cache <--");
 
-        elasticsearchProcessingService.getAllIndices().forEach(index -> {
+        elasticsearchProcessingService.getAllIndices().parallelStream().forEach(index -> {
             boolean keyExists = redisProcessingService.exists(index, DEFAULT_INTERVAL);
 
             if (!keyExists) {
