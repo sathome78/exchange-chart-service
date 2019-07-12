@@ -21,7 +21,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
-import static me.exrates.chartservice.utils.TimeUtils.getNearestBackTimeForBackdealInterval;
+import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)

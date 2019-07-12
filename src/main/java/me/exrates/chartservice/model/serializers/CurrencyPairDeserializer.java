@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
 
-import static me.exrates.chartservice.utils.OpenApiUtils.transformCurrencyPairBack;
+import static me.exrates.chartservice.utils.OpenApiUtil.transformCurrencyPairBack;
 
 public class CurrencyPairDeserializer extends JsonDeserializer<String> {
 

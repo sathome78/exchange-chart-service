@@ -7,7 +7,8 @@ import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.DataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
-import me.exrates.chartservice.utils.TimeUtils;
+import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,11 +41,10 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         Map<LocalDateTime, List<TradeDataDto>> groupedByTradeDate = orders.stream()
                 .map(TradeDataDto::new)
-                .collect(Collectors.groupingBy(tradeData -> TimeUtils.getNearestTimeBeforeForMinInterval(tradeData.getTradeDate())));
+                .collect(Collectors.groupingBy(tradeData -> TimeUtil.getNearestTimeBeforeForMinInterval(tradeData.getTradeDate())));
 
         List<CandleModel> candleModels = groupedByTradeDate.entrySet().stream()
                 .map(entry -> {
-                    final LocalDateTime candleOpenTime = entry.getKey();
                     final List<TradeDataDto> trades = entry.getValue();
 
                     TradeDataDto min = Collections.min(trades, Comparator.comparing(TradeDataDto::getTradeDate));
@@ -59,15 +59,16 @@ public class DataInitializerServiceImpl implements DataInitializerService {
                             .highRate(highRate)
                             .lowRate(lowRate)
                             .lastTradeTime(max.getTradeDate())
-                            .candleOpenTime(candleOpenTime)
+                            .candleOpenTime(entry.getKey())
                             .build();
                 })
                 .collect(Collectors.toList());
 
-        if (regenerate) {
-            processingService.deleteByIndex(pairName);
-        }
+        final String index = ElasticsearchGeneratorUtil.generateIndex(pairName);
 
-        processingService.batchInsert(candleModels, pairName);
+        if (regenerate) {
+            processingService.deleteDataByIndex(index);
+        }
+        processingService.batchInsert(candleModels, index);
     }
 }

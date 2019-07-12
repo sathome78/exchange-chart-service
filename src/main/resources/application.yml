@@ -41,6 +41,12 @@ redis:
     1 HOUR: 4;
     6 HOUR: 5;
     1 DAY: 6;
+  next-interval: >
+    5 MINUTE: 15 MINUTE;
+    15 MINUTE: 30 MINUTE;
+    30 MINUTE: 1 HOUR;
+    1 HOUR: 6 HOUR;
+    6 HOUR: 1 DAY;
 
 ssm:
   mode: dev
@@ -49,6 +55,10 @@ ssm:
 elasticsearch:
   host: localhost
   port: 9200
+
+scheduled:
+  update:
+    cache: 0 */30 * ? * *
 
 #eureka:
 #  client:
