@@ -5,28 +5,28 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ListenerBuffer;
 import me.exrates.chartservice.services.TradeDataService;
-import me.exrates.chartservice.utils.TimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+
+import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
 @Component
+@DependsOn("cacheInitializer")
 public class ListenerBufferImpl implements ListenerBuffer {
 
-    /*todo: wait for implementation and switch to it*/
-    private LocalDateTime lastCandleFromElasticCloseTime = LocalDateTime.now().minusMonths(1);
 
-
+    private LocalDateTime lastInitializedCandleTime;
     private Map<String, List<TradeDataDto>> cacheMap = new ConcurrentHashMap<>();
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
@@ -39,11 +39,15 @@ public class ListenerBufferImpl implements ListenerBuffer {
         this.tradeDataService = tradeDataService;
     }
 
+    @PostConstruct
+    private void init() {
+        lastInitializedCandleTime = tradeDataService.getLastInitializedCandleTime();
+    }
 
     @Override
     public void receive(TradeDataDto message) {
-        LocalDateTime thisTradeDate = TimeUtils.getNearestTimeBeforeForMinInterval(message.getTradeDate());
-        if (thisTradeDate.isAfter(lastCandleFromElasticCloseTime)) {
+        LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
+        if (thisTradeDate.isAfter(lastInitializedCandleTime)) {
             xSync.execute(message.getPairName(), () -> {
                 List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), (k) -> new ArrayList<>());
                 trades.add(message);
@@ -54,9 +58,9 @@ public class ListenerBufferImpl implements ListenerBuffer {
                     TimeUnit.MILLISECONDS.sleep(1000);
                     xSync.execute(message.getPairName(), () -> {
                         List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
-                        CompletableFuture.runAsync(() -> tradeDataService.handleReceivedTrades(message.getPairName(), trades));
+                        tradeDataService.handleReceivedTrades(message.getPairName(), trades);
                     });
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     log.error(e);
                 } finally {
                     semaphore.release();
@@ -73,5 +77,10 @@ public class ListenerBufferImpl implements ListenerBuffer {
             }
         }
         return semaphore;
+    }
+
+    @Override
+    public Boolean isReadyToClose() {
+        return cacheMap.isEmpty() && synchronizersMap.values().stream().anyMatch(p -> p.availablePermits() == 0);
     }
 }

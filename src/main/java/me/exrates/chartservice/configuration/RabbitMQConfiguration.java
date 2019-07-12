@@ -2,7 +2,9 @@ package me.exrates.chartservice.configuration;
 
 
 import org.springframework.amqp.rabbit.annotation.RabbitListenerConfigurer;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -23,8 +25,14 @@ public class RabbitMQConfiguration implements RabbitListenerConfigurer {
         return factory;
     }
 
+    @Bean
+    public RabbitListenerEndpointRegistry myRabbitListenerEndpointRegistry() {
+        return new RabbitListenerEndpointRegistry();
+    }
+
     @Override
     public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
         registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+        registrar.setEndpointRegistry(myRabbitListenerEndpointRegistry());
     }
 }

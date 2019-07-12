@@ -8,16 +8,13 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.model.enums.IntervalType;
-import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
-import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -27,10 +24,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static me.exrates.chartservice.converters.CandleDataConverter.merge;
+import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtils.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtils.getNearestTimeBeforeForMinInterval;
-
+import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
 @Service
@@ -57,10 +54,6 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Override
     public CandleModel getCandleForCurrentTime(String pairName, BackDealInterval interval) {
         return getCandle(pairName, LocalDateTime.now(), interval);
-    }
-
-    private CandleModel getSmallestCandle(String pairName, LocalDateTime dateTime) {
-        return getCandle(pairName, dateTime, SMALLEST_INTERVAL);
     }
 
     private CandleModel getCandle(String pairName, LocalDateTime dateTime, BackDealInterval interval) {
@@ -102,60 +95,25 @@ public class TradeDataServiceImpl implements TradeDataService {
     public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
         dto.stream()
            .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-           .forEach((k,v) -> handleReceivedTrades(pairName, k, v));
+           .forEach((k,v) -> groupTradesAndSave(pairName, v));
     }
 
-    private void handleReceivedTrades(String pairName, LocalDateTime candleTime, List<TradeDataDto> dto) {
+    private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
-            CandleModel reducedCandle = CandleModel.reduceToCandle(dto);
+            CandleModel reducedCandle = reduceToCandle(dto);
             supportedIntervals.forEach(p -> {
-                CandleModel cachedCandleModel = redisProcessingService.get(pairName, candleTime, p);
-                CandleModel mergedCandle = CandleModel.merge(cachedCandleModel, reducedCandle);
+                CandleModel cachedCandleModel = redisProcessingService.get(pairName, RedisGeneratorUtil.generateKey(pairName), p);
+                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle);
                 redisProcessingService.insertOrUpdate(mergedCandle, pairName, p);
-                if (p.equals(SMALLEST_INTERVAL) && cachedCandleModel == null) {
-                    checkAndAddCandlesToElasticCandles(pairName);
-                }
             });
         });
     }
 
-    private void checkAndAddCandlesToElasticCandles(String pairName) {
-        try {
-            LocalDateTime predLastCandleTime = getNearestTimeBeforeForMinInterval(LocalDateTime.now());
-            if (elasticsearchProcessingService.exist(pairName, predLastCandleTime)) {
-                return;
-            }
-            LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(CANDLES_TO_STORE_IN_CACHE, SMALLEST_INTERVAL);
-            LocalDateTime lastStoredCandleTime = getLastCandleTimeExistsInStorage(pairName, oldestCachedCandleTime, predLastCandleTime)
-                    .orElse(oldestCachedCandleTime);
-            List<CandleModel> absenteeCandles = redisProcessingService.getByRange(lastStoredCandleTime, predLastCandleTime, pairName, SMALLEST_INTERVAL);
-            if (CollectionUtils.isEmpty(absenteeCandles)) {
-                elasticsearchProcessingService.batchInsert(absenteeCandles, pairName);
-            }
-        } catch (Exception e) {
-            log.error("error update nonexistent candles in elastic or pair {}", pairName);
-        }
-    }
 
-    private Optional<LocalDateTime> getLastCandleTimeExistsInStorage(String currencyPair, LocalDateTime fromTime, LocalDateTime toTime) {
-        return elasticsearchProcessingService.getByRange(fromTime, toTime, currencyPair)
-                .stream()
-                .map(CandleModel::getCandleOpenTime )
-                .max(LocalDateTime::compareTo);
-    }
-
-    private void updateValuesFromNewTrade(TradeDataDto tradeDataDto, CandleModel model) {
-        if (model.getLastTradeTime().isBefore(tradeDataDto.getTradeDate())) {
-            model.setCloseRate(tradeDataDto.getExrate());
-        }
-        model.setVolume(model.getVolume().add(tradeDataDto.getAmountBase()));
-        model.setHighRate(model.getHighRate().max(tradeDataDto.getExrate()));
-        model.setLowRate(model.getLowRate().min(tradeDataDto.getExrate()));
-    }
-
-    private CandleModel getCandle(String pairName, LocalDateTime dateTime, BackDealInterval interval) {
-        LocalDateTime candleTime = getNearestBackTimeForBackdealInterval(dateTime, interval);
-        return redisProcessingService.get(pairName, candleTime, interval);
+    @Override
+    public LocalDateTime getLastInitializedCandleTime() {
+        /*todo: fetch data*/
+        return LocalDateTime.now();
     }
 
     private LocalDateTime getCandleTimeByCount(long count, BackDealInterval interval) {
