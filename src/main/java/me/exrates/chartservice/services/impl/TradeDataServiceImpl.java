@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -34,7 +33,6 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 public class TradeDataServiceImpl implements TradeDataService {
 
     private static final long CANDLES_TO_STORE_IN_CACHE = 300;
-    private static final BackDealInterval SMALLEST_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
@@ -111,7 +109,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
 
     @Override
-    public LocalDateTime getLastInitializedCandleTime() {
+    public LocalDateTime getLastInitializedCandleTime(String pairName) {
         /*todo: fetch data*/
         return LocalDateTime.now();
     }

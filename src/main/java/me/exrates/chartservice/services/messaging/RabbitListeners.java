@@ -18,7 +18,7 @@ import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_M
 @Log4j2
 @Profile(MODULE_MODE_CONSUMES)
 @Component
-@DependsOn("cacheDataInitService")
+@DependsOn({"cacheDataInitService", "listenerBuffer"})
 public class RabbitListeners {
 
     private final ListenerBuffer listenerBuffer;

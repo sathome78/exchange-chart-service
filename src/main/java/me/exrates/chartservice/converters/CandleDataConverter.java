@@ -41,6 +41,8 @@ public final class CandleDataConverter {
                                     .volume(left.getVolume().add(right.getVolume()))
                                     .build())
                             .map(candleModel -> candleModel.toBuilder()
+                                    .firstTradeTime(groupedCandles.get(0).getFirstTradeTime())
+                                    .lastTradeTime(groupedCandles.get(groupedCandles.size() - 1).getLastTradeTime())
                                     .openRate(groupedCandles.get(0).getOpenRate())
                                     .closeRate(groupedCandles.get(groupedCandles.size() - 1).getCloseRate())
                                     .candleOpenTime(entry.getKey())

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,12 +22,12 @@ import java.util.concurrent.TimeUnit;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
-@Component
-@DependsOn("cacheInitializer")
+@Component("listenerBuffer")
+@DependsOn("cacheDataInitService")
 public class ListenerBufferImpl implements ListenerBuffer {
 
 
-    private LocalDateTime lastInitializedCandleTime;
+    private Map<String, LocalDateTime> lastInitializedCandlesTime;
     private Map<String, List<TradeDataDto>> cacheMap = new ConcurrentHashMap<>();
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
@@ -41,13 +42,13 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
     @PostConstruct
     private void init() {
-        lastInitializedCandleTime = tradeDataService.getLastInitializedCandleTime();
+        lastInitializedCandlesTime = new HashMap<>();
     }
 
     @Override
     public void receive(TradeDataDto message) {
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
-        if (thisTradeDate.isAfter(lastInitializedCandleTime)) {
+        if (isTradeAfterInizializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
                 List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), (k) -> new ArrayList<>());
                 trades.add(message);
@@ -82,5 +83,10 @@ public class ListenerBufferImpl implements ListenerBuffer {
     @Override
     public Boolean isReadyToClose() {
         return cacheMap.isEmpty() && synchronizersMap.values().stream().anyMatch(p -> p.availablePermits() == 0);
+    }
+
+    private boolean isTradeAfterInizializedCandle(String pairName, LocalDateTime tradeCandleTime) {
+        /*todo impl*/
+        return true;
     }
 }

@@ -54,6 +54,8 @@ public class DataInitializerServiceImpl implements DataInitializerService {
                     BigDecimal lowRate = trades.stream().map(TradeDataDto::getExrate).min(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
 
                     return CandleModel.builder()
+                            .firstTradeTime(min.getTradeDate())
+                            .lastTradeTime(max.getTradeDate())
                             .openRate(min.getExrate())
                             .closeRate(max.getExrate())
                             .highRate(highRate)

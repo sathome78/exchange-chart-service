@@ -17,5 +17,5 @@ public interface TradeDataService {
 
     void handleReceivedTrades(String pairname, List<TradeDataDto> dto);
 
-    LocalDateTime getLastInitializedCandleTime();
+    LocalDateTime getLastInitializedCandleTime(String pairName);
 }
