@@ -10,7 +10,8 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
+import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
+
 
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)
@@ -18,36 +19,26 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 @AllArgsConstructor
 public class CandleModel {
 
-    @JsonProperty("open_rate")
+    @JsonProperty("open")
     private BigDecimal openRate;
-    @JsonProperty("closed_rate")
+    @JsonProperty("closed")
     private BigDecimal closeRate;
-    @JsonProperty("high_rate")
+    @JsonProperty("high")
     private BigDecimal highRate;
-    @JsonProperty("low_rate")
+    @JsonProperty("low")
     private BigDecimal lowRate;
     private BigDecimal volume;
     @JsonProperty("last_trade_time")
     private LocalDateTime lastTradeTime;
-    @JsonProperty("candle_open_time")
+    @JsonProperty("first_trade_time")
+    private LocalDateTime firstTradeTime;
+    @JsonProperty("time")
     private LocalDateTime candleOpenTime;
     @JsonProperty("time_in_millis")
     private long timeInMillis;
 
     public long getTimeInMillis() {
         return Timestamp.valueOf(candleOpenTime).getTime();
-    }
-
-    public static CandleModel newMinimalCandleFromTrade(TradeDataDto dto) {
-        return CandleModel.builder()
-                .candleOpenTime(getNearestTimeBeforeForMinInterval(dto.getTradeDate()))
-                .openRate(dto.getExrate())
-                .closeRate(dto.getExrate())
-                .highRate(dto.getExrate())
-                .lowRate(dto.getExrate())
-                .volume(dto.getAmountBase())
-                .lastTradeTime(dto.getTradeDate())
-                .build();
     }
 
     public CandleModel(BigDecimal highRate, BigDecimal lowRate, BigDecimal volume) {

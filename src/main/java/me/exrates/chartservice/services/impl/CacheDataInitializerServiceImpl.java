@@ -8,6 +8,7 @@ import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
@@ -33,16 +35,18 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
+    private final TradeDataService tradeDataService;
 
     private Map<String, String> nextIntervalMap;
 
     @Autowired
     public CacheDataInitializerServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                            RedisProcessingService redisProcessingService,
-                                           @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
+                                           @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap, TradeDataService tradeDataService) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.nextIntervalMap = nextIntervalMap;
+        this.tradeDataService = tradeDataService;
     }
 
     @PostConstruct
@@ -83,7 +87,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     private void initializeCache(List<CandleModel> models, String key, BackDealInterval interval) {
         if (interval != DEFAULT_INTERVAL) {
             models = CandleDataConverter.convertByInterval(models, interval);
+        } else {
+            List<CandleModel> finalModels = models;
+            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandle(key, finalModels));
         }
+
         redisProcessingService.batchInsertOrUpdate(models, key, interval);
 
         final String nextInterval = nextIntervalMap.get(interval.getInterval());
