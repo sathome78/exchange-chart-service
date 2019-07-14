@@ -6,49 +6,44 @@ import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ListenerBuffer;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Objects.isNull;
+import static me.exrates.chartservice.configuration.CommonConfiguration.INIT_TIMES_MAP;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
 @Component("listenerBuffer")
-@DependsOn("cacheDataInitService")
 public class ListenerBufferImpl implements ListenerBuffer {
 
 
-    private Map<String, LocalDateTime> lastInitializedCandlesTime;
     private Map<String, List<TradeDataDto>> cacheMap = new ConcurrentHashMap<>();
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
     private XSync<String> xSync =  new XSync<>();
 
     private final TradeDataService tradeDataService;
+    private final Map<String, LocalDateTime> initTimesMap;
 
     @Autowired
-    public ListenerBufferImpl(TradeDataService tradeDataService) {
+    public ListenerBufferImpl(TradeDataService tradeDataService, @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
         this.tradeDataService = tradeDataService;
-    }
-
-    @PostConstruct
-    private void init() {
-        lastInitializedCandlesTime = new HashMap<>();
+        this.initTimesMap = initTimesMap;
     }
 
     @Override
     public void receive(TradeDataDto message) {
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
-        if (isTradeAfterInizializedCandle(message.getPairName(), thisTradeDate)) {
+        if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
                 List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), (k) -> new ArrayList<>());
                 trades.add(message);
@@ -85,8 +80,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
         return cacheMap.isEmpty() && synchronizersMap.values().stream().anyMatch(p -> p.availablePermits() == 0);
     }
 
-    private boolean isTradeAfterInizializedCandle(String pairName, LocalDateTime tradeCandleTime) {
-        /*todo impl*/
-        return true;
+    private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeCandleTime) {
+        LocalDateTime initTime = initTimesMap.get(pairName);
+        return isNull(initTime) || tradeCandleTime.isAfter(initTime);
     }
 }

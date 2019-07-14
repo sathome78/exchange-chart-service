@@ -5,19 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.client.ml.job.util.TimeUtil;
-import org.springframework.util.CollectionUtils;
 
-import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.DoubleSummaryStatistics;
-import java.util.List;
 
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 
 @Data
@@ -46,19 +39,6 @@ public class CandleModel {
 
     public long getTimeInMillis() {
         return Timestamp.valueOf(candleOpenTime).getTime();
-    }
-
-    public static CandleModel newCandleFromTrade(TradeDataDto dto, BackDealInterval interval) {
-        return CandleModel.builder()
-                .candleOpenTime(getNearestBackTimeForBackdealInterval(dto.getTradeDate(), interval))
-                .openRate(dto.getExrate())
-                .closeRate(dto.getExrate())
-                .highRate(dto.getExrate())
-                .lowRate(dto.getExrate())
-                .volume(dto.getAmountBase())
-                .lastTradeTime(dto.getTradeDate())
-                .firstTradeTime(dto.getTradeDate())
-                .build();
     }
 
     public CandleModel(BigDecimal highRate, BigDecimal lowRate, BigDecimal volume) {

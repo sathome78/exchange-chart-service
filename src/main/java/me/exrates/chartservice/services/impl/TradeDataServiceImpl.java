@@ -14,15 +14,20 @@ import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static me.exrates.chartservice.configuration.CommonConfiguration.INIT_TIMES_MAP;
 import static me.exrates.chartservice.converters.CandleDataConverter.merge;
 import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
@@ -32,21 +37,24 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 @Service
 public class TradeDataServiceImpl implements TradeDataService {
 
-    private static final long CANDLES_TO_STORE_IN_CACHE = 300;
+    @Value("${candles.storeincache}")
+    public long candlesToStoreInCache;
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
     private final List<BackDealInterval> supportedIntervals;
+    private final Map<String, LocalDateTime> initTimesMap;
 
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
-                                XSync<String> xSync) {
+                                XSync<String> xSync, @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
         this.supportedIntervals = getAllSupportedIntervals();
+        this.initTimesMap = initTimesMap;
     }
 
     @Override
@@ -72,7 +80,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         LocalDateTime fromTime = getNearestBackTimeForBackdealInterval(from, interval);
         LocalDateTime toTime = getNearestBackTimeForBackdealInterval(to, interval);
-        LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(CANDLES_TO_STORE_IN_CACHE, interval);
+        LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
 
         final String key = RedisGeneratorUtil.generateKey(pairName);
 
@@ -96,6 +104,16 @@ public class TradeDataServiceImpl implements TradeDataService {
            .forEach((k,v) -> groupTradesAndSave(pairName, v));
     }
 
+    @Override
+    public void defineAndSaveLastInitializedCandle(String pairName, List<CandleModel> candleModelList) {
+        if (!CollectionUtils.isEmpty(candleModelList)) {
+            candleModelList.stream()
+                    .map(CandleModel::getCandleOpenTime)
+                    .max(LocalDateTime::compareTo)
+                    .ifPresent(p -> initTimesMap.put(pairName, p));
+        }
+    }
+
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
             CandleModel reducedCandle = reduceToCandle(dto);
@@ -105,13 +123,6 @@ public class TradeDataServiceImpl implements TradeDataService {
                 redisProcessingService.insertOrUpdate(mergedCandle, pairName, p);
             });
         });
-    }
-
-
-    @Override
-    public LocalDateTime getLastInitializedCandleTime(String pairName) {
-        /*todo: fetch data*/
-        return LocalDateTime.now();
     }
 
     private LocalDateTime getCandleTimeByCount(long count, BackDealInterval interval) {

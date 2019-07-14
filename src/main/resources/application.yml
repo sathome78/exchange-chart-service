@@ -56,6 +56,9 @@ elasticsearch:
   host: localhost
   port: 9200
 
+candles:
+  storeincache: 300
+
 scheduled:
   update:
     cache: 0 */30 * ? * *
