@@ -77,7 +77,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
     @Override
     public Boolean isReadyToClose() {
-        return cacheMap.isEmpty() && synchronizersMap.values().stream().anyMatch(p -> p.availablePermits() == 0);
+        return cacheMap.isEmpty() && synchronizersMap.values().stream().allMatch(p -> p.availablePermits() > 0);
     }
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeCandleTime) {

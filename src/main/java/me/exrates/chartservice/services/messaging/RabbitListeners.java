@@ -44,9 +44,12 @@ public class RabbitListeners {
 
     @PreDestroy
     private void stop() {
+
         final String property = Objects.requireNonNull(environment.getProperty("spring.rabbitmq.tradestopic"), "Property 'spring.rabbitmq.tradestopic' should not be null");
 
-        registry.getListenerContainer(property).stop();
+        if (registry.getListenerContainer(property).isRunning()) {
+            registry.stop();
+        }
         int counter = 0;
         do {
             try {
