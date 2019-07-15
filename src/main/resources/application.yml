@@ -4,8 +4,8 @@ spring:
   profiles:
     active:
       - local
-#      - produces
-      - consumes
+      - produces
+#      - consumes
   datasource:
     hikari:
       connection-timeout: 1000
