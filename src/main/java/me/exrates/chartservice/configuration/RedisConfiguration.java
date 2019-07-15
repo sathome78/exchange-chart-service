@@ -1,6 +1,5 @@
 package me.exrates.chartservice.configuration;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,8 +29,7 @@ public class RedisConfiguration {
         return new JedisPool(host, port);
     }
 
-    @Bean
-    @Qualifier(DB_INDEX_MAP)
+    @Bean(DB_INDEX_MAP)
     public Map<String, Integer> prepareDbIndexMap() {
         return Arrays.stream(allowedIntervalDbIndexesString.split(";"))
                 .map(row -> row.split(":"))
@@ -41,8 +39,7 @@ public class RedisConfiguration {
                         row -> Integer.parseInt(row[1].trim())));
     }
 
-    @Bean
-    @Qualifier(NEXT_INTERVAL_MAP)
+    @Bean(NEXT_INTERVAL_MAP)
     public Map<String, String> prepareNextIntervalMap() {
         return Arrays.stream(nextIntervalString.split(";"))
                 .map(row -> row.split(":"))

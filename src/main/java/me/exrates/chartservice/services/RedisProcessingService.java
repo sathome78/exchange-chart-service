@@ -8,9 +8,13 @@ import java.util.List;
 
 public interface RedisProcessingService {
 
+    List<String> getAllKeys(BackDealInterval interval);
+
     boolean exists(String key, BackDealInterval interval);
 
     CandleModel get(String key, String hashKey, BackDealInterval interval);
+
+    List<CandleModel> getAllByKey(String key, BackDealInterval interval);
 
     List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval);
 
@@ -21,4 +25,6 @@ public interface RedisProcessingService {
     void deleteAll();
 
     void deleteByDbIndex(int dbIndex);
+
+    void deleteByHashKey(String key, String hashKey, BackDealInterval interval);
 }

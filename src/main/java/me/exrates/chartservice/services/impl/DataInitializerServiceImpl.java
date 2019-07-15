@@ -70,6 +70,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         if (regenerate) {
             processingService.deleteDataByIndex(index);
+            processingService.deleteIndex(index);
         }
         processingService.batchInsert(candleModels, index);
     }

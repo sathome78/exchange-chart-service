@@ -9,14 +9,19 @@ import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import me.exrates.chartservice.utils.TimeUtil;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -37,54 +42,49 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     private final RedisProcessingService redisProcessingService;
     private final TradeDataService tradeDataService;
 
+    private long candlesToStoreInCache;
+
     private Map<String, String> nextIntervalMap;
 
     @Autowired
     public CacheDataInitializerServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                            RedisProcessingService redisProcessingService,
-                                           @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap, TradeDataService tradeDataService) {
+                                           TradeDataService tradeDataService,
+                                           @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                           @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
-        this.nextIntervalMap = nextIntervalMap;
         this.tradeDataService = tradeDataService;
+        this.candlesToStoreInCache = candlesToStoreInCache;
+        this.nextIntervalMap = nextIntervalMap;
     }
 
     @PostConstruct
     public void init() {
         try {
-            initializeCache();
+            updateCache();
         } catch (Exception ex) {
             log.error("--> PostConstruct 'init()' occurred error", ex);
         }
     }
 
-    @Scheduled(cron = "${scheduled.update.cache}")
+    @Override
     public void updateCache() {
-        try {
-            initializeCache();
-        } catch (Exception ex) {
-            log.error("--> Job 'updateCache()' occurred error", ex);
-        }
-    }
-
-    private void initializeCache() {
-        log.debug("--> Start process of initialize cache <--");
+        log.debug("--> Start process of update cache <--");
 
         elasticsearchProcessingService.getAllIndices().parallelStream().forEach(index -> {
-            boolean keyExists = redisProcessingService.exists(index, DEFAULT_INTERVAL);
-
-            if (!keyExists) {
+            if (!redisProcessingService.exists(index, DEFAULT_INTERVAL)) {
                 List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(index);
-                if (!models.isEmpty()) {
-                    this.initializeCache(models, index, DEFAULT_INTERVAL);
+                if (!CollectionUtils.isEmpty(models)) {
+                    this.updateCache(models, index, DEFAULT_INTERVAL);
                 }
             }
         });
 
-        log.debug("--> End process of initialize cache <--");
+        log.debug("--> End process of update cache <--");
     }
 
-    private void initializeCache(List<CandleModel> models, String key, BackDealInterval interval) {
+    private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
         if (interval != DEFAULT_INTERVAL) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
@@ -98,6 +98,41 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         if (isNull(nextInterval)) {
             return;
         }
-        initializeCache(models, key, new BackDealInterval(nextInterval));
+        updateCache(models, key, new BackDealInterval(nextInterval));
+    }
+
+    @Override
+    public void cleanCache() {
+        log.debug("--> Start process of clean cache <--");
+
+        this.cleanCache(DEFAULT_INTERVAL);
+
+        log.debug("--> End process of clean cache <--");
+    }
+
+    private void cleanCache(BackDealInterval interval) {
+        final LocalDateTime boundaryTime = LocalDateTime.now().minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
+
+        redisProcessingService.getAllKeys(interval).forEach(key -> {
+            redisProcessingService.getAllByKey(key, interval).stream()
+                    .filter(model -> boundaryTime.isAfter(model.getCandleOpenTime()))
+                    .map(model -> Pair.of(RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime()), model))
+                    .forEach(pair -> {
+                        final String hashKey = pair.getKey();
+                        final CandleModel model = pair.getValue();
+
+                        if (!elasticsearchProcessingService.exists(key, hashKey)) {
+                            elasticsearchProcessingService.insert(model, key);
+                        }
+                        redisProcessingService.deleteByHashKey(key, hashKey, interval);
+                    });
+
+        });
+
+        final String nextInterval = nextIntervalMap.get(interval.getInterval());
+        if (isNull(nextInterval)) {
+            return;
+        }
+        cleanCache(new BackDealInterval(nextInterval));
     }
 }

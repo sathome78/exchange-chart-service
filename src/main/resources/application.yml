@@ -57,11 +57,11 @@ elasticsearch:
   port: 9200
 
 candles:
-  storeincache: 300
+  store-in-cache: 300
 
 scheduled:
-  update:
-    cache: 0 */30 * ? * *
+  update-cache: 0 */5 * ? * *
+  clean-cache: 0 */5 * ? * *
 
 #eureka:
 #  client:

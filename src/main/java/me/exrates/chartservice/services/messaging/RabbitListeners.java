@@ -6,12 +6,13 @@ import me.exrates.chartservice.services.ListenerBuffer;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import java.util.Objects;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
 
@@ -22,19 +23,19 @@ import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_M
 public class RabbitListeners {
 
     private final ListenerBuffer listenerBuffer;
-
     private final RabbitListenerEndpointRegistry registry;
+    private final Environment environment;
 
     @Autowired
-    private Environment environment;
-
-    @Autowired
-    public RabbitListeners(ListenerBuffer listenerBuffer, RabbitListenerEndpointRegistry registry) {
+    public RabbitListeners(ListenerBuffer listenerBuffer,
+                           RabbitListenerEndpointRegistry registry,
+                           Environment environment) {
         this.listenerBuffer = listenerBuffer;
         this.registry = registry;
+        this.environment = environment;
     }
 
-    @RabbitListener(id="${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
+    @RabbitListener(id = "${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
     public void receiveTrade(TradeDataDto message) {
         log.debug("received message {}", message);
 
@@ -43,7 +44,9 @@ public class RabbitListeners {
 
     @PreDestroy
     private void stop() {
-        registry.getListenerContainer(environment.getProperty("spring.rabbitmq.tradestopic")).stop();
+        final String property = Objects.requireNonNull(environment.getProperty("spring.rabbitmq.tradestopic"), "Property 'spring.rabbitmq.tradestopic' should not be null");
+
+        registry.getListenerContainer(property).stop();
         int counter = 0;
         do {
             try {

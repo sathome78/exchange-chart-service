@@ -25,7 +25,6 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 @Component("listenerBuffer")
 public class ListenerBufferImpl implements ListenerBuffer {
 
-
     private Map<String, List<TradeDataDto>> cacheMap = new ConcurrentHashMap<>();
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
@@ -35,7 +34,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
     private final Map<String, LocalDateTime> initTimesMap;
 
     @Autowired
-    public ListenerBufferImpl(TradeDataService tradeDataService, @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
+    public ListenerBufferImpl(TradeDataService tradeDataService,
+                              @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
         this.tradeDataService = tradeDataService;
         this.initTimesMap = initTimesMap;
     }
