@@ -7,6 +7,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 
@@ -25,6 +26,7 @@ public class RabbitMQConfiguration implements RabbitListenerConfigurer {
         return factory;
     }
 
+    @Primary
     @Bean
     public RabbitListenerEndpointRegistry myRabbitListenerEndpointRegistry() {
         return new RabbitListenerEndpointRegistry();

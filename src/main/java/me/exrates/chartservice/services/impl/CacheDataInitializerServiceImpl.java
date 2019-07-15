@@ -115,7 +115,8 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     }
 
     private void cleanCache(BackDealInterval interval) {
-        final LocalDateTime boundaryTime = LocalDateTime.now().minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
+        LocalDateTime now = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
+        final LocalDateTime boundaryTime = now.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
 
         redisProcessingService.getAllKeys(interval).forEach(key -> {
             redisProcessingService.getAllByKey(key, interval).stream()
