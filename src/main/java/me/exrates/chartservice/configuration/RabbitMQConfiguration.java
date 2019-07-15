@@ -23,7 +23,6 @@ public class RabbitMQConfiguration implements RabbitListenerConfigurer {
         return factory;
     }
 
-
     @Override
     public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
         registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());

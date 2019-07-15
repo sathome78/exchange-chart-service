@@ -12,6 +12,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.converters.CandleDataConverter.merge;
 import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
@@ -99,7 +101,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
         dto.stream()
                 .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-                .forEach((k, v) -> groupTradesAndSave(pairName, v));
+                .forEach((key, value) -> groupTradesAndSave(pairName, value));
     }
 
     @Override
@@ -115,10 +117,19 @@ public class TradeDataServiceImpl implements TradeDataService {
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
             CandleModel reducedCandle = reduceToCandle(dto);
-            supportedIntervals.forEach(p -> {
-                CandleModel cachedCandleModel = redisProcessingService.get(pairName, RedisGeneratorUtil.generateKey(pairName), p);
-                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle, p);
-                redisProcessingService.insertOrUpdate(mergedCandle, pairName, p);
+            if (isNull(reducedCandle)) {
+                return;
+            }
+
+            supportedIntervals.forEach(interval -> {
+                LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(reducedCandle.getCandleOpenTime(), interval);
+
+                final String key = RedisGeneratorUtil.generateKey(pairName);
+                final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
+
+                CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
+                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle, interval);
+                redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
             });
         });
     }
