@@ -8,7 +8,7 @@ import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,8 +36,8 @@ public class ChartDataController {
 
     @GetMapping("/range")
     public CandlesDataDto getRange(@RequestParam String currencyPair,
-                                   @RequestParam LocalDateTime from,
-                                   @RequestParam LocalDateTime to,
+                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
                                    @RequestParam IntervalType intervalType,
                                    @RequestParam int intervalValue) {
         BackDealInterval backDealInterval = new BackDealInterval(intervalValue, intervalType);
