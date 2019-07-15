@@ -16,7 +16,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class RedisProcessingServiceImplTest extends AbstractTest {
 
@@ -30,11 +30,11 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
         final String key = RedisGeneratorUtil.generateKey(BTC_USD);
         final String hashKey = RedisGeneratorUtil.generateHashKey(NOW);
 
-        CandleModel candleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
+        boolean exists = processingService.exists(key, DEFAULT_INTERVAL);
 
-        assertNull(candleModel);
+        assertFalse(exists);
 
-        candleModel = CandleModel.builder()
+        CandleModel candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -44,6 +44,10 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
                 .build();
 
         processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
+
+        exists = processingService.exists(key, DEFAULT_INTERVAL);
+
+        assertTrue(exists);
 
         CandleModel insertedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
@@ -104,11 +108,26 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
 
         processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
 
+        models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
+
+        assertNotNull(models);
+        assertFalse(models.isEmpty());
+        assertEquals(3, models.size());
+
         models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
         assertNotNull(models);
         assertFalse(models.isEmpty());
         assertEquals(2, models.size());
+
+        List<String> keys = processingService.getAllKeys(DEFAULT_INTERVAL);
+
+        assertNotNull(keys);
+        assertFalse(keys.isEmpty());
+        assertEquals(1, keys.size());
+        assertEquals(key, keys.get(0));
+
+        processingService.deleteByHashKey(key, hashKey, DEFAULT_INTERVAL);
 
         processingService.deleteAll();
     }
