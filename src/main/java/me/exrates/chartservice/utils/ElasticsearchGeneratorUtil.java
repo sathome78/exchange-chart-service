@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 @NoArgsConstructor(access = AccessLevel.NONE)
 public final class ElasticsearchGeneratorUtil {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss");
 
     public static String generateIndex(String pairName) {
         return pairName.replace("/", "_").toLowerCase();

@@ -93,7 +93,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
             List<CandleModel> finalModels = models;
-            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandle(key, finalModels));
+            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
         }
 
         redisProcessingService.batchInsertOrUpdate(models, key, interval);

@@ -166,6 +166,20 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         jedis.hdel(key, hashKey);
     }
 
+    @Override
+    public void insertLastInitializedCandleTimeToCache(String pairName, LocalDateTime dateTime) {
+        @Cleanup Jedis jedis = getJedis(0);
+
+        jedis.set(pairName, RedisGeneratorUtil.generateHashKey(dateTime));
+    }
+
+    @Override
+    public LocalDateTime getLastInitializedCandleTimeFromCache(String pairName) {
+        @Cleanup Jedis jedis = getJedis(0);
+
+        return RedisGeneratorUtil.generateDateTime(jedis.get(pairName));
+    }
+
     /**
      * Get Jedis instance
      */
