@@ -21,12 +21,10 @@ import org.springframework.util.CollectionUtils;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
-import static me.exrates.chartservice.configuration.CommonConfiguration.INIT_TIMES_MAP;
 import static me.exrates.chartservice.converters.CandleDataConverter.merge;
 import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
@@ -43,21 +41,18 @@ public class TradeDataServiceImpl implements TradeDataService {
     private long candlesToStoreInCache;
 
     private List<BackDealInterval> supportedIntervals;
-    private Map<String, LocalDateTime> initTimesMap;
 
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
                                 XSync<String> xSync,
                                 @Value("${candles.store-in-cache}") long candlesToStoreInCache,
-                                @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
-                                @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
+                                @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
-        this.initTimesMap = initTimesMap;
     }
 
     @Override
@@ -108,12 +103,12 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public void defineAndSaveLastInitializedCandle(String pairName, List<CandleModel> models) {
+    public void defineAndSaveLastInitializedCandleTime(String pairName, List<CandleModel> models) {
         if (!CollectionUtils.isEmpty(models)) {
             models.stream()
                     .map(CandleModel::getCandleOpenTime)
                     .max(LocalDateTime::compareTo)
-                    .ifPresent(dateTime -> initTimesMap.put(pairName, dateTime));
+                    .ifPresent(dateTime -> redisProcessingService.insertLastInitializedCandleTimeToCache(pairName, dateTime));
         }
     }
 

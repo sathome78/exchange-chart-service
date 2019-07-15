@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -130,5 +131,28 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
         processingService.deleteByHashKey(key, hashKey, DEFAULT_INTERVAL);
 
         processingService.deleteAll();
+    }
+
+    @Test
+    public void insertAndGetLastInitializedCandleTimeEndToEnd() {
+        LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
+
+        processingService.insertLastInitializedCandleTimeToCache(BTC_USD, dateTimeWithoutNano);
+
+        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(BTC_USD);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
+
+        processingService.insertLastInitializedCandleTimeToCache(BTC_USD, dateTimeWithoutNano);
+
+        dateTime = processingService.getLastInitializedCandleTimeFromCache(BTC_USD);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        processingService.deleteByDbIndex(0);
     }
 }

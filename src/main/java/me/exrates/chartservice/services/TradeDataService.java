@@ -16,5 +16,5 @@ public interface TradeDataService {
 
     void handleReceivedTrades(String pairname, List<TradeDataDto> dto);
 
-    void defineAndSaveLastInitializedCandle(String pairName, List<CandleModel> models);
+    void defineAndSaveLastInitializedCandleTime(String pairName, List<CandleModel> models);
 }
