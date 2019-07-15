@@ -21,7 +21,7 @@ import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_M
 
 @Log4j2
 @Profile(MODULE_MODE_CONSUMES)
-@RequestMapping(value = "/data",
+@RequestMapping(value = "data",
         produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 @RestController
 public class ChartDataController {
