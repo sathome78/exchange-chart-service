@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.util.CollectionUtils;
 
 import javax.validation.constraints.NotNull;
@@ -76,8 +77,9 @@ public final class CandleDataConverter {
                 .build();
     }
 
-    public static CandleModel merge(CandleModel cachedCandle, @NotNull CandleModel newCandle) {
+    public static CandleModel merge(CandleModel cachedCandle, @NotNull CandleModel newCandle, BackDealInterval interval) {
         if (isNull(cachedCandle)) {
+            newCandle.setCandleOpenTime(getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval));
             return newCandle;
         }
         boolean leftStartFirst = cachedCandle.getFirstTradeTime().isBefore(newCandle.getFirstTradeTime());

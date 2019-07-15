@@ -3,10 +3,15 @@ package me.exrates.chartservice.jobs;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
+
+@Profile(MODULE_MODE_CONSUMES)
 @EnableScheduling
 @Log4j2
 @Component

@@ -122,7 +122,7 @@ public class TradeDataServiceImpl implements TradeDataService {
             CandleModel reducedCandle = reduceToCandle(dto);
             supportedIntervals.forEach(p -> {
                 CandleModel cachedCandleModel = redisProcessingService.get(pairName, RedisGeneratorUtil.generateKey(pairName), p);
-                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle);
+                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle, p);
                 redisProcessingService.insertOrUpdate(mergedCandle, pairName, p);
             });
         });
