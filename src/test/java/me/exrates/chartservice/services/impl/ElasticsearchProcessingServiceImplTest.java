@@ -27,9 +27,9 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
         final String index = ElasticsearchGeneratorUtil.generateIndex(BTC_USD);
         final String id = ElasticsearchGeneratorUtil.generateId(NOW);
 
-        boolean exist = processingService.exists(index, id);
+        boolean exists = processingService.exists(index, id);
 
-        assertFalse(exist);
+        assertFalse(exists);
 
         TimeUnit.SECONDS.sleep(1);
 
@@ -46,9 +46,9 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
 
         TimeUnit.SECONDS.sleep(1);
 
-        exist = processingService.exists(index, id);
+        exists = processingService.exists(index, id);
 
-        assertTrue(exist);
+        assertTrue(exists);
 
         TimeUnit.SECONDS.sleep(1);
 
