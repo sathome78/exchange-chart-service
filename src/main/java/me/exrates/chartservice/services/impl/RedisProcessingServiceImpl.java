@@ -8,7 +8,6 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -17,6 +16,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -49,6 +49,13 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
+    public List<String> getAllKeys(BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+
+        return new ArrayList<>(jedis.keys(KEYS_PATTERN));
+    }
+
+    @Override
     public boolean exists(String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
@@ -71,16 +78,11 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval) {
+    public List<CandleModel> getAllByKey(String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
         if (jedis.exists(key)) {
-            Map<String, String> valuesMap = jedis.hgetAll(key);
-
-            return valuesMap.entrySet().stream()
-                    .map(entry -> Pair.of(RedisGeneratorUtil.generateDate(entry.getKey()), entry.getValue()))
-                    .filter(pair -> pair.getKey().isAfter(from) && pair.getKey().isBefore(to))
-                    .map(Pair::getValue)
+            return jedis.hgetAll(key).values().stream()
                     .map(value -> {
                         try {
                             return mapper.readValue(value, CandleModel.class);
@@ -90,6 +92,27 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
                         }
                     })
                     .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+
+        if (jedis.exists(key)) {
+            return jedis.hgetAll(key).values().stream()
+                    .map(value -> {
+                        try {
+                            return mapper.readValue(value, CandleModel.class);
+                        } catch (IOException ex) {
+                            log.error("Problem with getting response from redis", ex);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .filter(model -> model.getCandleOpenTime().isAfter(from) && model.getCandleOpenTime().isBefore(to))
                     .collect(Collectors.toList());
         }
         return Collections.emptyList();
@@ -134,6 +157,13 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         @Cleanup Jedis jedis = getJedis(dbIndex);
 
         jedis.keys(KEYS_PATTERN).forEach(jedis::del);
+    }
+
+    @Override
+    public void deleteByHashKey(String key, String hashKey, BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+
+        jedis.hdel(key, hashKey);
     }
 
     /**

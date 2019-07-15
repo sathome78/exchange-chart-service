@@ -17,22 +17,39 @@ public final class TimeUtil {
         return getNearestBackTimeForBackdealInterval(dateTime, DEFAULT_MIN_INTERVAL);
     }
 
-    public static LocalDateTime getNearestBackTimeForBackdealInterval(LocalDateTime dateTime, BackDealInterval backDealInterval) {
-        switch (backDealInterval.getIntervalType()) {
+    public static LocalDateTime getNearestBackTimeForBackdealInterval(LocalDateTime dateTime, BackDealInterval interval) {
+        switch (interval.getIntervalType()) {
             case MINUTE: {
                 return dateTime.truncatedTo(ChronoUnit.HOURS)
-                        .plusMinutes(backDealInterval.getIntervalValue() * (dateTime.getMinute() / backDealInterval.getIntervalValue()));
+                        .plusMinutes(interval.getIntervalValue() * (dateTime.getMinute() / interval.getIntervalValue()));
             }
             case HOUR: {
                 return dateTime.truncatedTo(ChronoUnit.DAYS)
-                        .plusHours(backDealInterval.getIntervalValue() * (dateTime.getHour() / backDealInterval.getIntervalValue()));
+                        .plusHours(interval.getIntervalValue() * (dateTime.getHour() / interval.getIntervalValue()));
             }
             case DAY: {
                 return dateTime.truncatedTo(ChronoUnit.DAYS).minusDays(dateTime.getDayOfYear())
-                        .plusDays(backDealInterval.getIntervalValue() * (dateTime.getDayOfYear() / backDealInterval.getIntervalValue()));
+                        .plusDays(interval.getIntervalValue() * (dateTime.getDayOfYear() / interval.getIntervalValue()));
             }
             default: {
-                throw new UnsupportedOperationException(String.format("Interval type - %s not suuported", backDealInterval.getIntervalType()));
+                throw new UnsupportedOperationException(String.format("Interval type - %s not supported", interval.getIntervalType()));
+            }
+        }
+    }
+
+    public static int convertToMinutes(BackDealInterval interval) {
+        switch (interval.getIntervalType()) {
+            case MINUTE: {
+                return interval.getIntervalValue();
+            }
+            case HOUR: {
+                return interval.getIntervalValue() * 60;
+            }
+            case DAY: {
+                return interval.getIntervalValue() * 24 * 60;
+            }
+            default: {
+                throw new UnsupportedOperationException(String.format("Interval type - %s not supported", interval.getIntervalType()));
             }
         }
     }

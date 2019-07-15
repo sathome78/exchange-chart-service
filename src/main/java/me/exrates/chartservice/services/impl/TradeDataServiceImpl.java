@@ -7,9 +7,8 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
-import me.exrates.chartservice.model.enums.IntervalType;
-import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
+import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
@@ -24,9 +23,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.configuration.CommonConfiguration.INIT_TIMES_MAP;
 import static me.exrates.chartservice.converters.CandleDataConverter.merge;
 import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
@@ -37,23 +36,27 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 @Service
 public class TradeDataServiceImpl implements TradeDataService {
 
-    @Value("${candles.storeincache}")
-    public long candlesToStoreInCache;
-
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
-    private final List<BackDealInterval> supportedIntervals;
-    private final Map<String, LocalDateTime> initTimesMap;
+
+    private long candlesToStoreInCache;
+
+    private List<BackDealInterval> supportedIntervals;
+    private Map<String, LocalDateTime> initTimesMap;
 
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
-                                XSync<String> xSync, @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
+                                XSync<String> xSync,
+                                @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
+                                @Qualifier(INIT_TIMES_MAP) Map<String, LocalDateTime> initTimesMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
-        this.supportedIntervals = getAllSupportedIntervals();
+        this.candlesToStoreInCache = candlesToStoreInCache;
+        this.supportedIntervals = supportedIntervals;
         this.initTimesMap = initTimesMap;
     }
 
@@ -88,9 +91,9 @@ public class TradeDataServiceImpl implements TradeDataService {
             candleModels = getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, toTime, interval);
         } else if (fromTime.isBefore(oldestCachedCandleTime) && to.isAfter(oldestCachedCandleTime)) {
             candleModels = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, toTime, key, interval),
-                                     getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, oldestCachedCandleTime.minusSeconds(1), interval))
-                                 .flatMap(Collection::stream)
-                                 .collect(Collectors.toList());
+                    getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, oldestCachedCandleTime.minusSeconds(1), interval))
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
         } else {
             candleModels = redisProcessingService.getByRange(fromTime, toTime, key, interval);
         }
@@ -100,17 +103,17 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Override
     public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
         dto.stream()
-           .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-           .forEach((k,v) -> groupTradesAndSave(pairName, v));
+                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
+                .forEach((k, v) -> groupTradesAndSave(pairName, v));
     }
 
     @Override
-    public void defineAndSaveLastInitializedCandle(String pairName, List<CandleModel> candleModelList) {
-        if (!CollectionUtils.isEmpty(candleModelList)) {
-            candleModelList.stream()
+    public void defineAndSaveLastInitializedCandle(String pairName, List<CandleModel> models) {
+        if (!CollectionUtils.isEmpty(models)) {
+            models.stream()
                     .map(CandleModel::getCandleOpenTime)
                     .max(LocalDateTime::compareTo)
-                    .ifPresent(p -> initTimesMap.put(pairName, p));
+                    .ifPresent(dateTime -> initTimesMap.put(pairName, dateTime));
         }
     }
 
@@ -136,14 +139,4 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         return CandleDataConverter.convertByInterval(elasticsearchProcessingService.getByRange(from, to, index), interval);
     }
-
-    private List<BackDealInterval> getAllSupportedIntervals() {
-        return Stream.of(IntervalType.values())
-                     .map(p -> (IntStream.of(p.getSupportedValues())
-                                         .mapToObj(v -> new BackDealInterval(v, p))
-                                         .collect(Collectors.toList())))
-                     .flatMap(Collection::stream)
-                     .collect(Collectors.toList());
-    }
-
 }
