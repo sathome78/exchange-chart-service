@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
+import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
 import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTERVAL_MAP;
 
@@ -44,6 +45,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     private long candlesToStoreInCache;
 
+    private List<BackDealInterval> supportedIntervals;
     private Map<String, String> nextIntervalMap;
 
     @Autowired
@@ -51,11 +53,13 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                                            RedisProcessingService redisProcessingService,
                                            TradeDataService tradeDataService,
                                            @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                           @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
                                            @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.tradeDataService = tradeDataService;
         this.candlesToStoreInCache = candlesToStoreInCache;
+        this.supportedIntervals = supportedIntervals;
         this.nextIntervalMap = nextIntervalMap;
     }
 
@@ -105,7 +109,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public void cleanCache() {
         log.debug("--> Start process of clean cache <--");
 
-        this.cleanCache(DEFAULT_INTERVAL);
+        supportedIntervals.parallelStream().forEach(this::cleanCache);
 
         log.debug("--> End process of clean cache <--");
     }
@@ -121,18 +125,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                         final String hashKey = pair.getKey();
                         final CandleModel model = pair.getValue();
 
-                        if (!elasticsearchProcessingService.exists(key, hashKey)) {
+                        if (!elasticsearchProcessingService.exists(key, hashKey) && interval == DEFAULT_INTERVAL) {
                             elasticsearchProcessingService.insert(model, key);
                         }
                         redisProcessingService.deleteByHashKey(key, hashKey, interval);
                     });
-
         });
-
-        final String nextInterval = nextIntervalMap.get(interval.getInterval());
-        if (isNull(nextInterval)) {
-            return;
-        }
-        cleanCache(new BackDealInterval(nextInterval));
     }
 }
