@@ -27,4 +27,8 @@ public interface RedisProcessingService {
     void deleteByDbIndex(int dbIndex);
 
     void deleteByHashKey(String key, String hashKey, BackDealInterval interval);
+
+    void insertLastInitializedCandleTimeToCache(String pairName, LocalDateTime dateTime);
+
+    LocalDateTime getLastInitializedCandleTimeFromCache(String pairName);
 }
