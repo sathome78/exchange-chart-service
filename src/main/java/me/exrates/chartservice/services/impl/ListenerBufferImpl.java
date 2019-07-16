@@ -42,9 +42,10 @@ public class ListenerBufferImpl implements ListenerBuffer {
     @Override
     public void receive(TradeDataDto message) {
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
+
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
-                List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), (k) -> new ArrayList<>());
+                List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), k -> new ArrayList<>());
                 trades.add(message);
             });
             Semaphore semaphore = getSemaphoreSafe(message.getPairName());
@@ -68,7 +69,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
         Semaphore semaphore;
         if ((semaphore = synchronizersMap.get(pairName)) == null) {
             synchronized (safeSync) {
-                semaphore = synchronizersMap.computeIfAbsent(pairName, (k) -> new Semaphore(1));
+                semaphore = synchronizersMap.computeIfAbsent(pairName, k -> new Semaphore(1));
             }
         }
         return semaphore;
