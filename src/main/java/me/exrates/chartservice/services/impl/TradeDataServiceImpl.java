@@ -5,7 +5,6 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
@@ -21,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,7 +72,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public CandlesDataDto getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
+    public List<CandleModel> getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
         if (from.isAfter(to)) {
             return null;
         }
@@ -94,7 +94,7 @@ public class TradeDataServiceImpl implements TradeDataService {
         } else {
             candleModels = redisProcessingService.getByRange(fromTime, toTime, key, interval);
         }
-        return new CandlesDataDto(candleModels, pairName, interval);
+        return candleModels;
     }
 
     @Override
@@ -143,6 +143,11 @@ public class TradeDataServiceImpl implements TradeDataService {
     private List<CandleModel> getCandlesFromElasticAndAggregateToInterval(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
         final String index = ElasticsearchGeneratorUtil.generateIndex(pairName);
 
-        return CandleDataConverter.convertByInterval(elasticsearchProcessingService.getByRange(from, to, index), interval);
+        try {
+            return CandleDataConverter.convertByInterval(elasticsearchProcessingService.getByRange(from, to, index), interval);
+        } catch (Exception e) {
+            log.error(e);
+            return Collections.emptyList();
+        }
     }
 }

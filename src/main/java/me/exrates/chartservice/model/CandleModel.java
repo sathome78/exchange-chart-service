@@ -10,9 +10,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-
-
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)
 @NoArgsConstructor
