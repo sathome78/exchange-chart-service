@@ -17,6 +17,10 @@
     <properties>
         <java.version>1.8</java.version>
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
+
+        <!--SKIP ITs-->
+        <skipITs>false</skipITs>
+        <providerSkipITs>${skipITs}</providerSkipITs>
     </properties>
 
     <dependencies>
@@ -159,6 +163,14 @@
                     <finalName>chart</finalName>
                     <executable>true</executable>
                     <mainClass>me.exrates.chartservice.ChartdataApplication</mainClass>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
+                    <skipITs>${providerSkipITs}</skipITs>
                 </configuration>
             </plugin>
         </plugins>

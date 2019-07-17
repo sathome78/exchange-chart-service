@@ -1,4 +1,4 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RedisProcessingServiceImplTest extends AbstractTest {
+public class RedisProcessingServiceTestIT extends AbstractTest {
 
     private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 

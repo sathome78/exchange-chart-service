@@ -1,4 +1,4 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;

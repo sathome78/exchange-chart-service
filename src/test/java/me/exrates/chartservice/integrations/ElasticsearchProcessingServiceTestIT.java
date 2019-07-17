@@ -1,4 +1,4 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
@@ -17,7 +17,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
+public class ElasticsearchProcessingServiceTestIT extends AbstractTest {
 
     @Autowired
     private ElasticsearchProcessingService processingService;
