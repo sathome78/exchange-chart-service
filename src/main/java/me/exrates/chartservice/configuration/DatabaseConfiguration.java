@@ -38,8 +38,17 @@ public class DatabaseConfiguration {
         hikariConfig.setJdbcUrl(jdbcUrl);
         hikariConfig.setUsername(user);
         hikariConfig.setPassword(getPassword(ssmPath));
-        hikariConfig.setConnectionTimeout(30 * 1000);
         hikariConfig.setReadOnly(true);
+
+        hikariConfig.setConnectionTestQuery("SELECT 1");
+        hikariConfig.setConnectionInitSql("SELECT 1");
+        hikariConfig.setConnectionTimeout(5 * 1000);
+        hikariConfig.setValidationTimeout(5 * 1000);
+        hikariConfig.setIdleTimeout(5 * 60 * 1000);
+        hikariConfig.setMaxLifetime(10 * 60 * 1000);
+        hikariConfig.setMinimumIdle(5);
+        hikariConfig.setMaximumPoolSize(25);
+        hikariConfig.setInitializationFailTimeout(0);
         return new HikariDataSource(hikariConfig);
     }
 

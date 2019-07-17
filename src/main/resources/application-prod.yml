@@ -1,16 +1,6 @@
 spring:
   application:
     name: chart-service
-  datasource:
-    hikari:
-      connection-timeout: 1000
-      idle-timeout: 180000
-      max-lifetime: 600000
-      connection-init-sql: SELECT 1 FROM DUAL;
-      connection-test-query: SELECT 2 FROM DUAL;
-      minimum-idle: 5
-      maximum-pool-size: 10
-      validation-timeout: 5000
   devtools:
     restart:
       enabled: true
@@ -60,5 +50,5 @@ candles:
   store-in-cache: 300
 
 scheduled:
-  update-cache: 0 */5 * ? * *
-  clean-cache: 0 */5 * ? * *
+  update-cache: 0 */30 * ? * *
+  clean-cache: 0 */30 * ? * *

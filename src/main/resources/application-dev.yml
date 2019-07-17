@@ -1,16 +1,6 @@
 spring:
   application:
     name: chart-service
-  datasource:
-    hikari:
-      connection-timeout: 1000
-      idle-timeout: 180000
-      max-lifetime: 600000
-      connection-init-sql: SELECT 1 FROM DUAL;
-      connection-test-query: SELECT 2 FROM DUAL;
-      minimum-idle: 5
-      maximum-pool-size: 10
-      validation-timeout: 5000
   devtools:
     restart:
       enabled: true
@@ -25,12 +15,12 @@ spring:
 #  change to dev
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: exdevdb
 
 #  change to dev
 redis:
-  host: localhost
+  host: 172.10.12.21
   port: 6379
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
@@ -53,12 +43,12 @@ ssm:
 
 #  change to dev
 elasticsearch:
-  host: localhost
+  host: 172.10.12.21
   port: 9200
 
 candles:
   store-in-cache: 300
 
 scheduled:
-  update-cache: 0 */5 * ? * *
-  clean-cache: 0 */5 * ? * *
+  update-cache: 0 */30 * ? * *
+  clean-cache: 0 */30 * ? * *
