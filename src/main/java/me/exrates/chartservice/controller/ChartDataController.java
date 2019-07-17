@@ -7,8 +7,6 @@ import me.exrates.chartservice.model.CandlesDataDto;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,10 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
-import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
-
 @Log4j2
-@Profile(MODULE_MODE_CONSUMES)
 @RequestMapping(value = "/data",
         produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 @RestController
