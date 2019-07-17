@@ -5,21 +5,15 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Profile;
-
-import java.util.function.Supplier;
-
-import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_PRODUCES;
 
 @SpringBootApplication
-public class ChartdataApplication  {
+public class ChartdataApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ChartdataApplication.class, args);
     }
 
     @Bean
-    @Profile(MODULE_MODE_PRODUCES)
     public CommandLineRunner job() {
         return new CommandLineRunner() {
             @Override

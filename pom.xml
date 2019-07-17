@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>me.exrates</groupId>
-    <artifactId>chartservice</artifactId>
+    <artifactId>chart-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>chartservice</name>
+    <name>chart-service</name>
     <description>Service for processing chart data</description>
 
     <properties>
@@ -155,8 +155,12 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <finalName>chart</finalName>
+                    <executable>true</executable>
+                    <mainClass>me.exrates.chartservice.ChartdataApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>

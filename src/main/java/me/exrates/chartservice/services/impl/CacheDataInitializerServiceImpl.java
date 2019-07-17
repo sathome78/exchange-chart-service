@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -28,11 +27,9 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
-import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
 import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTERVAL_MAP;
 
 @Log4j2
-@Profile(MODULE_MODE_CONSUMES)
 @EnableScheduling
 @Service("cacheDataInitService")
 public class CacheDataInitializerServiceImpl implements CacheDataInitializerService {

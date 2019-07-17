@@ -7,17 +7,13 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.util.Objects;
 
-import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
-
 @Log4j2
-@Profile(MODULE_MODE_CONSUMES)
 @Component
 @DependsOn({"cacheDataInitService", "listenerBuffer"})
 public class RabbitListeners {

@@ -6,7 +6,6 @@ import me.exrates.chartservice.model.CandleDto;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,11 +18,9 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static me.exrates.chartservice.configuration.CommonConfiguration.MODULE_MODE_CONSUMES;
 
 @Log4j2
-@Profile(MODULE_MODE_CONSUMES)
-@RequestMapping(value = "data",
+@RequestMapping(value = "/data",
         produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 @RestController
 public class ChartDataController {
@@ -52,8 +49,8 @@ public class ChartDataController {
 
     @GetMapping("/last")
     public CandleDto getLast(@RequestParam String currencyPair,
-                               @RequestParam IntervalType intervalType,
-                               @RequestParam int intervalValue) {
+                             @RequestParam IntervalType intervalType,
+                             @RequestParam int intervalValue) {
         BackDealInterval backDealInterval = new BackDealInterval(intervalValue, intervalType);
         return CandleDto.fromCandleModel(tradeDataService.getCandleForCurrentTime(currencyPair, backDealInterval));
     }
