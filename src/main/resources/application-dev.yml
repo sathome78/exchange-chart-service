@@ -1,25 +1,26 @@
 spring:
   application:
     name: chart-service
-  profiles:
-    active: local
   devtools:
     restart:
       enabled: true
+#  change to dev
   rabbitmq:
     username: developer
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
-    tradestopic: CHART_DATA_QUEUE
+    tradestopic: CHART_DATA_QUEUE_DEV
 
+#  change to dev
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: exdevdb
 
+#  change to dev
 redis:
-  host: localhost
+  host: 172.10.12.21
   port: 6379
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
@@ -35,12 +36,14 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
+#  change to dev
 ssm:
   mode: dev
-  path: vLHjSkPJjB6JLVcA
+  path: /exrates/core-service/test/mysql.token
 
+#  change to dev
 elasticsearch:
-  host: localhost
+  host: 172.10.12.21
   port: 9200
 
 candles:
@@ -49,6 +52,3 @@ candles:
 scheduled:
   update-cache: 0 */30 * ? * *
   clean-cache: 0 */30 * ? * *
-
-server:
-  port: 8060

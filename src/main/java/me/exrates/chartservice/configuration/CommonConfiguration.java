@@ -7,6 +7,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.enums.IntervalType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
 import java.util.Collection;
 import java.util.List;
@@ -21,10 +22,6 @@ public class CommonConfiguration {
 
     public static final String ALL_SUPPORTED_INTERVALS_LIST = "allSupportedIntervalsList";
 
-    public static final String MODULE_MODE_PRODUCES = "produces";
-    public static final String MODULE_MODE_CONSUMES = "consumes";
-
-
     @Bean(JSON_MAPPER)
     public ObjectMapper mapper() {
         return new ObjectMapper()
@@ -35,6 +32,11 @@ public class CommonConfiguration {
     @Bean
     public XSync<String> xSync() {
         return new XSync<>();
+    }
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer();
     }
 
     @Bean(ALL_SUPPORTED_INTERVALS_LIST)

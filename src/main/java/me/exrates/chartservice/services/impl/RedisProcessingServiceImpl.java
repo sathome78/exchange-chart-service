@@ -67,12 +67,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
         if (jedis.hexists(key, hashKey)) {
-            try {
-                return mapper.readValue(jedis.hget(key, hashKey), CandleModel.class);
-            } catch (IOException ex) {
-                log.error("Problem with getting response from redis", ex);
-                return null;
-            }
+            return getModel(jedis.hget(key, hashKey));
         }
         return null;
     }
@@ -83,14 +78,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
 
         if (jedis.exists(key)) {
             return jedis.hgetAll(key).values().stream()
-                    .map(value -> {
-                        try {
-                            return mapper.readValue(value, CandleModel.class);
-                        } catch (IOException ex) {
-                            log.error("Problem with getting response from redis", ex);
-                            return null;
-                        }
-                    })
+                    .map(this::getModel)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         }
@@ -103,14 +91,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
 
         if (jedis.exists(key)) {
             return jedis.hgetAll(key).values().stream()
-                    .map(value -> {
-                        try {
-                            return mapper.readValue(value, CandleModel.class);
-                        } catch (IOException ex) {
-                            log.error("Problem with getting response from redis", ex);
-                            return null;
-                        }
-                    })
+                    .map(this::getModel)
                     .filter(Objects::nonNull)
                     .filter(model -> model.getCandleOpenTime().isAfter(from) && model.getCandleOpenTime().isBefore(to))
                     .collect(Collectors.toList());
@@ -193,7 +174,16 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         try {
             return mapper.writeValueAsString(model);
         } catch (JsonProcessingException ex) {
-            log.error("Problem with writing model object to string", ex);
+            log.error("Problem with writing model object into string", ex);
+            return null;
+        }
+    }
+
+    private CandleModel getModel(final String sourceString) {
+        try {
+            return mapper.readValue(sourceString, CandleModel.class);
+        } catch (IOException ex) {
+            log.error("Problem with getting response from redis", ex);
             return null;
         }
     }

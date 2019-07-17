@@ -6,6 +6,7 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.get.GetRequest;
@@ -66,8 +67,8 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             GetIndexResponse response = client.indices().get(request, RequestOptions.DEFAULT);
 
             return Arrays.asList(response.getIndices());
-        } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+        } catch (IOException | ElasticsearchStatusException ex) {
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
             return Collections.emptyList();
         }
     }
@@ -79,7 +80,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         try {
             return client.existsSource(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
             return false;
         }
     }
@@ -93,7 +94,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
             return mapper.readValue(response.getSourceAsString(), CandleModel.class);
         } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
             return null;
         }
     }
@@ -101,14 +102,13 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     @Override
     public List<CandleModel> getAllByIndex(String index) {
         SearchRequest request = new SearchRequest(index);
-        ;
 
         try {
             SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
             return getSearchResult(response);
         } catch (IOException ex) {
-            log.warn("Problem with getting response from elasticsearch cluster", ex);
+            log.warn("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
             return Collections.emptyList();
         }
@@ -127,7 +127,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
             return getSearchResult(response);
         } catch (IOException ex) {
-            log.warn("Problem with getting response from elasticsearch cluster", ex);
+            log.warn("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
             return Collections.emptyList();
         }
@@ -149,7 +149,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         try {
             response = client.index(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
             return;
         }
 
@@ -178,7 +178,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         try {
             response = client.update(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
             return;
         }
 
@@ -202,7 +202,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
             return response.getDeleted();
         } catch (IOException ex) {
-            log.warn("Problem with getting response from elasticsearch cluster", ex);
+            log.warn("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
             return 0L;
         }
@@ -224,7 +224,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
                 log.warn("Problem with deleting index: {}", index);
             }
         } catch (IOException ex) {
-            log.error("Problem with getting response from elasticsearch cluster", ex);
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
         }
     }
 

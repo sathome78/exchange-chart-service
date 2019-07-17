@@ -1,23 +1,34 @@
 spring:
   application:
     name: chart-service
-  profiles:
-    active: local
+  datasource:
+    hikari:
+      connection-timeout: 1000
+      idle-timeout: 180000
+      max-lifetime: 600000
+      connection-init-sql: SELECT 1 FROM DUAL;
+      connection-test-query: SELECT 2 FROM DUAL;
+      minimum-idle: 5
+      maximum-pool-size: 10
+      validation-timeout: 5000
   devtools:
     restart:
       enabled: true
+#  change to stage
   rabbitmq:
     username: developer
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
-    tradestopic: CHART_DATA_QUEUE
+    tradestopic: CHART_DATA_QUEUE_STAGE
 
+#  change to stage
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
   username: root
 
+#  change to stage
 redis:
   host: localhost
   port: 6379
@@ -35,10 +46,12 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
+#  change to stage
 ssm:
   mode: dev
-  path: vLHjSkPJjB6JLVcA
+  path: /exrates/core-service/test/mysql.token
 
+#  change to stage
 elasticsearch:
   host: localhost
   port: 9200
@@ -49,6 +62,3 @@ candles:
 scheduled:
   update-cache: 0 */30 * ? * *
   clean-cache: 0 */30 * ? * *
-
-server:
-  port: 8060
