@@ -3,9 +3,7 @@ spring:
     name: chartservice
   profiles:
     active:
-      - local
-      - produces
-#      - consumes
+      - consumes
   datasource:
     hikari:
       connection-timeout: 1000
