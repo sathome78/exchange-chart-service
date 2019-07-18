@@ -50,7 +50,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public CacheDataInitializerServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                            RedisProcessingService redisProcessingService,
                                            TradeDataService tradeDataService,
-                                           @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                           @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                            @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
                                            @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
@@ -124,7 +124,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                         final String hashKey = pair.getKey();
                         final CandleModel model = pair.getValue();
 
-                        if (!elasticsearchProcessingService.exists(key, hashKey) && Objects.equals(interval, DEFAULT_INTERVAL)) {
+                        if (Objects.equals(interval, DEFAULT_INTERVAL) && !elasticsearchProcessingService.exists(key, hashKey)) {
                             elasticsearchProcessingService.insert(model, key);
                         }
                         redisProcessingService.deleteByHashKey(key, hashKey, interval);

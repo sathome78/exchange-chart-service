@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("local")
 @SpringBootTest
-public abstract class AbstractTest {
+public abstract class AbstractTestIT {
 
     static final LocalDateTime NOW = LocalDateTime.now();
     static final LocalDateTime FROM_DATE = NOW.minusDays(1);

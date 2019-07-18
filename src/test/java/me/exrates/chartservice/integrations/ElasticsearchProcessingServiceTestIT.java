@@ -5,6 +5,7 @@ import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -17,7 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ElasticsearchProcessingServiceTestIT extends AbstractTest {
+public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
     @Autowired
     private ElasticsearchProcessingService processingService;
@@ -93,8 +94,7 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTest {
 
         List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, index);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
 
         TimeUnit.SECONDS.sleep(1);
@@ -123,24 +123,21 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTest {
 
         models = processingService.getAllByIndex(index);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
         TimeUnit.SECONDS.sleep(1);
 
         models = processingService.getByRange(FROM_DATE, TO_DATE, index);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(2, models.size());
 
         TimeUnit.SECONDS.sleep(1);
 
         List<String> indices = processingService.getAllIndices();
 
-        assertNotNull(indices);
-        assertFalse(indices.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(indices));
         assertEquals(1, indices.size());
         assertEquals(index, indices.get(0));
 

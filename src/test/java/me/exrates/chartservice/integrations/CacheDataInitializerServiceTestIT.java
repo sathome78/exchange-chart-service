@@ -13,6 +13,7 @@ import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,10 +21,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class CacheDataInitializerServiceTestIT extends AbstractTest {
+public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
     private static final BackDealInterval FIVE_MINUTE_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
     private static final BackDealInterval FIFTEEN_MINUTE_INTERVAL = new BackDealInterval(15, IntervalType.MINUTE);
@@ -69,43 +69,37 @@ public class CacheDataInitializerServiceTestIT extends AbstractTest {
 
         List<CandleModel> candles = redisProcessingService.getAllByKey(index, FIVE_MINUTE_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
 
         candles = redisProcessingService.getAllByKey(index, FIFTEEN_MINUTE_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIFTEEN_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
 
         candles = redisProcessingService.getAllByKey(index, THIRTY_MINUTE_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, THIRTY_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
 
         candles = redisProcessingService.getAllByKey(index, ONE_HOUR_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_HOUR_INTERVAL), candles.get(0).getCandleOpenTime());
 
         candles = redisProcessingService.getAllByKey(index, SIX_HOUR_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, SIX_HOUR_INTERVAL), candles.get(0).getCandleOpenTime());
 
         candles = redisProcessingService.getAllByKey(index, ONE_DAY_INTERVAL);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_DAY_INTERVAL), candles.get(0).getCandleOpenTime());
 
@@ -147,15 +141,13 @@ public class CacheDataInitializerServiceTestIT extends AbstractTest {
 
         List<CandleModel> candles = redisProcessingService.getAllByKey(key, FIVE_MINUTE_INTERVAL);
 
-        assertNotNull(candles);
-        assertTrue(candles.isEmpty());
+        assertTrue(CollectionUtils.isEmpty(candles));
 
         //check data from elasticsearch cluster (should not be empty)
 
         candles = elasticsearchProcessingService.getAllByIndex(key);
 
-        assertNotNull(candles);
-        assertFalse(candles.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
 
