@@ -11,6 +11,7 @@ import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -38,6 +39,9 @@ public class DataInitializerServiceImpl implements DataInitializerService {
     @Override
     public void generate(LocalDate fromDate, LocalDate toDate, String pairName, boolean regenerate) {
         final List<OrderDto> orders = orderService.getFilteredOrders(fromDate, toDate, pairName);
+        if (CollectionUtils.isEmpty(orders)) {
+            return;
+        }
 
         Map<LocalDateTime, List<TradeDataDto>> groupedByTradeDate = orders.stream()
                 .map(TradeDataDto::new)

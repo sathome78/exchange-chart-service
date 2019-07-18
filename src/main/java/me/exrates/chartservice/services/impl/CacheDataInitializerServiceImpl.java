@@ -23,6 +23,7 @@ import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.isNull;
@@ -49,7 +50,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public CacheDataInitializerServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                            RedisProcessingService redisProcessingService,
                                            TradeDataService tradeDataService,
-                                           @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                           @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                            @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
                                            @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
@@ -86,7 +87,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     }
 
     private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
-        if (interval != DEFAULT_INTERVAL) {
+        if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
             List<CandleModel> finalModels = models;
@@ -123,7 +124,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                         final String hashKey = pair.getKey();
                         final CandleModel model = pair.getValue();
 
-                        if (!elasticsearchProcessingService.exists(key, hashKey) && interval == DEFAULT_INTERVAL) {
+                        if (Objects.equals(interval, DEFAULT_INTERVAL) && !elasticsearchProcessingService.exists(key, hashKey)) {
                             elasticsearchProcessingService.insert(model, key);
                         }
                         redisProcessingService.deleteByHashKey(key, hashKey, interval);

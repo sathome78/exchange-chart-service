@@ -48,7 +48,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
                                 XSync<String> xSync,
-                                @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                 @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;

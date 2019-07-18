@@ -1,4 +1,4 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("local")
 @SpringBootTest
-public abstract class AbstractTest {
+public abstract class AbstractTestIT {
 
     static final LocalDateTime NOW = LocalDateTime.now();
     static final LocalDateTime FROM_DATE = NOW.minusDays(1);

@@ -1,4 +1,4 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
@@ -7,6 +7,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -19,7 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RedisProcessingServiceImplTest extends AbstractTest {
+public class RedisProcessingServiceTestIT extends AbstractTestIT {
 
     private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
@@ -85,8 +86,7 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
 
         List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
 
         CandleModel candleModel1 = CandleModel.builder()
@@ -111,20 +111,17 @@ public class RedisProcessingServiceImplTest extends AbstractTest {
 
         models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
         models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(2, models.size());
 
         List<String> keys = processingService.getAllKeys(DEFAULT_INTERVAL);
 
-        assertNotNull(keys);
-        assertFalse(keys.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(keys));
         assertEquals(1, keys.size());
         assertEquals(key, keys.get(0));
 
