@@ -92,6 +92,6 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         elasticsearchProcessingService.batchInsertOrUpdate(candleModels, index);
 
-        CompletableFuture.runAsync(cacheDataInitializerService::updateCache);
+        CompletableFuture.runAsync(() -> cacheDataInitializerService.updateCacheByKey(index));
     }
 }

@@ -76,16 +76,19 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public void updateCache() {
         log.debug("--> Start process of update cache <--");
 
-        elasticsearchProcessingService.getAllIndices().parallelStream().forEach(index -> {
-            if (!redisProcessingService.exists(index, DEFAULT_INTERVAL)) {
-                List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(index);
-                if (!CollectionUtils.isEmpty(models)) {
-                    this.updateCache(models, index, DEFAULT_INTERVAL);
-                }
-            }
-        });
+        elasticsearchProcessingService.getAllIndices().parallelStream().forEach(this::updateCacheByKey);
 
         log.debug("--> End process of update cache <--");
+    }
+
+    @Override
+    public void updateCacheByKey(String key) {
+        if (!redisProcessingService.exists(key, DEFAULT_INTERVAL)) {
+            List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
+            if (!CollectionUtils.isEmpty(models)) {
+                this.updateCache(models, key, DEFAULT_INTERVAL);
+            }
+        }
     }
 
     private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
