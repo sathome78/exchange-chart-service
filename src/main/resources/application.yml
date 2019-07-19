@@ -51,7 +51,7 @@ candles:
   store-in-cache: 300
 
 scheduled:
-  clean-cache: 0 */30 * ? * *
+  clean-cache: 0 */5 * ? * *
 
 server:
   port: 8060

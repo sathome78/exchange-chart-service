@@ -77,6 +77,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return Arrays.asList(response.getIndices());
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
             return Collections.emptyList();
         }
     }
@@ -89,6 +90,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return client.existsSource(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
             return false;
         }
     }
@@ -103,6 +105,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return mapper.readValue(response.getSourceAsString(), CandleModel.class);
         } catch (IOException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
             return null;
         }
     }
@@ -212,6 +215,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             response = client.index(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
             return;
         }
 
@@ -236,6 +240,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             response = client.update(request, RequestOptions.DEFAULT);
         } catch (IOException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
             return;
         }
 
@@ -259,7 +264,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
             return response.getDeleted();
         } catch (IOException ex) {
-            log.warn("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
             return 0L;
         }
@@ -323,7 +328,8 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
                     try {
                         return mapper.readValue(hit.getSourceAsString(), CandleModel.class);
                     } catch (IOException ex) {
-                        log.warn("Problem with read model object from string", ex);
+                        log.error("Problem with read model object from string", ex);
+
                         return null;
                     }
                 })
@@ -336,6 +342,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             return mapper.writeValueAsString(model);
         } catch (JsonProcessingException ex) {
             log.error("Problem with writing model object to string", ex);
+
             return null;
         }
     }
