@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -91,6 +92,6 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         elasticsearchProcessingService.batchInsertOrUpdate(candleModels, index);
 
-        cacheDataInitializerService.updateCache();
+        CompletableFuture.runAsync(cacheDataInitializerService::updateCache);
     }
 }
