@@ -61,13 +61,13 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .batchInsertOrUpdate(anyList(), anyString());
         doNothing()
                 .when(cacheDataInitializerService)
-                .updateCache();
+                .updateCacheByKey(anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, TEST_PAIR);
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).batchInsertOrUpdate(anyList(), anyString());
-        verify(cacheDataInitializerService, atLeastOnce()).updateCache();
+        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
     }
 
     @Test
