@@ -1,8 +1,10 @@
 package me.exrates.chartservice.integrations;
 
+import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
@@ -22,6 +24,9 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
     @Autowired
     private ElasticsearchProcessingService processingService;
+
+    @Rule
+    public RetryRule retryRule = new RetryRule(3);
 
     @Test
     public void endToEnd() throws Exception {

@@ -1,10 +1,12 @@
 package me.exrates.chartservice.integrations;
 
+import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +28,9 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
 
     @Autowired
     private RedisProcessingService processingService;
+
+    @Rule
+    public RetryRule retryRule = new RetryRule(3);
 
     @Test
     public void endToEnd() {

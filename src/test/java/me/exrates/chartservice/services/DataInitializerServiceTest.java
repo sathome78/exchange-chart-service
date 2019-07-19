@@ -14,6 +14,7 @@ import java.util.Collections;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -67,7 +68,7 @@ public class DataInitializerServiceTest extends AbstractTest {
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).batchInsertOrUpdate(anyList(), anyString());
-        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
+        verify(cacheDataInitializerService, after(1000)).updateCacheByKey(anyString());
     }
 
     @Test
