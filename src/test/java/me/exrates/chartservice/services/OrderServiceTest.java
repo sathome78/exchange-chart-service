@@ -29,7 +29,6 @@ public class OrderServiceTest extends AbstractTest {
     private static final LocalDate NOW = LocalDate.now();
     private static final LocalDate FROM_DATE = NOW.minusDays(1);
     private static final LocalDate TO_DATE = NOW.plusDays(1);
-    private static final String BTC_USD = "BTC/USD";
 
     @Mock
     private OrderRepository orderRepository;
@@ -45,7 +44,7 @@ public class OrderServiceTest extends AbstractTest {
     public void getFilteredOrders_ok() {
         doReturn(Collections.singletonList(OrderDto.builder()
                 .id(1)
-                .currencyPairName(BTC_USD)
+                .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)
                 .amountConvert(BigDecimal.TEN)
@@ -54,7 +53,7 @@ public class OrderServiceTest extends AbstractTest {
                 .when(orderRepository)
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
-        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, BTC_USD);
+        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, TEST_PAIR);
 
         assertFalse(CollectionUtils.isEmpty(orders));
         assertEquals(1, orders.size());
@@ -68,7 +67,7 @@ public class OrderServiceTest extends AbstractTest {
                 .when(orderRepository)
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
-        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, BTC_USD);
+        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, TEST_PAIR);
 
         assertTrue(CollectionUtils.isEmpty(orders));
 

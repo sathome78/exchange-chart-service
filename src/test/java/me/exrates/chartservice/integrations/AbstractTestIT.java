@@ -15,5 +15,5 @@ public abstract class AbstractTestIT {
     static final LocalDateTime NOW = LocalDateTime.now();
     static final LocalDateTime FROM_DATE = NOW.minusDays(1);
     static final LocalDateTime TO_DATE = NOW.plusDays(1);
-    static final String BTC_USD = "BTC/USD";
+    static final String TEST_PAIR = "COIN1/COIN2";
 }

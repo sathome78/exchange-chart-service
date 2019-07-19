@@ -29,7 +29,7 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
 
     @Test
     public void endToEnd() {
-        final String key = RedisGeneratorUtil.generateKey(BTC_USD);
+        final String key = RedisGeneratorUtil.generateKey(TEST_PAIR);
         final String hashKey = RedisGeneratorUtil.generateHashKey(NOW);
 
         boolean exists = processingService.exists(key, DEFAULT_INTERVAL);
@@ -122,8 +122,6 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
         List<String> keys = processingService.getAllKeys(DEFAULT_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(keys));
-        assertEquals(1, keys.size());
-        assertEquals(key, keys.get(0));
 
         processingService.deleteByHashKey(key, hashKey, DEFAULT_INTERVAL);
 
@@ -134,18 +132,18 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
     public void insertAndGetLastInitializedCandleTimeEndToEnd() {
         LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(BTC_USD, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
 
-        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(BTC_USD);
+        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
         dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(BTC_USD, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
 
-        dateTime = processingService.getLastInitializedCandleTimeFromCache(BTC_USD);
+        dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);

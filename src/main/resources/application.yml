@@ -13,10 +13,14 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE
 
+#datasource:
+#  driver-class-name: com.mysql.cj.jdbc.Driver
+#  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+#  username: root
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: exdevdb
 
 redis:
   host: localhost
@@ -47,7 +51,6 @@ candles:
   store-in-cache: 300
 
 scheduled:
-  update-cache: 0 */30 * ? * *
   clean-cache: 0 */30 * ? * *
 
 server:

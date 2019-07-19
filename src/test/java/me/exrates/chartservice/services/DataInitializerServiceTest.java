@@ -26,12 +26,13 @@ public class DataInitializerServiceTest extends AbstractTest {
     private static final LocalDate NOW = LocalDate.now();
     private static final LocalDate FROM_DATE = NOW.minusDays(1);
     private static final LocalDate TO_DATE = NOW.plusDays(1);
-    private static final String BTC_USD = "BTC/USD";
 
     @Mock
     private ElasticsearchProcessingService elasticsearchProcessingService;
     @Mock
     private OrderService orderService;
+    @Mock
+    private CacheDataInitializerService cacheDataInitializerService;
 
     private DataInitializerService dataInitializerService;
 
@@ -39,14 +40,15 @@ public class DataInitializerServiceTest extends AbstractTest {
     public void setUp() throws Exception {
         dataInitializerService = spy(new DataInitializerServiceImpl(
                 elasticsearchProcessingService,
-                orderService));
+                orderService,
+                cacheDataInitializerService));
     }
 
     @Test
     public void generate_ok() {
         doReturn(Collections.singletonList(OrderDto.builder()
                 .id(1)
-                .currencyPairName(BTC_USD)
+                .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)
                 .amountConvert(BigDecimal.TEN)
@@ -56,44 +58,16 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .batchInsert(anyList(), anyString());
+                .batchInsertOrUpdate(anyList(), anyString());
+        doNothing()
+                .when(cacheDataInitializerService)
+                .updateCache();
 
-        dataInitializerService.generate(FROM_DATE, TO_DATE, BTC_USD, false);
+        dataInitializerService.generate(FROM_DATE, TO_DATE, TEST_PAIR);
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).batchInsert(anyList(), anyString());
-        verify(elasticsearchProcessingService, never()).deleteDataByIndex(anyString());
-        verify(elasticsearchProcessingService, never()).deleteIndex(anyString());
-    }
-
-    @Test
-    public void generate_ok_with_regenerate_data() {
-        doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
-                .currencyPairName(BTC_USD)
-                .exRate(BigDecimal.TEN)
-                .amountBase(BigDecimal.ONE)
-                .amountConvert(BigDecimal.TEN)
-                .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
-                .build()))
-                .when(orderService)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        doNothing()
-                .when(elasticsearchProcessingService)
-                .batchInsert(anyList(), anyString());
-        doReturn(1L)
-                .when(elasticsearchProcessingService)
-                .deleteDataByIndex(anyString());
-        doNothing()
-                .when(elasticsearchProcessingService)
-                .deleteIndex(anyString());
-
-        dataInitializerService.generate(FROM_DATE, TO_DATE, BTC_USD, true);
-
-        verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).batchInsert(anyList(), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).deleteDataByIndex(anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).deleteIndex(anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).batchInsertOrUpdate(anyList(), anyString());
+        verify(cacheDataInitializerService, atLeastOnce()).updateCache();
     }
 
     @Test
@@ -102,11 +76,10 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .when(orderService)
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
-        dataInitializerService.generate(FROM_DATE, TO_DATE, BTC_USD, false);
+        dataInitializerService.generate(FROM_DATE, TO_DATE, TEST_PAIR);
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, never()).batchInsert(anyList(), anyString());
-        verify(elasticsearchProcessingService, never()).deleteDataByIndex(anyString());
-        verify(elasticsearchProcessingService, never()).deleteIndex(anyString());
+        verify(elasticsearchProcessingService, never()).batchInsertOrUpdate(anyList(), anyString());
+        verify(cacheDataInitializerService, never()).updateCache();
     }
 }

@@ -3,6 +3,7 @@ package me.exrates.chartservice.services;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.impl.CacheDataInitializerServiceImpl;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -35,8 +36,12 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     private CacheDataInitializerService cacheDataInitializerService;
 
+    private String key;
+
     @Before
     public void setUp() throws Exception {
+        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+
         cacheDataInitializerService = spy(new CacheDataInitializerServiceImpl(
                 elasticsearchProcessingService,
                 redisProcessingService,
@@ -48,7 +53,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void updateCache_ok() {
-        doReturn(Collections.singletonList("btc_usd"))
+        doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
         doReturn(false)
@@ -97,7 +102,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void updateCache_index_present_in_cache() {
-        doReturn(Collections.singletonList("btc_usd"))
+        doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
         doReturn(true)
@@ -115,7 +120,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void updateCache_empty_data_list() {
-        doReturn(Collections.singletonList("btc_usd"))
+        doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
         doReturn(false)
@@ -135,8 +140,8 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
     }
 
     @Test
-    public void cleanCache_ok() {
-        doReturn(Collections.singletonList("btc_usd"))
+    public void cleanCache_ok_with_insert() {
+        doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
         doReturn(Collections.singletonList(CandleModel.builder()
@@ -166,6 +171,56 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).insert(any(CandleModel.class), anyString());
         verify(redisProcessingService, atLeastOnce()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
+        verify(elasticsearchProcessingService, never()).update(any(CandleModel.class), anyString());
+    }
+
+    @Test
+    public void cleanCache_ok_with_update() {
+        doReturn(Collections.singletonList(key))
+                .when(redisProcessingService)
+                .getAllKeys(any(BackDealInterval.class));
+        doReturn(Collections.singletonList(CandleModel.builder()
+                .openRate(BigDecimal.TEN)
+                .closeRate(BigDecimal.TEN)
+                .highRate(BigDecimal.TEN)
+                .lowRate(BigDecimal.TEN)
+                .volume(BigDecimal.TEN)
+                .lastTradeTime(NOW.minusMinutes(50))
+                .candleOpenTime(NOW.minusDays(2))
+                .build()))
+                .when(redisProcessingService)
+                .getAllByKey(anyString(), any(BackDealInterval.class));
+        doReturn(true)
+                .when(elasticsearchProcessingService)
+                .exists(anyString(), anyString());
+        doReturn(CandleModel.builder()
+                .openRate(BigDecimal.TEN)
+                .closeRate(BigDecimal.TEN)
+                .highRate(BigDecimal.TEN)
+                .lowRate(BigDecimal.TEN)
+                .volume(BigDecimal.TEN)
+                .lastTradeTime(NOW.minusMinutes(100))
+                .candleOpenTime(NOW.minusDays(2))
+                .build())
+                .when(elasticsearchProcessingService)
+                .get(anyString(), anyString());
+        doNothing()
+                .when(elasticsearchProcessingService)
+                .update(any(CandleModel.class), anyString());
+        doNothing()
+                .when(redisProcessingService)
+                .deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+
+        cacheDataInitializerService.cleanCache();
+
+        verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
+        verify(redisProcessingService, times(6)).getAllByKey(anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
+        verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
+        verify(redisProcessingService, atLeastOnce()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).update(any(CandleModel.class), anyString());
     }
 
     @Test
@@ -185,7 +240,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void cleanCache_empty_data_list() {
-        doReturn(Collections.singletonList("btc_usd"))
+        doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
         doReturn(Collections.emptyList())
