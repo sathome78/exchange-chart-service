@@ -175,6 +175,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
             return mapper.writeValueAsString(model);
         } catch (JsonProcessingException ex) {
             log.error("Problem with writing model object into string", ex);
+
             return null;
         }
     }
@@ -184,6 +185,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
             return mapper.readValue(sourceString, CandleModel.class);
         } catch (IOException ex) {
             log.error("Problem with getting response from redis", ex);
+
             return null;
         }
     }

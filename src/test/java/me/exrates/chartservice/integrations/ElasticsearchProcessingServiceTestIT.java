@@ -1,8 +1,10 @@
 package me.exrates.chartservice.integrations;
 
+import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
@@ -23,10 +25,32 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
     @Autowired
     private ElasticsearchProcessingService processingService;
 
+    @Rule
+    public RetryRule retryRule = new RetryRule(3);
+
     @Test
     public void endToEnd() throws Exception {
-        final String index = ElasticsearchGeneratorUtil.generateIndex(BTC_USD);
+        final String index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
         final String id = ElasticsearchGeneratorUtil.generateId(NOW);
+
+        boolean existsIndex = processingService.existsIndex(index);
+
+        assertFalse(existsIndex);
+
+        TimeUnit.SECONDS.sleep(1);
+
+        String createdIndex = processingService.createIndex(index);
+
+        assertNotNull(createdIndex);
+        assertEquals(index, createdIndex);
+
+        TimeUnit.SECONDS.sleep(1);
+
+        existsIndex = processingService.existsIndex(index);
+
+        assertTrue(existsIndex);
+
+        TimeUnit.SECONDS.sleep(1);
 
         boolean exists = processingService.exists(index, id);
 
@@ -117,7 +141,7 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), index);
+        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), index);
 
         TimeUnit.SECONDS.sleep(1);
 

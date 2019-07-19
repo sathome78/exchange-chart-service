@@ -17,9 +17,9 @@ public interface ElasticsearchProcessingService {
 
     List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index);
 
-    void insert(CandleModel model, String index);
+    void batchInsertOrUpdate(List<CandleModel> models, String index);
 
-    void batchInsert(List<CandleModel> models, String index);
+    void insert(CandleModel model, String index);
 
     void update(CandleModel model, String index);
 
@@ -30,4 +30,8 @@ public interface ElasticsearchProcessingService {
     void deleteAllIndices();
 
     void deleteIndex(String index);
+
+    String createIndex(String index);
+
+    boolean existsIndex(String index);
 }

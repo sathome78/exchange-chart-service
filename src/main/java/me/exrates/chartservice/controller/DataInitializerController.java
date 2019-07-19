@@ -3,6 +3,7 @@ package me.exrates.chartservice.controller;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.services.DataInitializerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,14 +26,13 @@ public class DataInitializerController {
     }
 
     @PostMapping("/generate")
-    public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) LocalDate fromDate,
-                                                 @RequestParam(value = "to", required = false) LocalDate toDate,
-                                                 @RequestParam("pair_name") String pairName,
-                                                 @RequestParam(value = "regenerate", required = false, defaultValue = "false") boolean regenerate) {
+    public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                                 @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                                                 @RequestParam("pair_name") String pairName) {
         try {
-            log.debug("Criteria - from: {}, to: {}, pair name: {}, regenerate data: {}", fromDate, toDate, pairName, regenerate);
+            log.debug("Criteria - from: {}, to: {}, pair name: {}", fromDate, toDate, pairName);
 
-            initializerService.generate(fromDate, toDate, pairName, regenerate);
+            initializerService.generate(fromDate, toDate, pairName);
             return ResponseEntity.ok().build();
         } catch (Exception ex) {
             log.error("Some error occurred during generate chart data", ex);

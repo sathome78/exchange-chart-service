@@ -29,6 +29,8 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTE
         })
 public abstract class AbstractTest {
 
+    static final String TEST_PAIR = "COIN1/COIN2";
+
     @Value("${candles.store-in-cache:300}")
     long candlesToStoreInCache;
 
