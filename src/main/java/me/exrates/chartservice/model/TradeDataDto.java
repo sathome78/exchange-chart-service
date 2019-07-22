@@ -2,10 +2,8 @@ package me.exrates.chartservice.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.Tolerate;
 import me.exrates.chartservice.model.serializers.CurrencyPairDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeDeserializer;
@@ -15,7 +13,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter@Setter
+@Data
 @NoArgsConstructor
 public class TradeDataDto {
 
@@ -39,7 +37,6 @@ public class TradeDataDto {
         this.tradeDate = order.getDateAcception();
     }
 
-    @Tolerate
     public TradeDataDto(String pairName, BigDecimal exrate, BigDecimal amountBase, LocalDateTime tradeDate) {
         this.pairName = pairName;
         this.exrate = exrate;

@@ -83,7 +83,9 @@ public class ListenerBufferImplTest extends AbstractUnitTest {
     }
 
     @Test
-    public void isReadyToClose() {
+    public void isReadyToClose() throws InterruptedException {
+
+        receive();
 
         boolean result = listenerBuffer.isReadyToClose();
 
