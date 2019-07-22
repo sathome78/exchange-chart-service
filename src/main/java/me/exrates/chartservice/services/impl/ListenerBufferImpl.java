@@ -28,6 +28,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
     private XSync<String> xSync = new XSync<>();
+    private static final Integer BUFFER_DELAY = 1000;
+
 
     private final TradeDataService tradeDataService;
     private final RedisProcessingService redisProcessingService;
@@ -42,7 +44,6 @@ public class ListenerBufferImpl implements ListenerBuffer {
     @Override
     public void receive(TradeDataDto message) {
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
-
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
                 List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), k -> new ArrayList<>());
@@ -51,7 +52,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
             Semaphore semaphore = getSemaphoreSafe(message.getPairName());
             if (semaphore.tryAcquire()) {
                 try {
-                    TimeUnit.MILLISECONDS.sleep(1000);
+                    TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
                     xSync.execute(message.getPairName(), () -> {
                         List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
                         tradeDataService.handleReceivedTrades(message.getPairName(), trades);
@@ -82,7 +83,6 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeCandleTime) {
         LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(pairName);
-
         return isNull(initTime) || tradeCandleTime.isAfter(initTime);
     }
 }

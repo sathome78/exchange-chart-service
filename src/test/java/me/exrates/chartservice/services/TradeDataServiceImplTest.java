@@ -1,63 +1,38 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.services;
 
-import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
-import me.exrates.chartservice.model.enums.IntervalType;
-import me.exrates.chartservice.services.ElasticsearchProcessingService;
-import me.exrates.chartservice.services.RedisProcessingService;
-import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
-public class TradeDataServiceImplTest {
-
-    private static final int CANDLES_TO_STORE = 300;
-    private static final String BTC_USD = "btc_usd";
-    private static final BackDealInterval M5_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
-    private static final BackDealInterval M15_INTERVAL = new BackDealInterval(15, IntervalType.MINUTE);
-    private static final BackDealInterval M30_INTERVAL = new BackDealInterval(30, IntervalType.MINUTE);
-    private static final BackDealInterval ONE_HOUR_INTERVAL = new BackDealInterval(1, IntervalType.HOUR);
-    private static final BackDealInterval SIX_HOUR_INTERVAL = new BackDealInterval(6, IntervalType.HOUR);
-    private static final BackDealInterval ONE_DAY_INTERVAL = new BackDealInterval(1, IntervalType.DAY);
+@ContextConfiguration(classes = {UnitTestContext.class})
+public class TradeDataServiceImplTest extends AbstractUnitTest {
 
     @Autowired
-    private TradeDataService tradeDataService;
+    TradeDataService tradeDataService;
     @Autowired
-    private ElasticsearchProcessingService elasticsearchProcessingService;
+    ElasticsearchProcessingService elasticsearchProcessingService;
     @Autowired
-    private RedisProcessingService redisProcessingService;
+    RedisProcessingService redisProcessingService;
     @Autowired
-    private XSync<String> xSync;
-    @Autowired
-    private List<BackDealInterval> supportedIntervals;
-
+    List<BackDealInterval> supportedIntervals;
 
     @Test
     public void getCandleForCurrentTime() {
@@ -307,40 +282,4 @@ public class TradeDataServiceImplTest {
         return new BigDecimal(BigInteger.valueOf(new Random().nextInt(100001)), 2);
     }
 
-
-    @TestConfiguration
-    static class TradeDataServiceImplTestContextConfiguration {
-
-        @MockBean
-        private ElasticsearchProcessingService elasticsearchProcessingService;
-
-        @MockBean
-        private RedisProcessingService redisProcessingService;
-
-        @Bean
-        public XSync<String> xSync() {
-            return new XSync<>();
-        }
-
-        @Bean
-        public List<BackDealInterval> supportedIntervals() {
-            return Stream.of(IntervalType.values())
-                    .map(p -> (IntStream.of(p.getSupportedValues())
-                            .mapToObj(v -> new BackDealInterval(v, p))
-                            .collect(Collectors.toList())))
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
-        }
-
-        @Bean
-        public TradeDataService employeeService() {
-            return new TradeDataServiceImpl(
-                    elasticsearchProcessingService,
-                    redisProcessingService,
-                    xSync(),
-                    CANDLES_TO_STORE,
-                    supportedIntervals()
-            );
-        }
-    }
 }
