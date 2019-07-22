@@ -21,9 +21,12 @@ import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
@@ -49,7 +52,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public CacheDataInitializerServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                            RedisProcessingService redisProcessingService,
                                            TradeDataService tradeDataService,
-                                           @Value("${candles.store-in-cache}") long candlesToStoreInCache,
+                                           @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                            @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals,
                                            @Qualifier(NEXT_INTERVAL_MAP) Map<String, String> nextIntervalMap) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
@@ -73,25 +76,31 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     public void updateCache() {
         log.debug("--> Start process of update cache <--");
 
-        elasticsearchProcessingService.getAllIndices().parallelStream().forEach(index -> {
-            if (!redisProcessingService.exists(index, DEFAULT_INTERVAL)) {
-                List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(index);
-                if (!CollectionUtils.isEmpty(models)) {
-                    this.updateCache(models, index, DEFAULT_INTERVAL);
-                }
-            }
-        });
+        elasticsearchProcessingService.getAllIndices().parallelStream().forEach(this::updateCacheByKey);
 
         log.debug("--> End process of update cache <--");
     }
 
+    @Override
+    public void updateCacheByKey(String key) {
+        if (!redisProcessingService.exists(key, DEFAULT_INTERVAL)) {
+            List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
+            if (!CollectionUtils.isEmpty(models)) {
+                this.updateCache(models, key, DEFAULT_INTERVAL);
+            }
+        }
+    }
+
     private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
-        if (interval != DEFAULT_INTERVAL) {
+        if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
             List<CandleModel> finalModels = models;
             CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
         }
+        models = models.stream()
+                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
+                .collect(Collectors.toList());
 
         redisProcessingService.batchInsertOrUpdate(models, key, interval);
 
@@ -123,8 +132,16 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                         final String hashKey = pair.getKey();
                         final CandleModel model = pair.getValue();
 
-                        if (!elasticsearchProcessingService.exists(key, hashKey) && interval == DEFAULT_INTERVAL) {
-                            elasticsearchProcessingService.insert(model, key);
+                        if (Objects.equals(interval, DEFAULT_INTERVAL)) {
+                            if (elasticsearchProcessingService.exists(key, hashKey)) {
+                                CandleModel savedModel = elasticsearchProcessingService.get(key, hashKey);
+
+                                if (Objects.nonNull(savedModel) && model.getLastTradeTime().isAfter(savedModel.getLastTradeTime())) {
+                                    elasticsearchProcessingService.update(model, key);
+                                }
+                            } else {
+                                elasticsearchProcessingService.insert(model, key);
+                            }
                         }
                         redisProcessingService.deleteByHashKey(key, hashKey, interval);
                     });

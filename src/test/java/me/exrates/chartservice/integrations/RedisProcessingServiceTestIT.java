@@ -1,37 +1,45 @@
-package me.exrates.chartservice.services.impl;
+package me.exrates.chartservice.integrations;
 
+import me.exrates.chartservice.RetryRule;
+import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.services.ElasticsearchProcessingService;
-import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import me.exrates.chartservice.model.enums.IntervalType;
+import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
+public class RedisProcessingServiceTestIT extends AbstractTestIT {
+
+    private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     @Autowired
-    private ElasticsearchProcessingService processingService;
+    private RedisProcessingService processingService;
+
+    @Rule
+    public RetryRule retryRule = new RetryRule(3);
 
     @Test
-    public void endToEnd() throws Exception {
-        final String index = ElasticsearchGeneratorUtil.generateIndex(BTC_USD);
-        final String id = ElasticsearchGeneratorUtil.generateId(NOW);
+    public void endToEnd() {
+        final String key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+        final String hashKey = RedisGeneratorUtil.generateHashKey(NOW);
 
-        boolean exists = processingService.exists(index, id);
+        boolean exists = processingService.exists(key, DEFAULT_INTERVAL);
 
         assertFalse(exists);
-
-        TimeUnit.SECONDS.sleep(1);
 
         CandleModel candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -42,17 +50,13 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insert(candleModel, index);
+        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        exists = processingService.exists(index, id);
+        exists = processingService.exists(key, DEFAULT_INTERVAL);
 
         assertTrue(exists);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        CandleModel insertedCandleModel = processingService.get(index, id);
+        CandleModel insertedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(insertedCandleModel);
         assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
@@ -63,8 +67,6 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
         assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
 
-        TimeUnit.SECONDS.sleep(1);
-
         candleModel = CandleModel.builder()
                 .openRate(BigDecimal.ZERO)
                 .closeRate(BigDecimal.TEN)
@@ -74,11 +76,9 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.update(candleModel, index);
+        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
-
-        CandleModel updatedCandleModel = processingService.get(index, id);
+        CandleModel updatedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(updatedCandleModel);
         assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
@@ -89,15 +89,10 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
         assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
         assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
 
-        TimeUnit.SECONDS.sleep(1);
+        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, index);
-
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
-
-        TimeUnit.SECONDS.sleep(1);
 
         CandleModel candleModel1 = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -117,41 +112,47 @@ public class ElasticsearchProcessingServiceImplTest extends AbstractTest {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsert(Arrays.asList(candleModel1, candleModel2), index);
+        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
+        models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
 
-        models = processingService.getAllByIndex(index);
-
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
-        TimeUnit.SECONDS.sleep(1);
+        models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
 
-        models = processingService.getByRange(FROM_DATE, TO_DATE, index);
-
-        assertNotNull(models);
-        assertFalse(models.isEmpty());
+        assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(2, models.size());
 
-        TimeUnit.SECONDS.sleep(1);
+        List<String> keys = processingService.getAllKeys(DEFAULT_INTERVAL);
 
-        List<String> indices = processingService.getAllIndices();
+        assertFalse(CollectionUtils.isEmpty(keys));
 
-        assertNotNull(indices);
-        assertFalse(indices.isEmpty());
-        assertEquals(1, indices.size());
-        assertEquals(index, indices.get(0));
+        processingService.deleteByHashKey(key, hashKey, DEFAULT_INTERVAL);
 
-        TimeUnit.SECONDS.sleep(1);
+        processingService.deleteAll();
+    }
 
-        long deletedCount = processingService.deleteAllData();
+    @Test
+    public void insertAndGetLastInitializedCandleTimeEndToEnd() {
+        LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
 
-        assertEquals(3L, deletedCount);
+        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
 
-        TimeUnit.SECONDS.sleep(1);
+        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
 
-        processingService.deleteAllIndices();
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
+
+        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
+
+        dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        processingService.deleteByDbIndex(0);
     }
 }
