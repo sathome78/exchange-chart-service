@@ -29,15 +29,15 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     public List<OrderDto> getFilteredOrders(LocalDate fromDate, LocalDate toDate, String pairName) {
-        String currencyPairClause = "cp.name = :pairName";
+        String currencyPairClause = " AND cp.name = :pairName ";
 
         String acceptedClause = StringUtils.EMPTY;
         if (Objects.nonNull(fromDate) && Objects.nonNull(toDate)) {
-            acceptedClause = " AND (o.date_acception BETWEEN :dateFrom AND :dateTo)";
+            acceptedClause = " AND (o.date_acception BETWEEN :dateFrom AND :dateTo) ";
         } else if (Objects.nonNull(fromDate)) {
-            acceptedClause = " AND o.date_acception >= :dateFrom";
+            acceptedClause = " AND o.date_acception >= :dateFrom ";
         } else if (Objects.nonNull(toDate)) {
-            acceptedClause = " AND o.date_acception <= :dateTo";
+            acceptedClause = " AND o.date_acception <= :dateTo ";
         }
 
         String sql = "SELECT " +
@@ -49,7 +49,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 "o.date_acception " +
                 "FROM EXORDERS o " +
                 "JOIN CURRENCY_PAIR cp ON cp.id = o.currency_pair_id " +
-                "WHERE "
+                "WHERE o.status_id = 3 "
                 + currencyPairClause
                 + acceptedClause;
 

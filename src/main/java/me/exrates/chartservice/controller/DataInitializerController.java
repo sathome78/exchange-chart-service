@@ -25,6 +25,7 @@ public class DataInitializerController {
         this.initializerService = initializerService;
     }
 
+    //todo: 1. add request param - list of pairs instead of one pair. 2. check pair name - exist or not
     @PostMapping("/generate")
     public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
                                                  @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,

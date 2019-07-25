@@ -11,16 +11,23 @@ spring:
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
-    tradestopic: CHART_DATA_QUEUE
+    tradestopic: CHART_DATA_QUEUE_DEV
 
 #datasource:
 #  driver-class-name: com.mysql.cj.jdbc.Driver
 #  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 #  username: root
+#password: root
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
   username: exdevdb
+#password: KQmK82dd
+#datasource:
+#  driver-class-name: com.mysql.cj.jdbc.Driver
+#  url: jdbc:mysql://birzha-aurora-preprod-cluster.cluster-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+#  username: devprod
+#password: Fh24soaf8sy3
 
 redis:
   host: localhost
@@ -51,7 +58,7 @@ candles:
   store-in-cache: 300
 
 scheduled:
-  clean-cache: 0 */5 * ? * *
+  clean-cache: 0 */30 * ? * *
 
 server:
   port: 8060

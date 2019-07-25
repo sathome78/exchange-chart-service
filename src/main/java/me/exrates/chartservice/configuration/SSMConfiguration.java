@@ -31,7 +31,6 @@ public class SSMConfiguration {
 
         @Override
         public String lookup(String s) {
-//            return "root";
             return "KQmK82dd";
         }
     }
