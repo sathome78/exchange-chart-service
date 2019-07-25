@@ -84,9 +84,9 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         final String key = RedisGeneratorUtil.generateKey(pairName);
 
-        if (to.isBefore(oldestCachedCandleTime)) {
+        if (toTime.isBefore(oldestCachedCandleTime)) {
             candleModels = getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, toTime, interval);
-        } else if (fromTime.isBefore(oldestCachedCandleTime) && to.isAfter(oldestCachedCandleTime)) {
+        } else if (fromTime.isBefore(oldestCachedCandleTime) && toTime.isAfter(oldestCachedCandleTime)) {
             candleModels = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, toTime, key, interval),
                     getCandlesFromElasticAndAggregateToInterval(pairName, fromTime, oldestCachedCandleTime.minusSeconds(1), interval))
                     .flatMap(Collection::stream)
