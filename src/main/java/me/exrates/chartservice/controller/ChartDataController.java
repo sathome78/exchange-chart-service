@@ -8,6 +8,7 @@ import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,25 +35,38 @@ public class ChartDataController {
 
 
     @GetMapping("/range")
-    public List<CandleDto> getRange(@RequestParam String currencyPair,
-                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-                                    @RequestParam IntervalType intervalType,
-                                    @RequestParam int intervalValue) {
-        BackDealInterval backDealInterval = new BackDealInterval(intervalValue, intervalType);
-        return tradeDataService.getCandles(currencyPair, from, to, backDealInterval)
+    public ResponseEntity<List<CandleDto>> getRange(@RequestParam String currencyPair,
+                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+                                                    @RequestParam IntervalType intervalType,
+                                                    @RequestParam int intervalValue) {
+        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+
+        List<CandleDto> response = tradeDataService.getCandles(currencyPair, from, to, interval)
                 .stream()
-                .map(CandleDto::fromCandleModel)
+                .map(CandleDto::toDto)
                 .sorted(Comparator.comparing(CandleDto::getClose).reversed())
                 .collect(toList());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/last")
-    public CandleDto getLast(@RequestParam String currencyPair,
-                             @RequestParam IntervalType intervalType,
-                             @RequestParam int intervalValue) {
-        BackDealInterval backDealInterval = new BackDealInterval(intervalValue, intervalType);
-        return CandleDto.fromCandleModel(tradeDataService.getCandleForCurrentTime(currencyPair, backDealInterval));
+    public ResponseEntity<CandleDto> getLast(@RequestParam String currencyPair,
+                                             @RequestParam IntervalType intervalType,
+                                             @RequestParam int intervalValue) {
+        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+
+        return ResponseEntity.ok(CandleDto.toDto(tradeDataService.getCandleForCurrentTime(currencyPair, interval)));
     }
 
+    @GetMapping("/last-date")
+    public ResponseEntity<LocalDateTime> getLastCandleTimeBeforeDate(@RequestParam String currencyPair,
+                                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+                                                                     @RequestParam IntervalType intervalType,
+                                                                     @RequestParam int intervalValue) {
+        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+
+        return ResponseEntity.ok(tradeDataService.getLastCandleTimeBeforeDate(currencyPair, to, interval));
+    }
 }

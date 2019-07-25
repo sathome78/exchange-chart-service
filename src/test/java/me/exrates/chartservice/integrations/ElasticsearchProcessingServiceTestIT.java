@@ -4,6 +4,7 @@ import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,14 +27,22 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
     @Autowired
     private ElasticsearchProcessingService processingService;
 
+    private String index;
+    private String id;
+
     @Rule
     public RetryRule retryRule = new RetryRule(3);
 
+    @Before
+    public void setUp() throws Exception {
+        index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
+        id = ElasticsearchGeneratorUtil.generateId(NOW);
+
+        processingService.deleteIndex(index);
+    }
+
     @Test
     public void endToEnd() throws Exception {
-        final String index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
-        final String id = ElasticsearchGeneratorUtil.generateId(NOW);
-
         boolean existsIndex = processingService.existsIndex(index);
 
         assertFalse(existsIndex);
@@ -159,20 +169,20 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
         TimeUnit.SECONDS.sleep(1);
 
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(TO_DATE, index);
+
+        assertNotNull(lastCandleTime);
+
+        TimeUnit.SECONDS.sleep(1);
+
         List<String> indices = processingService.getAllIndices();
 
         assertFalse(CollectionUtils.isEmpty(indices));
-        assertEquals(1, indices.size());
-        assertEquals(index, indices.get(0));
 
         TimeUnit.SECONDS.sleep(1);
 
-        long deletedCount = processingService.deleteAllData();
+        long deletedCount = processingService.deleteDataByIndex(index);
 
         assertEquals(3L, deletedCount);
-
-        TimeUnit.SECONDS.sleep(1);
-
-        processingService.deleteAllIndices();
     }
 }

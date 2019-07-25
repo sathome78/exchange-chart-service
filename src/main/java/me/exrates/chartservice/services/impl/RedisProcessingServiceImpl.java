@@ -32,7 +32,7 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.DB_INDEX_
 @Service
 public class RedisProcessingServiceImpl implements RedisProcessingService {
 
-    private static final String KEYS_PATTERN = "*";
+    private static final String ALL = "*";
 
     private Map<String, Integer> dbIndexMap;
 
@@ -52,7 +52,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     public List<String> getAllKeys(BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
-        return new ArrayList<>(jedis.keys(KEYS_PATTERN));
+        return new ArrayList<>(jedis.keys(ALL));
     }
 
     @Override
@@ -66,37 +66,54 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     public CandleModel get(String key, String hashKey, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
-        if (jedis.hexists(key, hashKey)) {
-            return getModel(jedis.hget(key, hashKey));
+        if (!jedis.hexists(key, hashKey)) {
+            return null;
         }
-        return null;
+        return getModel(jedis.hget(key, hashKey));
     }
 
     @Override
     public List<CandleModel> getAllByKey(String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
-        if (jedis.exists(key)) {
-            return jedis.hgetAll(key).values().stream()
-                    .map(this::getModel)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+        if (!jedis.exists(key)) {
+            return Collections.emptyList();
         }
-        return Collections.emptyList();
+        return jedis.hgetAll(key).values().stream()
+                .map(this::getModel)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
-        if (jedis.exists(key)) {
-            return jedis.hgetAll(key).values().stream()
-                    .map(this::getModel)
-                    .filter(Objects::nonNull)
-                    .filter(model -> model.getCandleOpenTime().isAfter(from) && model.getCandleOpenTime().isBefore(to))
-                    .collect(Collectors.toList());
+        if (!jedis.exists(key)) {
+            return Collections.emptyList();
         }
-        return Collections.emptyList();
+        return jedis.hgetAll(key).values().stream()
+                .map(this::getModel)
+                .filter(Objects::nonNull)
+                .filter(model -> (model.getCandleOpenTime().isEqual(from) || model.getCandleOpenTime().isAfter(from))
+                        && (model.getCandleOpenTime().isEqual(to) || model.getCandleOpenTime().isBefore(to)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String key, BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+
+        if (!jedis.exists(key)) {
+            return null;
+        }
+        return jedis.hgetAll(key).values().stream()
+                .map(this::getModel)
+                .filter(Objects::nonNull)
+                .map(CandleModel::getCandleOpenTime)
+                .filter(candleOpenTime -> (candleOpenTime.isEqual(date) || candleOpenTime.isBefore(date)))
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
     }
 
     @Override
@@ -127,38 +144,49 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public void deleteAll() {
+    public void deleteAllKeys() {
         dbIndexMap.values().stream()
                 .sorted(Comparator.naturalOrder())
-                .forEach(this::deleteByDbIndex);
+                .forEach(dbIndex -> deleteKeyByDbIndexAndKey(dbIndex, ALL));
     }
 
     @Override
-    public void deleteByDbIndex(int dbIndex) {
+    public void deleteKey(String key) {
+        dbIndexMap.values().stream()
+                .sorted(Comparator.naturalOrder())
+                .forEach(dbIndex -> deleteKeyByDbIndexAndKey(dbIndex, key));
+    }
+
+    @Override
+    public void deleteKeyByDbIndexAndKey(int dbIndex, String key) {
         @Cleanup Jedis jedis = getJedis(dbIndex);
 
-        jedis.keys(KEYS_PATTERN).forEach(jedis::del);
+        if (ALL.equals(key)) {
+            jedis.keys(ALL).forEach(jedis::del);
+        } else {
+            jedis.del(key);
+        }
     }
 
     @Override
-    public void deleteByHashKey(String key, String hashKey, BackDealInterval interval) {
+    public void deleteDataByHashKey(String key, String hashKey, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 
         jedis.hdel(key, hashKey);
     }
 
     @Override
-    public void insertLastInitializedCandleTimeToCache(String pairName, LocalDateTime dateTime) {
+    public void insertLastInitializedCandleTimeToCache(String key, LocalDateTime dateTime) {
         @Cleanup Jedis jedis = getJedis(0);
 
-        jedis.set(pairName, RedisGeneratorUtil.generateHashKey(dateTime));
+        jedis.set(key, RedisGeneratorUtil.generateHashKey(dateTime));
     }
 
     @Override
-    public LocalDateTime getLastInitializedCandleTimeFromCache(String pairName) {
+    public LocalDateTime getLastInitializedCandleTimeFromCache(String key) {
         @Cleanup Jedis jedis = getJedis(0);
 
-        return RedisGeneratorUtil.generateDateTime(jedis.get(pairName));
+        return RedisGeneratorUtil.generateDateTime(jedis.get(key));
     }
 
     /**

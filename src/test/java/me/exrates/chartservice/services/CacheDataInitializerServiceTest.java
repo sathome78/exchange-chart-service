@@ -162,7 +162,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .insert(any(CandleModel.class), anyString());
         doNothing()
                 .when(redisProcessingService)
-                .deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+                .deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
 
         cacheDataInitializerService.cleanCache();
 
@@ -170,7 +170,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, times(6)).getAllByKey(anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).insert(any(CandleModel.class), anyString());
-        verify(redisProcessingService, atLeastOnce()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).update(any(CandleModel.class), anyString());
     }
@@ -210,7 +210,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .update(any(CandleModel.class), anyString());
         doNothing()
                 .when(redisProcessingService)
-                .deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+                .deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
 
         cacheDataInitializerService.cleanCache();
 
@@ -218,7 +218,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, times(6)).getAllByKey(anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
-        verify(redisProcessingService, atLeastOnce()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).update(any(CandleModel.class), anyString());
     }
@@ -235,7 +235,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, never()).getAllByKey(anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
-        verify(redisProcessingService, never()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -253,6 +253,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, times(6)).getAllByKey(anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
-        verify(redisProcessingService, never()).deleteByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
     }
 }

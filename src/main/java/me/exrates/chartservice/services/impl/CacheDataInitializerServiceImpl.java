@@ -91,7 +91,8 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         }
     }
 
-    private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
+    @Override
+    public void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
         if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
@@ -120,7 +121,8 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         log.debug("--> End process of clean cache <--");
     }
 
-    private void cleanCache(BackDealInterval interval) {
+    @Override
+    public void cleanCache(BackDealInterval interval) {
         LocalDateTime currentCandleTime = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
         final LocalDateTime boundaryTime = currentCandleTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
 
@@ -143,7 +145,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                                 elasticsearchProcessingService.insert(model, key);
                             }
                         }
-                        redisProcessingService.deleteByHashKey(key, hashKey, interval);
+                        redisProcessingService.deleteDataByHashKey(key, hashKey, interval);
                     });
         });
     }

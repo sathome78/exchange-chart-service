@@ -20,7 +20,7 @@ public class CandleDto {
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime time;
 
-    public static CandleDto fromCandleModel(CandleModel candleModel) {
+    public static CandleDto toDto(CandleModel candleModel) {
         return CandleDto.builder()
                 .open(candleModel.getOpenRate())
                 .close(candleModel.getCloseRate())

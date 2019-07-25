@@ -6,6 +6,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +30,22 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
     @Autowired
     private RedisProcessingService processingService;
 
+    private String key;
+    private String hashKey;
+
     @Rule
     public RetryRule retryRule = new RetryRule(3);
 
+    @Before
+    public void setUp() throws Exception {
+        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+        hashKey = RedisGeneratorUtil.generateHashKey(NOW);
+
+        processingService.deleteKey(key);
+    }
+
     @Test
     public void endToEnd() {
-        final String key = RedisGeneratorUtil.generateKey(TEST_PAIR);
-        final String hashKey = RedisGeneratorUtil.generateHashKey(NOW);
-
         boolean exists = processingService.exists(key, DEFAULT_INTERVAL);
 
         assertFalse(exists);
@@ -124,35 +133,37 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(2, models.size());
 
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(TO_DATE, key, DEFAULT_INTERVAL);
+
+        assertNotNull(lastCandleTime);
+
         List<String> keys = processingService.getAllKeys(DEFAULT_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(keys));
 
-        processingService.deleteByHashKey(key, hashKey, DEFAULT_INTERVAL);
-
-        processingService.deleteAll();
+        processingService.deleteDataByHashKey(key, hashKey, DEFAULT_INTERVAL);
     }
 
     @Test
     public void insertAndGetLastInitializedCandleTimeEndToEnd() {
         LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(key, dateTimeWithoutNano);
 
-        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
+        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(key);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
         dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(TEST_PAIR, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(key, dateTimeWithoutNano);
 
-        dateTime = processingService.getLastInitializedCandleTimeFromCache(TEST_PAIR);
+        dateTime = processingService.getLastInitializedCandleTimeFromCache(key);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
-        processingService.deleteByDbIndex(0);
+        processingService.deleteKeyByDbIndexAndKey(0, key);
     }
 }

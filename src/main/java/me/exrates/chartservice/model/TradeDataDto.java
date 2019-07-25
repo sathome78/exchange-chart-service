@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Tolerate;
 import me.exrates.chartservice.model.serializers.CurrencyPairDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeSerializer;
