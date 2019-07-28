@@ -26,10 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
-import static me.exrates.chartservice.converters.CandleDataConverter.merge;
-import static me.exrates.chartservice.converters.CandleDataConverter.reduceToCandle;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
@@ -74,7 +71,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     @Override
     public List<CandleModel> getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
-        if (nonNull(from) && nonNull(to) && from.isAfter(to)) {
+        if (isNull(from) || isNull(to) || from.isAfter(to)) {
             return Collections.emptyList();
         }
 
@@ -91,16 +88,20 @@ public class TradeDataServiceImpl implements TradeDataService {
             candleModels = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, to, key, interval),
                     getCandlesFromElasticAndAggregateToInterval(pairName, from, oldestCachedCandleTime.minusSeconds(1), interval))
                     .flatMap(Collection::stream)
+                    .distinct()
                     .collect(Collectors.toList());
         } else {
             candleModels = redisProcessingService.getByRange(from, to, key, interval);
         }
+
+        CandleDataConverter.fixOpenRate(candleModels);
+
         return candleModels;
     }
 
     @Override
     public LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime date, BackDealInterval interval) {
-        if (nonNull(date)) {
+        if (isNull(date)) {
             return null;
         }
 
@@ -135,19 +136,21 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
-            CandleModel reducedCandle = reduceToCandle(dto);
-            if (isNull(reducedCandle)) {
+            CandleModel newCandle = CandleDataConverter.reduceToCandle(dto);
+            if (isNull(newCandle)) {
                 return;
             }
 
             supportedIntervals.forEach(interval -> {
-                LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(reducedCandle.getCandleOpenTime(), interval);
+                LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
+
+                newCandle.setCandleOpenTime(candleTime);
 
                 final String key = RedisGeneratorUtil.generateKey(pairName);
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
 
                 CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
-                CandleModel mergedCandle = merge(cachedCandleModel, reducedCandle, interval);
+                CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
                 redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
             });
         });
@@ -156,6 +159,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     private LocalDateTime getCandleTimeByCount(long count, BackDealInterval interval) {
         LocalDateTime timeForLastCandle = getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
         long candlesFromBeginInterval = interval.getIntervalValue() * count;
+
         return timeForLastCandle.minus(candlesFromBeginInterval, interval.getIntervalType().getCorrespondingTimeUnit());
     }
 

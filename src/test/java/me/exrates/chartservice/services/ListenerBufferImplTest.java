@@ -3,6 +3,7 @@ package me.exrates.chartservice.services;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.impl.ListenerBufferImpl;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -99,8 +101,15 @@ public class ListenerBufferImplTest extends AbstractTest {
         int counter = 0;
         while (counter < GENERATED_TRADES_COUNT) {
             counter++;
-            trades.add(TradeDataDto.createTradeWithRandomTime(currencyPair));
+            trades.add(createTradeWithRandomTime(currencyPair));
         }
         return trades;
+    }
+
+    public TradeDataDto createTradeWithRandomTime(String currencyPair) {
+        TradeDataDto tradeDataDto = new TradeDataDto();
+        tradeDataDto.setPairName(currencyPair);
+        tradeDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
+        return tradeDataDto;
     }
 }

@@ -2,18 +2,21 @@ package me.exrates.chartservice.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import me.exrates.chartservice.model.serializers.CurrencyPairDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeDeserializer;
 import me.exrates.chartservice.model.serializers.LocalDateTimeSerializer;
-import org.apache.commons.math3.random.RandomDataGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
+@Builder(builderClassName = "Builder")
 @NoArgsConstructor
+@AllArgsConstructor
 public class TradeDataDto {
 
     private int orderId;
@@ -34,19 +37,5 @@ public class TradeDataDto {
         this.amountBase = order.getAmountBase();
         this.amountConvert = order.getAmountConvert();
         this.tradeDate = order.getDateAcception();
-    }
-
-    public TradeDataDto(String pairName, BigDecimal exrate, BigDecimal amountBase, LocalDateTime tradeDate) {
-        this.pairName = pairName;
-        this.exrate = exrate;
-        this.amountBase = amountBase;
-        this.tradeDate = tradeDate;
-    }
-
-    public static TradeDataDto createTradeWithRandomTime(String currencyPair) {
-        TradeDataDto tradeDataDto = new TradeDataDto();
-        tradeDataDto.setPairName(currencyPair);
-        tradeDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
-        return tradeDataDto;
     }
 }

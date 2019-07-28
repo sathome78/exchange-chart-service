@@ -58,11 +58,11 @@ public class OrderRepositoryImpl implements OrderRepository {
 
         if (Objects.nonNull(fromDate) && Objects.nonNull(toDate)) {
             params.put("dateFrom", fromDate.atTime(LocalTime.MIN));
-            params.put("dateTo", toDate.atTime(LocalTime.MAX));
+            params.put("dateTo", toDate.minusDays(1).atTime(LocalTime.MAX));
         } else if (Objects.nonNull(fromDate)) {
             params.put("dateFrom", fromDate.atTime(LocalTime.MIN));
         } else if (Objects.nonNull(toDate)) {
-            params.put("dateTo", toDate.atTime(LocalTime.MAX));
+            params.put("dateTo", toDate.minusDays(1).atTime(LocalTime.MAX));
         }
 
         return slaveJdbcTemplate.query(sql, params, (rs, rowNum) -> OrderDto.builder()
