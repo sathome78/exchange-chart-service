@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
@@ -93,9 +95,6 @@ public class TradeDataServiceImpl implements TradeDataService {
         } else {
             candleModels = redisProcessingService.getByRange(from, to, key, interval);
         }
-
-        CandleDataConverter.fixOpenRate(candleModels);
-
         return candleModels;
     }
 
@@ -142,9 +141,13 @@ public class TradeDataServiceImpl implements TradeDataService {
             }
 
             supportedIntervals.forEach(interval -> {
-                LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
-
+                final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
                 newCandle.setCandleOpenTime(candleTime);
+
+                final BigDecimal closeRate = getCloseRateFromPreviousCandle(pairName, candleTime, interval);
+                if (nonNull(closeRate)) {
+                    newCandle.setOpenRate(closeRate);
+                }
 
                 final String key = RedisGeneratorUtil.generateKey(pairName);
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
@@ -154,6 +157,21 @@ public class TradeDataServiceImpl implements TradeDataService {
                 redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
             });
         });
+    }
+
+    private BigDecimal getCloseRateFromPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
+        final String key = RedisGeneratorUtil.generateKey(pairName);
+
+        LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleTime, key, interval);
+        if (isNull(lastCandleTimeBeforeDate)) {
+            return null;
+        }
+
+        final String hashKey = RedisGeneratorUtil.generateHashKey(lastCandleTimeBeforeDate);
+
+        CandleModel previousModel = redisProcessingService.get(key, hashKey, interval);
+
+        return previousModel.getCloseRate();
     }
 
     private LocalDateTime getCandleTimeByCount(long count, BackDealInterval interval) {

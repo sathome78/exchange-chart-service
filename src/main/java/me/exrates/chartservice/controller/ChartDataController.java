@@ -45,7 +45,6 @@ public class ChartDataController {
         List<CandleDto> response = tradeDataService.getCandles(currencyPair, from, to, interval)
                 .stream()
                 .map(CandleDto::toDto)
-                .sorted(Comparator.comparing(CandleDto::getClose).reversed())
                 .collect(toList());
 
         return ResponseEntity.ok(response);
