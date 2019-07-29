@@ -22,13 +22,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
@@ -97,7 +95,7 @@ public class TradeDataServiceImpl implements TradeDataService {
             models = redisProcessingService.getByRange(from, to, key, interval);
         }
 
-        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+        CandleDataConverter.fixOpenRate(models);
 
         return models;
     }
@@ -148,10 +146,10 @@ public class TradeDataServiceImpl implements TradeDataService {
                 final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
                 newCandle.setCandleOpenTime(candleTime);
 
-                final BigDecimal closeRate = getCloseRateFromPreviousCandle(pairName, candleTime, interval);
-                if (nonNull(closeRate)) {
-                    newCandle.setOpenRate(closeRate);
-                }
+//                final BigDecimal closeRate = getCloseRateFromPreviousCandle(pairName, candleTime, interval);
+//                if (nonNull(closeRate)) {
+//                    newCandle.setOpenRate(closeRate);
+//                }
 
                 final String key = RedisGeneratorUtil.generateKey(pairName);
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
