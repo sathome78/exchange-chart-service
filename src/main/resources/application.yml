@@ -59,6 +59,9 @@ elasticsearch:
   host: localhost
   port: 9200
 
+swagger:
+  enabled: true
+
 candles:
   store-in-cache: 300
 
