@@ -53,9 +53,9 @@ public class DataInitializerServiceImpl implements DataInitializerService {
         List<CandleModel> models = CandleDataConverter.convert(orders);
         log.debug("<<< GENERATOR >>> End transform orders to candles");
 
-//        log.debug("<<< GENERATOR >>> Start fix candles open rate");
-//        CandleDataConverter.fixOpenRate(models);
-//        log.debug("<<< GENERATOR >>> End fix candles open rate");
+        log.debug("<<< GENERATOR >>> Start fix candles open rate");
+        CandleDataConverter.fixOpenRate(models);
+        log.debug("<<< GENERATOR >>> End fix candles open rate");
 
         final String index = ElasticsearchGeneratorUtil.generateIndex(pairName);
 
