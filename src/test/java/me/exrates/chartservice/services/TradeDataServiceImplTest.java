@@ -181,14 +181,14 @@ public class TradeDataServiceImplTest extends AbstractTest {
 
     @Test
     public void defineAndSaveLastInitializedCandleTime() {
-        List<CandleModel> candleModels = new ArrayList<>();
+        List<CandleModel> models = new ArrayList<>();
         LocalDateTime time = TimeUtil.getNearestTimeBeforeForMinInterval(LocalDateTime.now());
 
-        candleModels.add(buildDefaultCandle(time));
-        candleModels.add(buildDefaultCandle(time.plusMinutes(1)));
-        candleModels.add(buildDefaultCandle(time.plusMinutes(3)));
+        models.add(buildDefaultCandle(time));
+        models.add(buildDefaultCandle(time.plusMinutes(1)));
+        models.add(buildDefaultCandle(time.plusMinutes(3)));
 
-        tradeDataService.defineAndSaveLastInitializedCandleTime(BTC_USD, candleModels);
+        tradeDataService.defineAndSaveLastInitializedCandleTime(BTC_USD, models);
         verify(redisProcessingService, times(1))
                 .insertLastInitializedCandleTimeToCache(BTC_USD, time.plusMinutes(3));
     }

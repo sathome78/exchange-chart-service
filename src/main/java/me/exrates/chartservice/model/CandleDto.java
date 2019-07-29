@@ -30,5 +30,4 @@ public class CandleDto {
                 .time(candleModel.getCandleOpenTime())
                 .build();
     }
-
 }

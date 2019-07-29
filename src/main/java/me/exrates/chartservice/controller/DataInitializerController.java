@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Log4j2
 @RequestMapping("/data-initializer")
@@ -25,15 +26,14 @@ public class DataInitializerController {
         this.initializerService = initializerService;
     }
 
-    //todo: 1. add request param - list of pairs instead of one pair. 2. check pair name - exist or not
     @PostMapping("/generate")
     public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
                                                  @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-                                                 @RequestParam("pair_name") String pairName) {
+                                                 @RequestParam("pairs") List<String> pairs) {
         try {
-            log.debug("Criteria - from: {}, to: {}, pair name: {}", fromDate, toDate, pairName);
+            log.debug("Criteria - from: {}, to: {}, pairs: {}", fromDate, toDate, pairs.toString());
 
-            initializerService.generate(fromDate, toDate, pairName);
+            pairs.forEach(pair -> initializerService.generate(fromDate, toDate, pair));
             return ResponseEntity.ok().build();
         } catch (Exception ex) {
             log.error("Some error occurred during generate chart data", ex);

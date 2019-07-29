@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,19 +84,22 @@ public class TradeDataServiceImpl implements TradeDataService {
         final LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
         final String key = RedisGeneratorUtil.generateKey(pairName);
 
-        List<CandleModel> candleModels;
+        List<CandleModel> models;
         if (to.isBefore(oldestCachedCandleTime)) {
-            candleModels = getCandlesFromElasticAndAggregateToInterval(pairName, from, to, interval);
+            models = getCandlesFromElasticAndAggregateToInterval(pairName, from, to, interval);
         } else if (from.isBefore(oldestCachedCandleTime) && to.isAfter(oldestCachedCandleTime)) {
-            candleModels = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, to, key, interval),
+            models = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, to, key, interval),
                     getCandlesFromElasticAndAggregateToInterval(pairName, from, oldestCachedCandleTime.minusSeconds(1), interval))
                     .flatMap(Collection::stream)
                     .distinct()
                     .collect(Collectors.toList());
         } else {
-            candleModels = redisProcessingService.getByRange(from, to, key, interval);
+            models = redisProcessingService.getByRange(from, to, key, interval);
         }
-        return candleModels;
+
+        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
+        return models;
     }
 
     @Override

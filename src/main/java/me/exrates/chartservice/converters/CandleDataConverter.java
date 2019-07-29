@@ -29,12 +29,12 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 public final class CandleDataConverter {
 
     /**
-     * @param candleModels - list of candles for aggregating to backDealInterval
+     * @param models - list of candles for aggregating to backDealInterval
      * @param interval     - interval for aggregating candles
      * @return unsorted list of candles, aggregated to specified backDealInterval
      */
-    public static List<CandleModel> convertByInterval(List<CandleModel> candleModels, BackDealInterval interval) {
-        return candleModels.stream()
+    public static List<CandleModel> convertByInterval(List<CandleModel> models, BackDealInterval interval) {
+        return models.stream()
                 .collect(Collectors.groupingBy(p -> getNearestBackTimeForBackdealInterval(p.getCandleOpenTime(), interval)))
                 .entrySet().stream()
                 .map(entry -> {
