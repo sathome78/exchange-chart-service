@@ -6,6 +6,7 @@ import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ListenerBuffer;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,18 +28,19 @@ public class ListenerBufferImpl implements ListenerBuffer {
     private Map<String, List<TradeDataDto>> cacheMap = new ConcurrentHashMap<>();
     private Map<String, Semaphore> synchronizersMap = new ConcurrentHashMap<>();
     private final Object safeSync = new Object();
-    private XSync<String> xSync = new XSync<>();
     private static final Integer BUFFER_DELAY = 1000;
-
 
     private final TradeDataService tradeDataService;
     private final RedisProcessingService redisProcessingService;
+    private final XSync<String> xSync;
 
     @Autowired
     public ListenerBufferImpl(TradeDataService tradeDataService,
-                              RedisProcessingService redisProcessingService) {
+                              RedisProcessingService redisProcessingService,
+                              XSync<String> xSync) {
         this.tradeDataService = tradeDataService;
         this.redisProcessingService = redisProcessingService;
+        this.xSync = xSync;
     }
 
     @Override
@@ -82,7 +84,9 @@ public class ListenerBufferImpl implements ListenerBuffer {
     }
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeCandleTime) {
-        LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(pairName);
+        final String key = RedisGeneratorUtil.generateKey(pairName);
+
+        LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(key);
         return isNull(initTime) || tradeCandleTime.isAfter(initTime);
     }
 }

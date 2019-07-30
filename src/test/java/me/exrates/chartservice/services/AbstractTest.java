@@ -1,8 +1,10 @@
 package me.exrates.chartservice.services;
 
+import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.configuration.CommonConfiguration;
 import me.exrates.chartservice.configuration.RedisConfiguration;
 import me.exrates.chartservice.model.BackDealInterval;
+import me.exrates.chartservice.model.enums.IntervalType;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +32,15 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTE
 public abstract class AbstractTest {
 
     static final String TEST_PAIR = "COIN1/COIN2";
+    static final int CANDLES_TO_STORE = 300;
+    static final String BTC_USD = "btc_usd";
+    static final String BTC_USDT = "btc_usdt";
+    static final BackDealInterval M5_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
+    static final BackDealInterval M15_INTERVAL = new BackDealInterval(15, IntervalType.MINUTE);
+    static final BackDealInterval M30_INTERVAL = new BackDealInterval(30, IntervalType.MINUTE);
+    static final BackDealInterval ONE_HOUR_INTERVAL = new BackDealInterval(1, IntervalType.HOUR);
+    static final BackDealInterval SIX_HOUR_INTERVAL = new BackDealInterval(6, IntervalType.HOUR);
+    static final BackDealInterval ONE_DAY_INTERVAL = new BackDealInterval(1, IntervalType.DAY);
 
     @Value("${candles.store-in-cache:300}")
     long candlesToStoreInCache;
@@ -40,4 +51,6 @@ public abstract class AbstractTest {
     @Autowired
     @Qualifier(NEXT_INTERVAL_MAP)
     Map<String, String> nextIntervalMap;
+    @Autowired
+    XSync<String> xSync;
 }

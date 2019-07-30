@@ -10,6 +10,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
@@ -39,14 +41,36 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
     @Autowired
     private CacheDataInitializerService cacheDataInitializerService;
 
+    private String index;
+    private String key;
+
     @Rule
     public RetryRule retryRule = new RetryRule(3);
 
+    @Before
+    public void setUp() throws Exception {
+        index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
+        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+
+        // clear elasticsearch cluster
+
+        elasticsearchProcessingService.deleteIndex(index);
+
+        // clear redis cache
+
+        redisProcessingService.deleteKey(index);
+
+        redisProcessingService.deleteKeyByDbIndexAndKey(0, index);
+    }
+
     @Test
     public void updateCache_ok() throws Exception {
-        final String index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
-
         //initialize data in elasticsearch cluster
+
+        String createdIndex = elasticsearchProcessingService.createIndex(index);
+
+        assertNotNull(createdIndex);
+        assertEquals(index, createdIndex);
 
         CandleModel candleModel = CandleModel.builder()
                 .openRate(BigDecimal.TEN)
@@ -61,7 +85,7 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //update redis cache for all available intervals
 
-        cacheDataInitializerService.updateCache();
+        cacheDataInitializerService.updateCacheByKey(index);
 
         TimeUnit.SECONDS.sleep(5);
 
@@ -102,22 +126,10 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
         assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_DAY_INTERVAL), candles.get(0).getCandleOpenTime());
-
-        // clear elasticsearch cluster
-
-        elasticsearchProcessingService.deleteAllData();
-
-        elasticsearchProcessingService.deleteAllIndices();
-
-        // clear redis cache
-
-        redisProcessingService.deleteAll();
     }
 
     @Test
     public void cleaneCache_ok_with_insert() throws Exception {
-        final String key = RedisGeneratorUtil.generateKey(TEST_PAIR);
-
         //initialize data in redis cache
 
         CandleModel candleModel = CandleModel.builder()
@@ -133,7 +145,7 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //clean redis cache for all available intervals
 
-        cacheDataInitializerService.cleanCache();
+        cacheDataInitializerService.cleanCache(FIVE_MINUTE_INTERVAL);
 
         TimeUnit.SECONDS.sleep(5);
 
@@ -150,22 +162,10 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
         assertFalse(CollectionUtils.isEmpty(candles));
         assertEquals(1, candles.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
-
-        // clear elasticsearch cluster
-
-        elasticsearchProcessingService.deleteAllData();
-
-        elasticsearchProcessingService.deleteAllIndices();
-
-        // clear redis cache
-
-        redisProcessingService.deleteAll();
     }
 
     @Test
     public void cleaneCache_ok_with_update() throws Exception {
-        final String key = RedisGeneratorUtil.generateKey(TEST_PAIR);
-
         //initialize data in redis cache
 
         CandleModel candleModel = CandleModel.builder()
@@ -194,7 +194,7 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //clean redis cache for all available intervals
 
-        cacheDataInitializerService.cleanCache();
+        cacheDataInitializerService.cleanCache(FIVE_MINUTE_INTERVAL);
 
         TimeUnit.SECONDS.sleep(5);
 
@@ -219,15 +219,5 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
         assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getHighRate()));
         assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getLowRate()));
         assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getVolume()));
-
-        // clear elasticsearch cluster
-
-        elasticsearchProcessingService.deleteAllData();
-
-        elasticsearchProcessingService.deleteAllIndices();
-
-        // clear redis cache
-
-        redisProcessingService.deleteAll();
     }
 }

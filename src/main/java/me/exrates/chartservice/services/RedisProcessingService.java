@@ -18,17 +18,21 @@ public interface RedisProcessingService {
 
     List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval);
 
+    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String key, BackDealInterval interval);
+
     void batchInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval);
 
     void insertOrUpdate(CandleModel model, String key, BackDealInterval interval);
 
-    void deleteAll();
+    void deleteAllKeys();
 
-    void deleteByDbIndex(int dbIndex);
+    void deleteKey(String key);
 
-    void deleteByHashKey(String key, String hashKey, BackDealInterval interval);
+    void deleteKeyByDbIndexAndKey(int dbIndex, String key);
 
-    void insertLastInitializedCandleTimeToCache(String pairName, LocalDateTime dateTime);
+    void deleteDataByHashKey(String key, String hashKey, BackDealInterval interval);
 
-    LocalDateTime getLastInitializedCandleTimeFromCache(String pairName);
+    void insertLastInitializedCandleTimeToCache(String key, LocalDateTime dateTime);
+
+    LocalDateTime getLastInitializedCandleTimeFromCache(String key);
 }

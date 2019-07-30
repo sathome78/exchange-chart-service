@@ -17,6 +17,8 @@ public interface ElasticsearchProcessingService {
 
     List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index);
 
+    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String index);
+
     void batchInsertOrUpdate(List<CandleModel> models, String index);
 
     void insert(CandleModel model, String index);

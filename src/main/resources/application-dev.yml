@@ -46,6 +46,9 @@ elasticsearch:
   host: 172.10.12.21
   port: 9200
 
+swagger:
+  enabled: true
+
 candles:
   store-in-cache: 300
 

@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 @Configuration
 public class CommonConfiguration {
 
+    public static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
+
     public static final String JSON_MAPPER = "jsonMapper";
 
     public static final String ALL_SUPPORTED_INTERVALS_LIST = "allSupportedIntervalsList";

@@ -33,6 +33,8 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.Max;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -149,7 +151,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
                 .query(QueryBuilders.rangeQuery("time_in_millis")
                         .gte(Timestamp.valueOf(fromDate).getTime())
-                        .lt(Timestamp.valueOf(toDate).getTime()));
+                        .lte(Timestamp.valueOf(toDate).getTime()));
 
         SearchRequest request = new SearchRequest(index)
                 .scroll(scroll)
@@ -178,6 +180,32 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String index) {
+        final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                .query(QueryBuilders
+                        .rangeQuery("time_in_millis")
+                        .lte(Timestamp.valueOf(date).getTime()))
+                .aggregation(AggregationBuilders
+                        .max("last_candle_time")
+                        .field("time_in_millis"));
+
+        SearchRequest request = new SearchRequest(index)
+                .source(sourceBuilder);
+
+        try {
+            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+
+            Max lastCandleTime = response.getAggregations().get("last_candle_time");
+
+            return new Timestamp((long) lastCandleTime.getValue()).toLocalDateTime();
+        } catch (IOException ex) {
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+
+            return null;
         }
     }
 
@@ -285,7 +313,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             if (!response.isAcknowledged()) {
                 log.warn("Problem with deleting index: {}", index);
             }
-        } catch (IOException ex) {
+        } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
         }
     }

@@ -4,7 +4,6 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
@@ -26,18 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
+import static me.exrates.chartservice.configuration.CommonConfiguration.DEFAULT_INTERVAL;
 import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTERVAL_MAP;
 
 @Log4j2
 @EnableScheduling
 @Service("cacheDataInitService")
 public class CacheDataInitializerServiceImpl implements CacheDataInitializerService {
-
-    private static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
@@ -91,16 +88,15 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         }
     }
 
-    private void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
+    @Override
+    public void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
         if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
             List<CandleModel> finalModels = models;
             CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
         }
-        models = models.stream()
-                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .collect(Collectors.toList());
+        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
         redisProcessingService.batchInsertOrUpdate(models, key, interval);
 
@@ -120,7 +116,8 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         log.debug("--> End process of clean cache <--");
     }
 
-    private void cleanCache(BackDealInterval interval) {
+    @Override
+    public void cleanCache(BackDealInterval interval) {
         LocalDateTime currentCandleTime = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
         final LocalDateTime boundaryTime = currentCandleTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
 
@@ -143,7 +140,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                                 elasticsearchProcessingService.insert(model, key);
                             }
                         }
-                        redisProcessingService.deleteByHashKey(key, hashKey, interval);
+                        redisProcessingService.deleteDataByHashKey(key, hashKey, interval);
                     });
         });
     }
