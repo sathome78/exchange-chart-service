@@ -14,7 +14,6 @@ spring:
   devtools:
     restart:
       enabled: true
-#  change to stage
   rabbitmq:
     username: developer
     password: eehei4AeJein
@@ -22,16 +21,15 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE_STAGE
 
-#  change to stage
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: exdevdb
+  password: KQmK82dd
 
-#  change to stage
 redis:
-  host: localhost
-  port: 6379
+  host: redis-chart-staging.service
+  port: 6382
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -46,15 +44,9 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
-#  change to stage
-ssm:
-  mode: dev
-  path: /exrates/core-service/test/mysql.token
-
-#  change to stage
 elasticsearch:
-  host: localhost
-  port: 9200
+  host: elastic-chart-staging.service
+  port: 9202
 
 swagger:
   enabled: true

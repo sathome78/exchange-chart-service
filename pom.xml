@@ -80,11 +80,6 @@
             <version>7.2.0</version>
         </dependency>
         <dependency>
-            <groupId>me.exrates</groupId>
-            <artifactId>ssm-integration</artifactId>
-            <version>1.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>23.0</version>
