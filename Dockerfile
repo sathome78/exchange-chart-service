@@ -8,5 +8,8 @@ COPY ./target/chart.jar chart.jar
 VOLUME ${APP_PATH}/indexes
 RUN sh -c 'touch chart.jar'
 
+ARG CONFIG_ACTIVE_PROFILE="-Dspring.profiles.active="${ENVIRONMENT}
+
 EXPOSE ${PORT}
-ENTRYPOINT ["java","-jar","-Dspring.profiles.active=${ENVIRONMENT}","chart.jar"]
+
+CMD java -jar chart.jar ${CONFIG_ACTIVE_PROFILE}
