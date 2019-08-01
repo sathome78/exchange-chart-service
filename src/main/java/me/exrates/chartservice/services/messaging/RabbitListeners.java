@@ -33,14 +33,15 @@ public class RabbitListeners {
 
     @RabbitListener(id = "${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
     public void receiveTrade(TradeDataDto message) {
-        log.debug("received message {}", message);
+        log.info("Received message from core service {}", message);
 
+        log.info("Start processing new data: pair name: {}, trade date: {}", message.getPairName(), message.getTradeDate());
         listenerBuffer.receive(message);
+        log.info("End processing new trade data");
     }
 
     @PreDestroy
     private void stop() {
-
         final String property = Objects.requireNonNull(environment.getProperty("spring.rabbitmq.tradestopic"), "Property 'spring.rabbitmq.tradestopic' should not be null");
 
         if (registry.getListenerContainer(property).isRunning()) {
@@ -51,8 +52,8 @@ public class RabbitListeners {
             try {
                 Thread.sleep(5000);
                 counter++;
-            } catch (InterruptedException e) {
-                log.error(e);
+            } catch (InterruptedException ex) {
+                log.error(ex);
             }
         } while (!listenerBuffer.isReadyToClose() || counter < 10);
     }

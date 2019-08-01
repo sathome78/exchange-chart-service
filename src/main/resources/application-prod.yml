@@ -4,7 +4,6 @@ spring:
   devtools:
     restart:
       enabled: true
-#  change to prod
   rabbitmq:
     username: developer
     password: eehei4AeJein
@@ -12,15 +11,15 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE_PROD
 
-#  change to prod
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://exprod-3-cluster.cluster-ro-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: okostiukevych
+  password: 943AJNzKGiUsWtqU
 
 #  change to prod
 redis:
-  host: localhost
+  host: redis-chart-prod.service
   port: 6379
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
@@ -37,13 +36,8 @@ redis:
     6 HOUR: 1 DAY;
 
 #  change to prod
-ssm:
-  mode: dev
-  path: /exrates/core-service/prod/mysql.token
-
-#  change to prod
 elasticsearch:
-  host: localhost
+  host: elastic-chart-prod.service
   port: 9200
 
 swagger:

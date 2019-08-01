@@ -4,7 +4,6 @@ spring:
   devtools:
     restart:
       enabled: true
-#  change to preprod
   rabbitmq:
     username: developer
     password: eehei4AeJein
@@ -12,16 +11,16 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE_PREPROD
 
-#  change to preprod
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: root
+  url: jdbc:mysql://birzha-aurora-preprod-cluster.cluster-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: devprod
+  password: Fh24soaf8sy3
 
 #  change to preprod
 redis:
-  host: localhost
-  port: 6379
+  host: redis-chart-preprod.service
+  port: 6381
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -37,14 +36,9 @@ redis:
     6 HOUR: 1 DAY;
 
 #  change to preprod
-ssm:
-  mode: dev
-  path: /exrates/core-service/preprod/mysql.token
-
-#  change to preprod
 elasticsearch:
-  host: localhost
-  port: 9200
+  host: elastic-chart-preprod.service
+  port: 9201
 
 swagger:
   enabled: true

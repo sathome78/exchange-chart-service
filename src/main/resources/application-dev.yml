@@ -4,7 +4,6 @@ spring:
   devtools:
     restart:
       enabled: true
-#  change to dev
   rabbitmq:
     username: developer
     password: eehei4AeJein
@@ -12,16 +11,15 @@ spring:
     port: 5672
     tradestopic: CHART_DATA_QUEUE_DEV
 
-#  change to dev
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
   username: exdevdb
+  password: KQmK82dd
 
-#  change to dev
 redis:
-  host: 172.10.12.21
-  port: 6379
+  host: redis-chart-dev.service
+  port: 6383
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -36,15 +34,9 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
-#  change to dev
-ssm:
-  mode: dev
-  path: /exrates/core-service/test/mysql.token
-
-#  change to dev
 elasticsearch:
-  host: 172.10.12.21
-  port: 9200
+  host: elastic-chart-dev.service
+  port: 9203
 
 swagger:
   enabled: true
