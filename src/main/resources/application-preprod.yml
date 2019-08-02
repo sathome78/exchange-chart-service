@@ -5,9 +5,9 @@ spring:
     restart:
       enabled: true
   rabbitmq:
-    username: developer
-    password: eehei4AeJein
-    host: rabbitmq-dev.service
+    username: preprod
+    password: eehVBU21x
+    host: rabbitmq-preprod.service
     port: 5672
     tradestopic: CHART_DATA_QUEUE_PREPROD
 
