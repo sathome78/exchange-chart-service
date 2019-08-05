@@ -3,6 +3,7 @@ package me.exrates.chartservice.controller;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleDto;
+import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.TradeDataService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
 
 @Log4j2
@@ -55,7 +57,11 @@ public class ChartDataController {
                                              @RequestParam int intervalValue) {
         final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
 
-        return ResponseEntity.ok(CandleDto.toDto(tradeDataService.getCandleForCurrentTime(currencyPair, interval)));
+        CandleModel model = tradeDataService.getCandleForCurrentTime(currencyPair, interval);
+        if (isNull(model)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(CandleDto.toDto(model));
     }
 
     @GetMapping("/last-date")
