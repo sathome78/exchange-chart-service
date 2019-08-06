@@ -59,4 +59,4 @@ scheduled:
 
 logging:
   level:
-    ROOT: debug
+    me.exrates.chartservice: debug
