@@ -16,7 +16,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Log4j2
@@ -43,7 +42,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         log.debug("<<< GENERATOR >>> Start get closed orders from database");
         final List<OrderDto> orders = orderService.getFilteredOrders(fromDate, toDate, pairName);
-        log.debug("<<< GENERATOR >>> End get closed orders from database");
+        log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
 
         if (CollectionUtils.isEmpty(orders)) {
             return;
@@ -51,7 +50,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
         log.debug("<<< GENERATOR >>> Start transform orders to candles");
         List<CandleModel> models = CandleDataConverter.convert(orders);
-        log.debug("<<< GENERATOR >>> End transform orders to candles");
+        log.debug("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
 
         log.debug("<<< GENERATOR >>> Start fix candles open rate");
         CandleDataConverter.fixOpenRate(models);
@@ -62,10 +61,6 @@ public class DataInitializerServiceImpl implements DataInitializerService {
         log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
         elasticsearchProcessingService.batchInsertOrUpdate(models, index);
         log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
-
-        log.debug("<<< GENERATOR >>> Start process of generate all intervals cache for: {}", pairName);
-        cacheDataInitializerService.updateCacheByKey(index);
-        log.debug("<<< GENERATOR >>> End process of generate all intervals cache for: {}", pairName);
 
         log.debug("<<< GENERATOR >>> End generate data for cache for: {}, Time: {} ms", pairName, stopWatch.getTime(TimeUnit.SECONDS));
     }

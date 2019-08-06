@@ -46,3 +46,4 @@ candles:
 
 scheduled:
   clean-cache: 0 */30 * ? * *
+  update-cache: 0 */5 * ? * *
