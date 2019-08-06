@@ -63,8 +63,9 @@ public class DataInitializerServiceImpl implements DataInitializerService {
         elasticsearchProcessingService.batchInsertOrUpdate(models, index);
         log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
-        log.debug("<<< GENERATOR >>> Start async process of generate all intervals cache for: {}", pairName);
-        CompletableFuture.runAsync(() -> cacheDataInitializerService.updateCacheByKey(index));
+        log.debug("<<< GENERATOR >>> Start process of generate all intervals cache for: {}", pairName);
+        cacheDataInitializerService.updateCacheByKey(index);
+        log.debug("<<< GENERATOR >>> End process of generate all intervals cache for: {}", pairName);
 
         log.debug("<<< GENERATOR >>> End generate data for cache for: {}, Time: {} ms", pairName, stopWatch.getTime(TimeUnit.SECONDS));
     }
