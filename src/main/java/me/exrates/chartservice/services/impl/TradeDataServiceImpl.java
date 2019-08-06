@@ -166,15 +166,31 @@ public class TradeDataServiceImpl implements TradeDataService {
     private BigDecimal getCloseRateFromPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
         final String key = RedisGeneratorUtil.generateKey(pairName);
 
-        LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleTime, key, interval);
-        if (isNull(lastCandleTimeBeforeDate)) {
+        LocalDateTime lastInitializedCandleTimeFromCache = redisProcessingService.getLastInitializedCandleTimeFromCache(key);
+        if (isNull(lastInitializedCandleTimeFromCache)) {
             return null;
         }
 
-        final String hashKey = RedisGeneratorUtil.generateHashKey(lastCandleTimeBeforeDate);
+        CandleModel previousModel;
+        if (candleTime.isAfter(lastInitializedCandleTimeFromCache)) {
+            LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleTime, key, interval);
+            if (isNull(lastCandleTimeBeforeDate)) {
+                return null;
+            }
 
-        CandleModel previousModel = redisProcessingService.get(key, hashKey, interval);
+            final String hashKey = RedisGeneratorUtil.generateHashKey(lastCandleTimeBeforeDate);
 
+            previousModel = redisProcessingService.get(key, hashKey, interval);
+        } else {
+            LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleTime, key);
+            if (isNull(lastCandleTimeBeforeDate)) {
+                return null;
+            }
+
+            final String id = ElasticsearchGeneratorUtil.generateId(lastCandleTimeBeforeDate);
+
+            previousModel = elasticsearchProcessingService.get(key, id);
+        }
         return previousModel.getCloseRate();
     }
 
