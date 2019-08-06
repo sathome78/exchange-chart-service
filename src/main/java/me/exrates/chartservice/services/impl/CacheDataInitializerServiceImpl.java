@@ -93,7 +93,8 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
             models = CandleDataConverter.convertByInterval(models, interval);
         } else {
-            tradeDataService.defineAndSaveLastInitializedCandleTime(key, models);
+            final List<CandleModel> finalModels = models;
+            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
         }
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
