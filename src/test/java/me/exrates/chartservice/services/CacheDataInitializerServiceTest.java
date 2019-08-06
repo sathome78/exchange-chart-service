@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -177,7 +178,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).update(any(CandleModel.class), anyString());
-        verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
     }
 
     @Test
@@ -229,7 +230,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).update(any(CandleModel.class), anyString());
-        verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
     }
 
     @Test
@@ -266,6 +267,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
         verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
     }
 }
