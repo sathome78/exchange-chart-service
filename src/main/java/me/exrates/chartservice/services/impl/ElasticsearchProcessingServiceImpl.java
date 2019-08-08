@@ -104,7 +104,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         try {
             GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
-            return mapper.readValue(response.getSourceAsString(), CandleModel.class);
+            String sourceAsString = response.getSourceAsString();
+            if (isNull(sourceAsString)) {
+                return null;
+            }
+            return mapper.readValue(sourceAsString, CandleModel.class);
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 

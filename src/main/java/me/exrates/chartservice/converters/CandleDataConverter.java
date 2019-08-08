@@ -7,6 +7,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.utils.TimeUtil;
+import org.elasticsearch.common.TriFunction;
 import org.springframework.util.CollectionUtils;
 
 import javax.validation.constraints.NotNull;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
@@ -29,8 +31,8 @@ import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinI
 public final class CandleDataConverter {
 
     /**
-     * @param models - list of candles for aggregating to backDealInterval
-     * @param interval     - interval for aggregating candles
+     * @param models   - list of candles for aggregating to backDealInterval
+     * @param interval - interval for aggregating candles
      * @return unsorted list of candles, aggregated to specified backDealInterval
      */
     public static List<CandleModel> convertByInterval(List<CandleModel> models, BackDealInterval interval) {
@@ -138,21 +140,56 @@ public final class CandleDataConverter {
             CandleModel model = modelsMap.get(from);
 
             if (isNull(model)) {
-                BigDecimal closeRate = initialCandle.getCloseRate();
-
-                model = CandleModel.builder()
-                        .firstTradeTime(null)
-                        .lastTradeTime(null)
-                        .openRate(closeRate)
-                        .closeRate(closeRate)
-                        .highRate(closeRate)
-                        .lowRate(closeRate)
-                        .volume(BigDecimal.ZERO)
-                        .candleOpenTime(from)
-                        .build();
-                models.add(model);
+                models.add(CandleModel.empty(initialCandle.getCloseRate(), from));
             } else {
                 initialCandle = model;
+            }
+        }
+        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
+        return models;
+    }
+
+    public static List<CandleModel> fillGaps(TriFunction<String, LocalDateTime, BackDealInterval, CandleModel> getPreviousCandleFunction,
+                                             List<CandleModel> models, String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
+        final int minutes = TimeUtil.convertToMinutes(interval);
+
+        CandleModel initialCandle;
+
+        if (CollectionUtils.isEmpty(models)) {
+            CandleModel previousCandle = getPreviousCandleFunction.apply(pairName, from, interval);
+
+            initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+
+            while (from.isBefore(to)) {
+                models.add(CandleModel.empty(initialCandle.getCloseRate(), from));
+
+                from = from.plusMinutes(minutes);
+            }
+            models.add(CandleModel.empty(initialCandle.getCloseRate(), to));
+        } else {
+            final Map<LocalDateTime, CandleModel> modelsMap = models.stream()
+                    .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
+
+            initialCandle = models.get(0);
+            if (from.isBefore(initialCandle.getCandleOpenTime())) {
+                CandleModel previousCandle = getPreviousCandleFunction.apply(pairName, from, interval);
+
+                initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+            }
+
+            while (from.isBefore(to)) {
+                CandleModel model = modelsMap.get(from);
+
+                if (isNull(model)) {
+                    models.add(CandleModel.empty(initialCandle.getCloseRate(), from));
+                } else {
+                    initialCandle = model;
+                }
+                from = from.plusMinutes(minutes);
+            }
+            if (isNull(modelsMap.get(to))) {
+                models.add(CandleModel.empty(initialCandle.getCloseRate(), to));
             }
         }
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
