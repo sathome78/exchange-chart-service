@@ -43,4 +43,17 @@ public class CandleModel {
         this.lowRate = lowRate;
         this.volume = volume;
     }
+
+    public static CandleModel empty(BigDecimal closeRate, LocalDateTime candleOpenTime) {
+        return CandleModel.builder()
+                .firstTradeTime(null)
+                .lastTradeTime(null)
+                .openRate(closeRate)
+                .closeRate(closeRate)
+                .highRate(closeRate)
+                .lowRate(closeRate)
+                .volume(BigDecimal.ZERO)
+                .candleOpenTime(candleOpenTime)
+                .build();
+    }
 }

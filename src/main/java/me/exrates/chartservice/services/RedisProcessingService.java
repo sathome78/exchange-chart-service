@@ -12,6 +12,8 @@ public interface RedisProcessingService {
 
     boolean exists(String key, BackDealInterval interval);
 
+    boolean exists(String key, int dbIndex);
+
     CandleModel get(String key, String hashKey, BackDealInterval interval);
 
     List<CandleModel> getAllByKey(String key, BackDealInterval interval);

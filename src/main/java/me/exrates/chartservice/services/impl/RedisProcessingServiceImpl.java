@@ -63,6 +63,13 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
+    public boolean exists(String key, int dbIndex) {
+        @Cleanup Jedis jedis = getJedis(dbIndex);
+
+        return jedis.exists(key);
+    }
+
+    @Override
     public CandleModel get(String key, String hashKey, BackDealInterval interval) {
         @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
 

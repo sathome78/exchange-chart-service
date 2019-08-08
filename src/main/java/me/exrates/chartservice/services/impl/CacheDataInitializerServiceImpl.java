@@ -80,7 +80,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void updateCacheByKey(String key) {
-        if (!redisProcessingService.exists(key, DEFAULT_INTERVAL)) {
+        if (!redisProcessingService.exists(key, 0)) {
             List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
             if (!CollectionUtils.isEmpty(models)) {
                 this.updateCache(models, key, DEFAULT_INTERVAL);
@@ -142,6 +142,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                         }
                         redisProcessingService.deleteDataByHashKey(key, hashKey, interval);
                     });
+
+            if (Objects.equals(interval, DEFAULT_INTERVAL)) {
+                List<CandleModel> allByKey = redisProcessingService.getAllByKey(key, DEFAULT_INTERVAL);
+                CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, allByKey));
+            }
         });
     }
 }

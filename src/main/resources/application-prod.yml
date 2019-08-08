@@ -17,7 +17,6 @@ datasource:
   username: okostiukevych
   password: 943AJNzKGiUsWtqU
 
-#  change to prod
 redis:
   host: redis-chart-prod.service
   port: 6379
@@ -35,7 +34,6 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
-#  change to prod
 elasticsearch:
   host: elastic-chart-prod.service
   port: 9200
@@ -48,3 +46,4 @@ candles:
 
 scheduled:
   clean-cache: 0 */30 * ? * *
+  update-cache: 0 */5 * ? * *

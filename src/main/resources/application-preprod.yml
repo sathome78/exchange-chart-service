@@ -17,7 +17,6 @@ datasource:
   username: devprod
   password: Fh24soaf8sy3
 
-#  change to preprod
 redis:
   host: redis-chart-preprod.service
   port: 6381
@@ -35,7 +34,6 @@ redis:
     1 HOUR: 6 HOUR;
     6 HOUR: 1 DAY;
 
-#  change to preprod
 elasticsearch:
   host: elastic-chart-preprod.service
   port: 9201
@@ -48,3 +46,4 @@ candles:
 
 scheduled:
   clean-cache: 0 */30 * ? * *
+  update-cache: 0 */5 * ? * *
