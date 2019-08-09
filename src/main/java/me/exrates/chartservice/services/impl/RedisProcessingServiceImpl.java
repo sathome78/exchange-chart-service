@@ -118,7 +118,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
                 .map(this::getModel)
                 .filter(Objects::nonNull)
                 .map(CandleModel::getCandleOpenTime)
-                .filter(candleOpenTime -> (candleOpenTime.isEqual(date) || candleOpenTime.isBefore(date)))
+                .filter(candleOpenTime -> candleOpenTime.isBefore(date))
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
     }
