@@ -170,6 +170,8 @@ public final class CandleDataConverter {
             }
             bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), to));
         } else {
+            bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
             final Map<LocalDateTime, CandleModel> modelsMap = bufferedModels.stream()
                     .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
 
