@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
@@ -159,9 +158,7 @@ public final class CandleDataConverter {
         CandleModel initialCandle;
 
         if (CollectionUtils.isEmpty(bufferedModels)) {
-            CandleModel previousCandle = getPreviousCandleFunction.apply(pairName, from, interval);
-
-            initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+            initialCandle = getPreviousCandleFunction.apply(pairName, from, interval);
 
             while (from.isBefore(to)) {
                 bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), from));
@@ -177,9 +174,7 @@ public final class CandleDataConverter {
 
             initialCandle = bufferedModels.get(0);
             if (from.isBefore(initialCandle.getCandleOpenTime())) {
-                CandleModel previousCandle = getPreviousCandleFunction.apply(pairName, from, interval);
-
-                initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+                initialCandle = getPreviousCandleFunction.apply(pairName, from, interval);
             }
 
             while (from.isBefore(to)) {

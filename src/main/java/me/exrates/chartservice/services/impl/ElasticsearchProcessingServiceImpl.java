@@ -192,7 +192,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
                 .query(QueryBuilders
                         .rangeQuery("time_in_millis")
-                        .lte(Timestamp.valueOf(date).getTime()))
+                        .lt(Timestamp.valueOf(date).getTime()))
                 .aggregation(AggregationBuilders
                         .max("last_candle_time")
                         .field("time_in_millis"));
