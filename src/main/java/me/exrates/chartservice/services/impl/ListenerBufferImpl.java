@@ -59,8 +59,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
                         List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
                         tradeDataService.handleReceivedTrades(message.getPairName(), trades);
                     });
-                } catch (Exception e) {
-                    log.error(e);
+                } catch (Exception ex) {
+                    log.error(ex);
                 } finally {
                     semaphore.release();
                 }
