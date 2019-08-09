@@ -7,13 +7,11 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.utils.TimeUtil;
-import org.elasticsearch.common.TriFunction;
 import org.springframework.util.CollectionUtils;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
@@ -148,52 +146,6 @@ public final class CandleDataConverter {
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
         return models;
-    }
-
-    public static List<CandleModel> fillGaps(TriFunction<String, LocalDateTime, BackDealInterval, CandleModel> getPreviousCandleFunction,
-                                             List<CandleModel> models, String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
-        List<CandleModel> bufferedModels = new ArrayList<>(models);
-        final int minutes = TimeUtil.convertToMinutes(interval);
-
-        CandleModel initialCandle;
-
-        if (CollectionUtils.isEmpty(bufferedModels)) {
-            initialCandle = getPreviousCandleFunction.apply(pairName, from, interval);
-
-            while (from.isBefore(to)) {
-                bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), from));
-
-                from = from.plusMinutes(minutes);
-            }
-            bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), to));
-        } else {
-            bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-
-            final Map<LocalDateTime, CandleModel> modelsMap = bufferedModels.stream()
-                    .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
-
-            initialCandle = bufferedModels.get(0);
-            if (from.isBefore(initialCandle.getCandleOpenTime())) {
-                initialCandle = getPreviousCandleFunction.apply(pairName, from, interval);
-            }
-
-            while (from.isBefore(to)) {
-                CandleModel model = modelsMap.get(from);
-
-                if (isNull(model)) {
-                    bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), from));
-                } else {
-                    initialCandle = model;
-                }
-                from = from.plusMinutes(minutes);
-            }
-            if (isNull(modelsMap.get(to))) {
-                bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), to));
-            }
-        }
-        bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-
-        return bufferedModels;
     }
 
     public static void fixOpenRate(List<CandleModel> models) {
