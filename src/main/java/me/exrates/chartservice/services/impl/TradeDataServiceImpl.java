@@ -148,11 +148,7 @@ public class TradeDataServiceImpl implements TradeDataService {
                 newCandle.setCandleOpenTime(candleTime);
 
                 final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
-                if (isNull(previousCandle)) {
-                    newCandle.setOpenRate(BigDecimal.ZERO);
-                } else {
-                    newCandle.setOpenRate(previousCandle.getCloseRate());
-                }
+                newCandle.setOpenRate(previousCandle.getCloseRate());
 
                 final String key = RedisGeneratorUtil.generateKey(pairName);
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
@@ -166,6 +162,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private CandleModel getPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
         final String key = RedisGeneratorUtil.generateKey(pairName);
+        final LocalDateTime defaultPreviousCandleTime = candleTime.minusMinutes(TimeUtil.convertToMinutes(interval));
 
         final LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
 
@@ -173,7 +170,7 @@ public class TradeDataServiceImpl implements TradeDataService {
         if (candleTime.isAfter(oldestCachedCandleTime)) {
             LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleTime, key, interval);
             if (isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(BigDecimal.ZERO, null);
+                return CandleModel.empty(BigDecimal.ZERO, defaultPreviousCandleTime);
             }
 
             final String hashKey = RedisGeneratorUtil.generateHashKey(lastCandleTimeBeforeDate);
@@ -182,7 +179,7 @@ public class TradeDataServiceImpl implements TradeDataService {
         } else {
             LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleTime, key);
             if (isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(BigDecimal.ZERO, null);
+                return CandleModel.empty(BigDecimal.ZERO, defaultPreviousCandleTime);
             }
 
             final String id = ElasticsearchGeneratorUtil.generateId(lastCandleTimeBeforeDate);
