@@ -10,6 +10,7 @@ spring:
     host: rabbitmq-prod.service
     port: 5672
     tradestopic: CHART_DATA_QUEUE_PROD
+    candlestopic: NEW_CANDLES_PROD
 
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver

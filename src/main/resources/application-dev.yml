@@ -10,7 +10,7 @@ spring:
     host: rabbitmq-dev.service
     port: 5672
     tradestopic: CHART_DATA_QUEUE_DEV
-
+    candlestopic: NEW_CANDLES_DEV
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC

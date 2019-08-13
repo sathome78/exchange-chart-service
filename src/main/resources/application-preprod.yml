@@ -10,7 +10,7 @@ spring:
     host: rabbitmq-preprod.service
     port: 5672
     tradestopic: CHART_DATA_QUEUE_PREPROD
-
+    candlestopic: NEW_CANDLES_PREPROD
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://birzha-aurora-preprod-cluster.cluster-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC

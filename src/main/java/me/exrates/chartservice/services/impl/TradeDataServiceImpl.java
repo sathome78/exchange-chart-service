@@ -4,11 +4,14 @@ import com.antkorwin.xsync.XSync;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
+import me.exrates.chartservice.model.CandleDetailedDto;
+import me.exrates.chartservice.model.CandleDto;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
+import me.exrates.chartservice.services.messaging.RabbitMessenger;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
@@ -26,6 +29,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,18 +52,20 @@ public class TradeDataServiceImpl implements TradeDataService {
     private long candlesToStoreInCache;
 
     private List<BackDealInterval> supportedIntervals;
+    private final RabbitMessenger rabbitMessenger;
 
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
                                 XSync<String> xSync,
                                 @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
-                                @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
+                                @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals, RabbitMessenger rabbitMessenger) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
+        this.rabbitMessenger = rabbitMessenger;
     }
 
     @Override
@@ -196,19 +203,29 @@ public class TradeDataServiceImpl implements TradeDataService {
                 return;
             }
 
+            List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
             supportedIntervals.forEach(interval -> {
-                final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
-                newCandle.setCandleOpenTime(candleTime);
+                completableFutures.add(CompletableFuture.runAsync(() -> {
+                    final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
+                    newCandle.setCandleOpenTime(candleTime);
 
-                final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
-                newCandle.setOpenRate(previousCandle.getCloseRate());
+                    final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+                    newCandle.setOpenRate(previousCandle.getCloseRate());
 
-                final String key = RedisGeneratorUtil.generateKey(pairName);
-                final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
+                    final String key = RedisGeneratorUtil.generateKey(pairName);
+                    final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
 
-                CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
-                CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
-                redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
+                    CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
+                    CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
+                    redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
+
+                    rabbitMessenger.sendNewCandle(new CandleDetailedDto(pairName, interval, CandleDto.toDto(mergedCandle)));
+                }));
+
+                CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]))
+                        .exceptionally(ex -> null)
+                        .join();
+
             });
         });
     }
