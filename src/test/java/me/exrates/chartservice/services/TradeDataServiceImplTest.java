@@ -4,6 +4,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.impl.TradeDataServiceImpl;
+import me.exrates.chartservice.services.messaging.RabbitMessenger;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Assert;
@@ -36,6 +37,8 @@ public class TradeDataServiceImplTest extends AbstractTest {
     ElasticsearchProcessingService elasticsearchProcessingService;
     @Mock
     RedisProcessingService redisProcessingService;
+    @Mock
+    RabbitMessenger rabbitMessenger;
 
     private TradeDataService tradeDataService;
 
@@ -46,7 +49,8 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 redisProcessingService,
                 xSync,
                 candlesToStoreInCache,
-                supportedIntervals
+                supportedIntervals,
+                rabbitMessenger
         ));
     }
 

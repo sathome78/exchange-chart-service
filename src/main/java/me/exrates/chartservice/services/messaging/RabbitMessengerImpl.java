@@ -16,13 +16,13 @@ public class RabbitMessengerImpl implements RabbitMessenger {
 
     @Autowired
     public RabbitMessengerImpl(RabbitTemplate rabbitTemplate,
-                               @Value("${rabbitmq.candlestopic}") String candlesTopic) {
+                               @Value("${spring.rabbitmq.candlestopic}") String candlesTopic) {
         this.rabbitTemplate = rabbitTemplate;
         this.candlesTopic = candlesTopic;
     }
 
     @Override
-    public void sendNewCandle(CandleDetailedDto dto) {
+    public void sendNewCandle(final CandleDetailedDto dto) {
         try {
             rabbitTemplate.convertAndSend(candlesTopic, dto);
         } catch (Exception e) {
