@@ -1,9 +1,13 @@
 package me.exrates.chartservice.services.impl;
 
 import com.antkorwin.xsync.XSync;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
+import me.exrates.chartservice.model.CandleDetailedDto;
+import me.exrates.chartservice.model.CandleDto;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
@@ -26,6 +30,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +38,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
+import static me.exrates.chartservice.configuration.CommonConfiguration.CANDLES_TOPIC_PREFIX;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
@@ -43,6 +49,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
     private final XSync<String> xSync;
+    private final ObjectMapper objectMapper;
 
     private long candlesToStoreInCache;
 
@@ -59,6 +66,7 @@ public class TradeDataServiceImpl implements TradeDataService {
         this.xSync = xSync;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -196,21 +204,40 @@ public class TradeDataServiceImpl implements TradeDataService {
                 return;
             }
 
+            List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
             supportedIntervals.forEach(interval -> {
-                final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
-                newCandle.setCandleOpenTime(candleTime);
+                completableFutures.add(CompletableFuture.runAsync(() -> {
+                    final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
+                    newCandle.setCandleOpenTime(candleTime);
 
-                final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
-                newCandle.setOpenRate(previousCandle.getCloseRate());
+                    final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+                    newCandle.setOpenRate(previousCandle.getCloseRate());
 
-                final String key = RedisGeneratorUtil.generateKey(pairName);
-                final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
+                    final String key = RedisGeneratorUtil.generateKey(pairName);
+                    final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
 
-                CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
-                CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
-                redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
+                    CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
+                    CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
+                    redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
+
+                    mapAndPublishCandle(mergedCandle, pairName, interval);
+                }));
+
+                CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]))
+                        .exceptionally(ex -> null)
+                        .join();
+
             });
         });
+    }
+
+    private void mapAndPublishCandle(CandleModel candleModel, String currencyPair, BackDealInterval interval) {
+        try {
+            CandleDetailedDto dto = new CandleDetailedDto(currencyPair, interval, CandleDto.toDto(candleModel), candleModel.getLastTradeTime());
+            redisProcessingService.publishMessage(CANDLES_TOPIC_PREFIX.concat(currencyPair), objectMapper.writeValueAsString(dto));
+        } catch (Exception e) {
+            log.error(e);
+        }
     }
 
     private CandleModel getPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {

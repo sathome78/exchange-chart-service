@@ -196,6 +196,12 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         return RedisGeneratorUtil.generateDateTime(jedis.get(key));
     }
 
+    @Override
+    public Long publishMessage(String channel, String message) {
+        @Cleanup Jedis jedis = getJedis(0);
+        return jedis.publish(channel, message);
+    }
+
     /**
      * Get Jedis instance
      */

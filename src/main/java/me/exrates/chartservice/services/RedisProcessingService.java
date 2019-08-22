@@ -37,4 +37,6 @@ public interface RedisProcessingService {
     void insertLastInitializedCandleTimeToCache(String key, LocalDateTime dateTime);
 
     LocalDateTime getLastInitializedCandleTimeFromCache(String key);
+
+    Long publishMessage(String channel, String message);
 }

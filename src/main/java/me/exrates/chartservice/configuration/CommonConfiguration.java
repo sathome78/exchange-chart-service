@@ -24,6 +24,10 @@ public class CommonConfiguration {
 
     public static final String ALL_SUPPORTED_INTERVALS_LIST = "allSupportedIntervalsList";
 
+    public static final String BUFFER_SYNC = "bufferSync";
+
+    public static final String CANDLES_TOPIC_PREFIX = "candles.";
+
     @Bean(JSON_MAPPER)
     public ObjectMapper mapper() {
         return new ObjectMapper()
@@ -33,6 +37,11 @@ public class CommonConfiguration {
 
     @Bean
     public XSync<String> xSync() {
+        return new XSync<>();
+    }
+
+    @Bean(BUFFER_SYNC)
+    public XSync<String> bufferXSync() {
         return new XSync<>();
     }
 
