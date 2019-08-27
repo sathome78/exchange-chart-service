@@ -70,4 +70,4 @@ server:
 
 logging:
   level:
-    me.exrates.chartservice: debug
+    me.exrates.chartservice: info

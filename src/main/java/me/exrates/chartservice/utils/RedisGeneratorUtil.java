@@ -7,6 +7,8 @@ import lombok.extern.log4j.Log4j2;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static java.util.Objects.isNull;
+
 @Log4j2
 @NoArgsConstructor(access = AccessLevel.NONE)
 public final class RedisGeneratorUtil {
@@ -18,10 +20,13 @@ public final class RedisGeneratorUtil {
     }
 
     public static LocalDateTime generateDateTime(String key) {
+        if (isNull(key)) {
+            return null;
+        }
         try {
             return LocalDateTime.parse(key, FORMATTER);
         } catch (Exception ex) {
-            log.error("Process of parsing string to date format occurred error");
+            log.error("Process of parsing string to date format occurred error", ex);
             return null;
         }
     }

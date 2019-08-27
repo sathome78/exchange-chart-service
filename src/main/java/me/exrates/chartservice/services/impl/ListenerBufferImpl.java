@@ -8,6 +8,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.isNull;
+import static me.exrates.chartservice.configuration.CommonConfiguration.BUFFER_SYNC;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
@@ -37,7 +39,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
     @Autowired
     public ListenerBufferImpl(TradeDataService tradeDataService,
                               RedisProcessingService redisProcessingService,
-                              XSync<String> xSync) {
+                              @Qualifier(BUFFER_SYNC) XSync<String> xSync) {
         this.tradeDataService = tradeDataService;
         this.redisProcessingService = redisProcessingService;
         this.xSync = xSync;

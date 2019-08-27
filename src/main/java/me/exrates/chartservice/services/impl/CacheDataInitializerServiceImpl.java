@@ -71,20 +71,18 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void updateCache() {
-        log.debug("--> Start process of update cache <--");
+        log.info("--> Start process of update cache <--");
 
         elasticsearchProcessingService.getAllIndices().parallelStream().forEach(this::updateCacheByKey);
 
-        log.debug("--> End process of update cache <--");
+        log.info("--> End process of update cache <--");
     }
 
     @Override
     public void updateCacheByKey(String key) {
-        if (!redisProcessingService.exists(key, 0)) {
-            List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
-            if (!CollectionUtils.isEmpty(models)) {
-                this.updateCache(models, key, DEFAULT_INTERVAL);
-            }
+        List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
+        if (!CollectionUtils.isEmpty(models)) {
+            this.updateCache(models, key, DEFAULT_INTERVAL);
         }
     }
 
@@ -98,7 +96,15 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         }
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
-        redisProcessingService.batchInsertOrUpdate(models, key, interval);
+        models.forEach(model -> {
+            final String hashKey = RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime());
+
+            CandleModel cachedModel = redisProcessingService.get(key, hashKey, interval);
+
+            if (isNull(cachedModel) && getBoundaryTime(interval).isBefore(model.getCandleOpenTime())) {
+                redisProcessingService.insertOrUpdate(model, key, interval);
+            }
+        });
 
         final String nextInterval = nextIntervalMap.get(interval.getInterval());
         if (isNull(nextInterval)) {
@@ -109,21 +115,18 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void cleanCache() {
-        log.debug("--> Start process of clean cache <--");
+        log.info("--> Start process of clean cache <--");
 
         supportedIntervals.parallelStream().forEach(this::cleanCache);
 
-        log.debug("--> End process of clean cache <--");
+        log.info("--> End process of clean cache <--");
     }
 
     @Override
     public void cleanCache(BackDealInterval interval) {
-        LocalDateTime currentCandleTime = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
-        final LocalDateTime boundaryTime = currentCandleTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
-
         redisProcessingService.getAllKeys(interval).forEach(key -> {
             redisProcessingService.getAllByKey(key, interval).stream()
-                    .filter(model -> boundaryTime.isAfter(model.getCandleOpenTime()))
+                    .filter(model -> getBoundaryTime(interval).isAfter(model.getCandleOpenTime()))
                     .map(model -> Pair.of(RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime()), model))
                     .forEach(pair -> {
                         final String hashKey = pair.getKey();
@@ -148,5 +151,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                 CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, allByKey));
             }
         });
+    }
+
+    private LocalDateTime getBoundaryTime(BackDealInterval interval) {
+        LocalDateTime currentCandleTime = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
+
+        return currentCandleTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval));
     }
 }

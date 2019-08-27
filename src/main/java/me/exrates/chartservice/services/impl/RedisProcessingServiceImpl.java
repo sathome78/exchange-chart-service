@@ -141,11 +141,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
 
         Long result = jedis.hset(key, hashKey, valueString);
 
-        if (result == 0) {
-            log.debug("Value have been updated in redis");
-        } else if (result == 1) {
-            log.debug("Value have been inserted into redis");
-        } else {
+        if (result != 0 && result != 1) {
             log.warn("Process of inserting or updating are corrupted");
         }
     }

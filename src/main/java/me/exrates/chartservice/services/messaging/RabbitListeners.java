@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 @Log4j2
 @Component
@@ -36,7 +37,7 @@ public class RabbitListeners {
         log.info("Received message from core service {}", message);
 
         log.info("Start processing new data: pair name: {}, trade date: {}", message.getPairName(), message.getTradeDate());
-        listenerBuffer.receive(message);
+        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
         log.info("End processing new trade data");
     }
 

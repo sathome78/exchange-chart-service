@@ -100,7 +100,7 @@ public class TradeDataServiceImpl implements TradeDataService {
             models = redisProcessingService.getByRange(from, to, key, interval);
         }
 
-        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+        CandleDataConverter.fixOpenRate(models);
 
         return fillGaps(models, pairName, from, to, interval);
     }
