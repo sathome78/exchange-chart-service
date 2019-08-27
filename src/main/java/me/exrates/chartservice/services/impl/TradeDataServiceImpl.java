@@ -212,7 +212,6 @@ public class TradeDataServiceImpl implements TradeDataService {
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
 
                 CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
-                log.debug("<<< groupTradesAndSave() >>> cached candle: {}", cachedCandleModel.toString());
                 CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
                 log.debug("<<< groupTradesAndSave() >>> merged candle: {}", mergedCandle.toString());
                 redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
