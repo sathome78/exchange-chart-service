@@ -36,7 +36,7 @@ datasource:
 
 redis:
   host: localhost
-  port: 6380
+  port: 6379
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -66,7 +66,7 @@ scheduled:
   update-cache: 0 */5 * ? * *
 
 server:
-  port: 8070
+  port: 8060
 
 logging:
   level:
