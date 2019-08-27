@@ -191,23 +191,30 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
+            log.debug("<<< groupTradesAndSave() >>> start");
             CandleModel newCandle = CandleDataConverter.reduceToCandle(dto);
             if (isNull(newCandle)) {
                 return;
             }
 
             supportedIntervals.forEach(interval -> {
+                log.debug("<<< groupTradesAndSave() >>> interval: {}", interval.getInterval());
                 final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
                 newCandle.setCandleOpenTime(candleTime);
+                log.debug("<<< groupTradesAndSave() >>> new candle: {}", newCandle.toString());
 
                 final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+                log.debug("<<< groupTradesAndSave() >>> previous candle: {}", previousCandle.toString());
                 newCandle.setOpenRate(previousCandle.getCloseRate());
+                log.debug("<<< groupTradesAndSave() >>> new candle: {}", newCandle.toString());
 
                 final String key = RedisGeneratorUtil.generateKey(pairName);
                 final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
 
                 CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
+                log.debug("<<< groupTradesAndSave() >>> cached candle: {}", cachedCandleModel.toString());
                 CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
+                log.debug("<<< groupTradesAndSave() >>> merged candle: {}", mergedCandle.toString());
                 redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
             });
         });
