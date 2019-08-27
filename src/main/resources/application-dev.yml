@@ -47,3 +47,7 @@ candles:
 scheduled:
   clean-cache: 0 */30 * ? * *
   update-cache: 0 */5 * ? * *
+
+logging:
+  level:
+    me.exrates.chartservice: info

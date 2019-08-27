@@ -71,11 +71,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void updateCache() {
-        log.debug("--> Start process of update cache <--");
+        log.info("--> Start process of update cache <--");
 
         elasticsearchProcessingService.getAllIndices().parallelStream().forEach(this::updateCacheByKey);
 
-        log.debug("--> End process of update cache <--");
+        log.info("--> End process of update cache <--");
     }
 
     @Override
@@ -115,11 +115,11 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void cleanCache() {
-        log.debug("--> Start process of clean cache <--");
+        log.info("--> Start process of clean cache <--");
 
         supportedIntervals.parallelStream().forEach(this::cleanCache);
 
-        log.debug("--> End process of clean cache <--");
+        log.info("--> End process of clean cache <--");
     }
 
     @Override

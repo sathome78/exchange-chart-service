@@ -38,30 +38,30 @@ public class DataInitializerServiceImpl implements DataInitializerService {
     @Override
     public void generate(LocalDate fromDate, LocalDate toDate, String pairName) {
         StopWatch stopWatch = StopWatch.createStarted();
-        log.debug("<<< GENERATOR >>> Start generate data for cache for: {}", pairName);
+        log.info("<<< GENERATOR >>> Start generate data for cache for: {}", pairName);
 
-        log.debug("<<< GENERATOR >>> Start get closed orders from database");
+        log.info("<<< GENERATOR >>> Start get closed orders from database");
         final List<OrderDto> orders = orderService.getFilteredOrders(fromDate, toDate, pairName);
-        log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
+        log.info("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
 
         if (CollectionUtils.isEmpty(orders)) {
             return;
         }
 
-        log.debug("<<< GENERATOR >>> Start transform orders to candles");
+        log.info("<<< GENERATOR >>> Start transform orders to candles");
         List<CandleModel> models = CandleDataConverter.convert(orders);
-        log.debug("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
+        log.info("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
 
-        log.debug("<<< GENERATOR >>> Start fix candles open rate");
+        log.info("<<< GENERATOR >>> Start fix candles open rate");
         CandleDataConverter.fixOpenRate(models);
-        log.debug("<<< GENERATOR >>> End fix candles open rate");
+        log.info("<<< GENERATOR >>> End fix candles open rate");
 
         final String index = ElasticsearchGeneratorUtil.generateIndex(pairName);
 
-        log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
+        log.info("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
         elasticsearchProcessingService.batchInsertOrUpdate(models, index);
-        log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
+        log.info("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
-        log.debug("<<< GENERATOR >>> End generate data for cache for: {}, Time: {} ms", pairName, stopWatch.getTime(TimeUnit.SECONDS));
+        log.info("<<< GENERATOR >>> End generate data for cache for: {}, Time: {} ms", pairName, stopWatch.getTime(TimeUnit.SECONDS));
     }
 }

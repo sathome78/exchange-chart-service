@@ -31,7 +31,7 @@ public class DataInitializerController {
                                                  @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
                                                  @RequestParam("pairs") List<String> pairs) {
         try {
-            log.debug("Criteria - from: {}, to: {}, pairs: {}", fromDate, toDate, pairs.toString());
+            log.info("Criteria - from: {}, to: {}, pairs: {}", fromDate, toDate, pairs.toString());
 
             pairs.forEach(pair -> initializerService.generate(fromDate, toDate, pair));
             return ResponseEntity.ok().build();
