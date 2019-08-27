@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
@@ -58,9 +57,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
-        doReturn(false)
-                .when(redisProcessingService)
-                .exists(anyString(), anyInt());
         doReturn(Collections.singletonList(CandleModel.builder()
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
@@ -74,17 +70,20 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doNothing()
                 .when(tradeDataService)
                 .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        doReturn(null)
+                .when(redisProcessingService)
+                .get(anyString(), anyString(), any(BackDealInterval.class));
         doNothing()
                 .when(redisProcessingService)
-                .batchInsertOrUpdate(anyList(), anyString(), any(BackDealInterval.class));
+                .insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
 
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(redisProcessingService, atLeastOnce()).exists(anyString(), anyInt());
         verify(elasticsearchProcessingService, atLeastOnce()).getAllByIndex(anyString());
         verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, times(6)).batchInsertOrUpdate(anyList(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(6)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(6)).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -96,28 +95,10 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(redisProcessingService, never()).exists(anyString(), anyInt());
         verify(elasticsearchProcessingService, never()).getAllByIndex(anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, never()).batchInsertOrUpdate(anyList(), anyString(), any(BackDealInterval.class));
-    }
-
-    @Test
-    public void updateCache_index_present_in_cache() {
-        doReturn(Collections.singletonList(key))
-                .when(elasticsearchProcessingService)
-                .getAllIndices();
-        doReturn(true)
-                .when(redisProcessingService)
-                .exists(anyString(), anyInt());
-
-        cacheDataInitializerService.updateCache();
-
-        verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(redisProcessingService, atLeastOnce()).exists(anyString(), anyInt());
-        verify(elasticsearchProcessingService, never()).getAllByIndex(anyString());
-        verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, never()).batchInsertOrUpdate(anyList(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -125,9 +106,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
-        doReturn(false)
-                .when(redisProcessingService)
-                .exists(anyString(), anyInt());
         doReturn(Collections.emptyList())
                 .when(elasticsearchProcessingService)
                 .getAllByIndex(anyString());
@@ -135,10 +113,10 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(redisProcessingService, atLeastOnce()).exists(anyString(), anyInt());
         verify(elasticsearchProcessingService, atLeastOnce()).getAllByIndex(anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, never()).batchInsertOrUpdate(anyList(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
     }
 
     @Test
