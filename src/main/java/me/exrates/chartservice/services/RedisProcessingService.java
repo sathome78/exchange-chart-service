@@ -22,7 +22,7 @@ public interface RedisProcessingService {
 
     LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String key, BackDealInterval interval);
 
-    void batchInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval);
+    void bulkInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval);
 
     void insertOrUpdate(CandleModel model, String key, BackDealInterval interval);
 

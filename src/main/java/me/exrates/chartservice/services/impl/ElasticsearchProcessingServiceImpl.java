@@ -9,6 +9,7 @@ import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
 
@@ -214,20 +216,30 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public void batchInsertOrUpdate(List<CandleModel> models, String index) {
+    public void bulkInsertOrUpdate(List<CandleModel> models, String index) {
         if (!this.existsIndex(index)) {
             this.createIndex(index);
         }
 
+        BulkRequest bulkRequest = new BulkRequest();
+
         models.forEach(model -> {
             final String id = ElasticsearchGeneratorUtil.generateId(model.getCandleOpenTime());
 
-            if (this.exists(index, id)) {
-                this.update(model, index);
-            } else {
-                this.insert(model, index);
+            String sourceString = getSourceString(model);
+            if (nonNull(sourceString)) {
+                IndexRequest request = new IndexRequest(index)
+                        .id(id)
+                        .source(sourceString, XContentType.JSON);
+                bulkRequest.add(request);
             }
         });
+
+        try {
+            client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        } catch (IOException | ElasticsearchStatusException ex) {
+            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
+        }
     }
 
     @Override

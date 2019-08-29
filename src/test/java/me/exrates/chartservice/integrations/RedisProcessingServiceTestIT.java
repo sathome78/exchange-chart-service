@@ -125,7 +125,7 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
+        processingService.bulkInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
 
         models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
 

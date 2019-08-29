@@ -90,7 +90,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             final String index = ElasticsearchGeneratorUtil.generateIndex(pair);
 
             log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
-            elasticsearchProcessingService.batchInsertOrUpdate(models, index);
+            elasticsearchProcessingService.bulkInsertOrUpdate(models, index);
             log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
             log.info("<<< GENERATOR >>> End generate cache data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));

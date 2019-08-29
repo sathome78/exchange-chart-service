@@ -59,13 +59,13 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .batchInsertOrUpdate(anyList(), anyString());
+                .bulkInsertOrUpdate(anyList(), anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE);
 
         verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).batchInsertOrUpdate(anyList(), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
     }
 
     @Test
@@ -82,12 +82,12 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .batchInsertOrUpdate(anyList(), anyString());
+                .bulkInsertOrUpdate(anyList(), anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).batchInsertOrUpdate(anyList(), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
     }
 
     @Test
@@ -99,6 +99,6 @@ public class DataInitializerServiceTest extends AbstractTest {
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, never()).batchInsertOrUpdate(anyList(), anyString());
+        verify(elasticsearchProcessingService, never()).bulkInsertOrUpdate(anyList(), anyString());
     }
 }

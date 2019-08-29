@@ -66,7 +66,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .candleOpenTime(NOW)
                 .build()))
                 .when(elasticsearchProcessingService)
-                .getAllByIndex(anyString());
+                .getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
         doNothing()
                 .when(tradeDataService)
                 .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
@@ -80,7 +80,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, atLeastOnce()).getAllByIndex(anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
         verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, times(6)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, times(6)).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
@@ -108,12 +108,12 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .getAllIndices();
         doReturn(Collections.emptyList())
                 .when(elasticsearchProcessingService)
-                .getAllByIndex(anyString());
+                .getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
 
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, atLeastOnce()).getAllByIndex(anyString());
+        verify(elasticsearchProcessingService, times(6)).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));

@@ -80,37 +80,41 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void updateCacheByKey(String key) {
-        List<CandleModel> models = elasticsearchProcessingService.getAllByIndex(key);
-        if (!CollectionUtils.isEmpty(models)) {
-            this.updateCache(models, key, DEFAULT_INTERVAL);
-        }
+        this.updateCache(key, DEFAULT_INTERVAL);
     }
 
     @Override
-    public void updateCache(List<CandleModel> models, String key, BackDealInterval interval) {
-        if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
-            models = CandleDataConverter.convertByInterval(models, interval);
-        } else {
-            List<CandleModel> finalModels = models;
-            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
-        }
-        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+    public void updateCache(String key, BackDealInterval interval) {
+        final LocalDateTime fromDate = getBoundaryTime(interval);
+        final LocalDateTime toDate = LocalDateTime.now();
 
-        models.forEach(model -> {
-            final String hashKey = RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime());
+        List<CandleModel> models = elasticsearchProcessingService.getByRange(fromDate, toDate, key);
 
-            CandleModel cachedModel = redisProcessingService.get(key, hashKey, interval);
-
-            if (isNull(cachedModel) && getBoundaryTime(interval).isBefore(model.getCandleOpenTime())) {
-                redisProcessingService.insertOrUpdate(model, key, interval);
+        if (!CollectionUtils.isEmpty(models)) {
+            if (!Objects.equals(interval, DEFAULT_INTERVAL)) {
+                models = CandleDataConverter.convertByInterval(models, interval);
+            } else {
+                List<CandleModel> finalModels = models;
+                CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveLastInitializedCandleTime(key, finalModels));
             }
-        });
+            models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
+            models.forEach(model -> {
+                final String hashKey = RedisGeneratorUtil.generateHashKey(model.getCandleOpenTime());
+
+                CandleModel cachedModel = redisProcessingService.get(key, hashKey, interval);
+
+                if (isNull(cachedModel)) {
+                    redisProcessingService.insertOrUpdate(model, key, interval);
+                }
+            });
+        }
 
         final String nextInterval = nextIntervalMap.get(interval.getInterval());
         if (isNull(nextInterval)) {
             return;
         }
-        updateCache(models, key, new BackDealInterval(nextInterval));
+        updateCache(key, new BackDealInterval(nextInterval));
     }
 
     @Override

@@ -155,7 +155,7 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), index);
+        processingService.bulkInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), index);
 
         TimeUnit.SECONDS.sleep(1);
 

@@ -87,11 +87,13 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         elasticsearchProcessingService.insert(candleModel, index);
 
+        TimeUnit.SECONDS.sleep(1);
+
         //update redis cache for all available intervals
 
         cacheDataInitializerService.updateCacheByKey(index);
 
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(1);
 
         //check data from redis cache for all intervals
 
