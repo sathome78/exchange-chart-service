@@ -4,6 +4,7 @@ import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +38,10 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
     public void setUp() throws Exception {
         index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
         id = ElasticsearchGeneratorUtil.generateId(NOW);
+    }
 
+    @After
+    public void tearDown() throws Exception {
         processingService.deleteIndex(index);
     }
 

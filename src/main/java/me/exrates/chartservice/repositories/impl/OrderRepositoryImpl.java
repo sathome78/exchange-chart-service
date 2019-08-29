@@ -28,6 +28,13 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
+    public List<String> getAllCurrencyPairNames() {
+        final String sql = "SELECT cp.name FROM CURRENCY_PAIR cp";
+
+        return slaveJdbcTemplate.query(sql, (rs, i) -> rs.getString("name"));
+    }
+
+    @Override
     public List<OrderDto> getFilteredOrders(LocalDate fromDate, LocalDate toDate, String pairName) {
         String currencyPairClause = " AND cp.name = :pairName ";
 
@@ -40,7 +47,7 @@ public class OrderRepositoryImpl implements OrderRepository {
             acceptedClause = " AND o.date_acception <= :dateTo ";
         }
 
-        String sql = "SELECT " +
+        final String sql = "SELECT " +
                 "o.id AS order_id, " +
                 "cp.name AS currency_pair_name, " +
                 "o.amount_base, " +
