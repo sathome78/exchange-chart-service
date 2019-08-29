@@ -4,7 +4,6 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.services.DataInitializerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,14 +29,24 @@ public class DataInitializerController {
     public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
                                                  @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
                                                  @RequestParam("pairs") List<String> pairs) {
-        try {
-            log.info("Criteria - from: {}, to: {}, pairs: {}", fromDate, toDate, pairs.toString());
+        log.info("Generate for pairs: {} - from: {}, to: {}", pairs.toString(), fromDate, toDate);
 
-            pairs.forEach(pair -> initializerService.generate(fromDate, toDate, pair));
-            return ResponseEntity.ok().build();
-        } catch (Exception ex) {
-            log.error("Some error occurred during generate chart data", ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        initializerService.generate(fromDate, toDate, pairs);
+
+        log.info("Process of generation cache data for: {} is DONE!", pairs.toString());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/generate/all")
+    public ResponseEntity generateAllData(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                          @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        log.info("Generate for all pairs - from: {}, to: {}", fromDate, toDate);
+
+        initializerService.generate(fromDate, toDate);
+
+        log.info("Process of generation cache data for: ALL is DONE!");
+
+        return ResponseEntity.ok().build();
     }
 }
