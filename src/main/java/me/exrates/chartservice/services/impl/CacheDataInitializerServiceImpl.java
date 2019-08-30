@@ -86,7 +86,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
     @Override
     public void updateCache(String key, BackDealInterval interval) {
         final LocalDateTime fromDate = getBoundaryTime(interval);
-        final LocalDateTime toDate = LocalDateTime.now();
+        final LocalDateTime toDate = TimeUtil.getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval).plusDays(1);
 
         List<CandleModel> models = elasticsearchProcessingService.getByRange(fromDate, toDate, key);
 
