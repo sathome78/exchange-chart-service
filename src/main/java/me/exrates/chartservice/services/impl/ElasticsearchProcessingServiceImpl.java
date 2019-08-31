@@ -7,19 +7,16 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -120,7 +117,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public List<CandleModel> getAllByIndex(String index) {
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
 
         SearchRequest request = new SearchRequest(index)
                 .scroll(scroll);
@@ -153,7 +150,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
     @Override
     public List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index) {
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1L));
+        final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
         final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
                 .query(QueryBuilders.rangeQuery("time_in_millis")
                         .gte(Timestamp.valueOf(fromDate).getTime())
@@ -254,17 +251,10 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
                 .id(id)
                 .source(sourceString, XContentType.JSON);
 
-        IndexResponse response;
         try {
-            response = client.index(request, RequestOptions.DEFAULT);
+            client.index(request, RequestOptions.DEFAULT);
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
-
-            return;
-        }
-
-        if (response.getResult() != DocWriteResponse.Result.CREATED) {
-            log.warn("Source have not created in elasticsearch cluster");
         }
     }
 
@@ -279,17 +269,10 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         UpdateRequest request = new UpdateRequest(index, id)
                 .doc(sourceString, XContentType.JSON);
 
-        UpdateResponse response;
         try {
-            response = client.update(request, RequestOptions.DEFAULT);
+            client.update(request, RequestOptions.DEFAULT);
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
-
-            return;
-        }
-
-        if (response.getResult() != DocWriteResponse.Result.UPDATED) {
-            log.warn("Source have not updated in elasticsearch cluster");
         }
     }
 
@@ -339,7 +322,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         CreateIndexRequest request = new CreateIndexRequest(index)
                 .settings(Settings.builder()
                         .put("index.number_of_shards", 3)
-                        .put("index.number_of_replicas", 2)
+                        .put("index.number_of_replicas", 1)
                         .build());
 
         try {

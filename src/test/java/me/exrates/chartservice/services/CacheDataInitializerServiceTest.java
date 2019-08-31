@@ -48,8 +48,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 redisProcessingService,
                 tradeDataService,
                 candlesToStoreInCache,
-                supportedIntervals,
-                nextIntervalMap));
+                supportedIntervals));
     }
 
     @Test
@@ -113,7 +112,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, times(6)).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));

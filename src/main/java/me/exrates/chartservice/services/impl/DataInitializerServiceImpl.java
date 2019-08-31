@@ -4,10 +4,12 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDto;
+import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.DataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -28,14 +31,17 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final OrderService orderService;
+    private final CacheDataInitializerService cacheDataInitializerService;
 
     @Autowired
     public DataInitializerServiceImpl(@Value("${generator.min-period:3}") long minPeriod,
                                       ElasticsearchProcessingService elasticsearchProcessingService,
-                                      OrderService orderService) {
+                                      OrderService orderService,
+                                      CacheDataInitializerService cacheDataInitializerService) {
         this.minPeriod = minPeriod;
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.orderService = orderService;
+        this.cacheDataInitializerService = cacheDataInitializerService;
     }
 
     @Override
@@ -57,16 +63,23 @@ public class DataInitializerServiceImpl implements DataInitializerService {
         LocalDate minFrom = fromDate;
         LocalDate minTo = fromDate.plusMonths(minPeriod);
 
+        List<Boolean> generated = new ArrayList<>();
         while (minTo.isBefore(toDate)) {
-            generateForMinPeriod(minFrom, minTo, pair);
+            generated.add(generateForMinPeriod(minFrom, minTo, pair));
 
             minFrom = minTo;
             minTo = minTo.plusMonths(minPeriod);
         }
-        generateForMinPeriod(minFrom, toDate, pair);
+        generated.add(generateForMinPeriod(minFrom, toDate, pair));
+
+        if (generated.stream().anyMatch(g -> g)) {
+            log.debug("<<< GENERATOR >>> Start update cache");
+            cacheDataInitializerService.updateCacheByKey(RedisGeneratorUtil.generateKey(pair));
+            log.debug("<<< GENERATOR >>> End update cache");
+        }
     }
 
-    private void generateForMinPeriod(LocalDate fromDate, LocalDate toDate, String pair) {
+    private boolean generateForMinPeriod(LocalDate fromDate, LocalDate toDate, String pair) {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
             log.info("<<< GENERATOR >>> Start generate cache data for pair: {} [Period: {} - {}]", pair, fromDate, toDate);
@@ -76,7 +89,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
 
             if (CollectionUtils.isEmpty(orders)) {
-                return;
+                return false;
             }
 
             log.debug("<<< GENERATOR >>> Start transform orders to candles");
@@ -87,15 +100,17 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             CandleDataConverter.fixOpenRate(models);
             log.debug("<<< GENERATOR >>> End fix candles open rate");
 
-            final String index = ElasticsearchGeneratorUtil.generateIndex(pair);
-
             log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
-            elasticsearchProcessingService.bulkInsertOrUpdate(models, index);
+            elasticsearchProcessingService.bulkInsertOrUpdate(models, ElasticsearchGeneratorUtil.generateIndex(pair));
             log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
             log.info("<<< GENERATOR >>> End generate cache data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));
+
+            return true;
         } catch (Exception ex) {
             log.error("<<< GENERATOR >>> Process of generation cache data was failed for pair: {} [Period: {} - {}]", pair, fromDate, toDate, ex);
+
+            return false;
         }
     }
 }

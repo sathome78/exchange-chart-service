@@ -31,6 +31,8 @@ public class DataInitializerServiceTest extends AbstractTest {
     private ElasticsearchProcessingService elasticsearchProcessingService;
     @Mock
     private OrderService orderService;
+    @Mock
+    private CacheDataInitializerService cacheDataInitializerService;
 
     private DataInitializerService dataInitializerService;
 
@@ -39,7 +41,7 @@ public class DataInitializerServiceTest extends AbstractTest {
         dataInitializerService = spy(new DataInitializerServiceImpl(
                 3,
                 elasticsearchProcessingService,
-                orderService));
+                orderService, cacheDataInitializerService));
     }
 
     @Test
@@ -60,12 +62,16 @@ public class DataInitializerServiceTest extends AbstractTest {
         doNothing()
                 .when(elasticsearchProcessingService)
                 .bulkInsertOrUpdate(anyList(), anyString());
+        doNothing()
+                .when(cacheDataInitializerService)
+                .updateCacheByKey(anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE);
 
         verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
+        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
     }
 
     @Test
@@ -83,11 +89,15 @@ public class DataInitializerServiceTest extends AbstractTest {
         doNothing()
                 .when(elasticsearchProcessingService)
                 .bulkInsertOrUpdate(anyList(), anyString());
+        doNothing()
+                .when(cacheDataInitializerService)
+                .updateCacheByKey(anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
+        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
     }
 
     @Test

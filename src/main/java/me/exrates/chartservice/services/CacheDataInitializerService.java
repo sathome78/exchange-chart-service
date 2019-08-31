@@ -11,7 +11,7 @@ public interface CacheDataInitializerService {
 
     void updateCacheByKey(String key);
 
-    void updateCache(String key, BackDealInterval interval);
+    void updateCache(List<CandleModel> models, String key, BackDealInterval interval);
 
     void cleanCache();
 

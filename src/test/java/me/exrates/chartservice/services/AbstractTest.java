@@ -1,6 +1,5 @@
 package me.exrates.chartservice.services;
 
-import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.configuration.CommonConfiguration;
 import me.exrates.chartservice.configuration.RedisConfiguration;
 import me.exrates.chartservice.model.BackDealInterval;
@@ -14,10 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
-import java.util.Map;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
-import static me.exrates.chartservice.configuration.RedisConfiguration.NEXT_INTERVAL_MAP;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("local")
@@ -48,9 +45,4 @@ public abstract class AbstractTest {
     @Autowired
     @Qualifier(ALL_SUPPORTED_INTERVALS_LIST)
     List<BackDealInterval> supportedIntervals;
-    @Autowired
-    @Qualifier(NEXT_INTERVAL_MAP)
-    Map<String, String> nextIntervalMap;
-    @Autowired
-    XSync<String> xSync;
 }

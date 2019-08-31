@@ -47,6 +47,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
     @Override
     public void receive(TradeDataDto message) {
+        log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Start processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
+
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
@@ -68,6 +70,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
                 }
             }
         }
+        log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> End processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
     }
 
     private Semaphore getSemaphoreSafe(String pairName) {

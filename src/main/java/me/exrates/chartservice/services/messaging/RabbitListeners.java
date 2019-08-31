@@ -36,7 +36,6 @@ public class RabbitListeners {
     public void receiveTrade(TradeDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
 
-        log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Start processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
         CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
     }
 

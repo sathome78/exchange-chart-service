@@ -1,5 +1,6 @@
 package me.exrates.chartservice.services;
 
+import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.impl.ListenerBufferImpl;
 import org.apache.commons.lang3.ObjectUtils;
@@ -52,7 +53,7 @@ public class ListenerBufferImplTest extends AbstractTest {
         listenerBuffer = spy(new ListenerBufferImpl(
                 tradeDataService,
                 redisProcessingService,
-                xSync));
+                new XSync<>()));
     }
 
     @Test

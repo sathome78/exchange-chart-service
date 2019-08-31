@@ -34,9 +34,8 @@ public final class CandleDataConverter {
      * @return unsorted list of candles, aggregated to specified backDealInterval
      */
     public static List<CandleModel> convertByInterval(List<CandleModel> models, BackDealInterval interval) {
-        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-
         return models.stream()
+                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
                 .collect(Collectors.groupingBy(p -> getNearestBackTimeForBackdealInterval(p.getCandleOpenTime(), interval)))
                 .entrySet().stream()
                 .map(entry -> {
@@ -145,9 +144,9 @@ public final class CandleDataConverter {
                 initialCandle = model;
             }
         }
-        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-
-        return models;
+        return models.stream()
+                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
+                .collect(Collectors.toList());
     }
 
     public static void fixOpenRate(List<CandleModel> models) {
