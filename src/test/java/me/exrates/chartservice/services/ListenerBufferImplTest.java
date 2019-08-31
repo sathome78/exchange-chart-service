@@ -7,6 +7,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -56,6 +57,7 @@ public class ListenerBufferImplTest extends AbstractTest {
                 new XSync<>()));
     }
 
+    @Ignore
     @Test
     public void receive() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
@@ -87,6 +89,7 @@ public class ListenerBufferImplTest extends AbstractTest {
         Assert.assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
     }
 
+    @Ignore
     @Test
     public void isReadyToClose() throws InterruptedException {
 
