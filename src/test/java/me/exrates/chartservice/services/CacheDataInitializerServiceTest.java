@@ -80,7 +80,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
         verify(elasticsearchProcessingService, atLeastOnce()).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-        verify(tradeDataService, atLeastOnce()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, times(6)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, times(6)).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
     }
