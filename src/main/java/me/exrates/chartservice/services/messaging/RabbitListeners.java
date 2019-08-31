@@ -36,8 +36,7 @@ public class RabbitListeners {
     public void receiveTrade(TradeDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
 
-//        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
-        listenerBuffer.receive(message);
+        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
     }
 
     @PreDestroy

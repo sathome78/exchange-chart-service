@@ -57,7 +57,6 @@ public class ListenerBufferImplTest extends AbstractTest {
                 new XSync<>()));
     }
 
-    @Ignore
     @Test
     public void receive() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
@@ -89,7 +88,6 @@ public class ListenerBufferImplTest extends AbstractTest {
         Assert.assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
     }
 
-    @Ignore
     @Test
     public void isReadyToClose() throws InterruptedException {
 

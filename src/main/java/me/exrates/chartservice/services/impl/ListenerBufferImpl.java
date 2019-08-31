@@ -12,11 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.BUFFER_SYNC;
@@ -50,25 +51,24 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
-//            xSync.execute(message.getPairName(), () -> {
-//                List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), k -> new ArrayList<>());
-//                trades.add(message);
-//            });
-//            Semaphore semaphore = getSemaphoreSafe(message.getPairName());
-//            if (semaphore.tryAcquire()) {
-//                try {
-//                    TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
-//                    xSync.execute(message.getPairName(), () -> {
-//                        List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
-//                        tradeDataService.handleReceivedTrades(message.getPairName(), trades);
-//                    });
-//                } catch (Exception ex) {
-//                    log.error(ex);
-//                } finally {
-//                    semaphore.release();
-//                }
-//            }
-            tradeDataService.handleReceivedTrades(message.getPairName(), Collections.singletonList(message));
+            xSync.execute(message.getPairName(), () -> {
+                List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), k -> new ArrayList<>());
+                trades.add(message);
+            });
+            Semaphore semaphore = getSemaphoreSafe(message.getPairName());
+            if (semaphore.tryAcquire()) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
+                    xSync.execute(message.getPairName(), () -> {
+                        List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
+                        tradeDataService.handleReceivedTrades(message.getPairName(), trades);
+                    });
+                } catch (Exception ex) {
+                    log.error(ex);
+                } finally {
+                    semaphore.release();
+                }
+            }
         }
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> End processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
     }
