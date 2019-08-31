@@ -82,7 +82,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
     private boolean generateForMinPeriod(LocalDate fromDate, LocalDate toDate, String pair) {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
-            log.info("<<< GENERATOR >>> Start generate cache data for pair: {} [Period: {} - {}]", pair, fromDate, toDate);
+            log.info("<<< GENERATOR >>> Start generate data for pair: {} [Period: {} - {}]", pair, fromDate, toDate);
 
             log.debug("<<< GENERATOR >>> Start get closed orders from database");
             final List<OrderDto> orders = orderService.getFilteredOrders(fromDate, toDate, pair);
@@ -104,11 +104,11 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             elasticsearchProcessingService.bulkInsertOrUpdate(models, ElasticsearchGeneratorUtil.generateIndex(pair));
             log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
-            log.info("<<< GENERATOR >>> End generate cache data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));
+            log.info("<<< GENERATOR >>> End generate data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));
 
             return true;
         } catch (Exception ex) {
-            log.error("<<< GENERATOR >>> Process of generation cache data was failed for pair: {} [Period: {} - {}]", pair, fromDate, toDate, ex);
+            log.error("<<< GENERATOR >>> Process of generation data was failed for pair: {} [Period: {} - {}]", pair, fromDate, toDate, ex);
 
             return false;
         }
