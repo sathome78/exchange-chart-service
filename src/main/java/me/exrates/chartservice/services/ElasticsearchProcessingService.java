@@ -19,7 +19,7 @@ public interface ElasticsearchProcessingService {
 
     LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String index);
 
-    void batchInsertOrUpdate(List<CandleModel> models, String index);
+    void bulkInsertOrUpdate(List<CandleModel> models, String index);
 
     void insert(CandleModel model, String index);
 

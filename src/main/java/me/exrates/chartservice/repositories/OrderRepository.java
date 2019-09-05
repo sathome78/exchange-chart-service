@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface OrderRepository {
 
+    List<String> getAllCurrencyPairNames();
+
     List<OrderDto> getFilteredOrders(LocalDate fromDate, LocalDate toDate, String pairName);
 }

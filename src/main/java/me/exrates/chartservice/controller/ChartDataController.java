@@ -22,8 +22,7 @@ import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
 
 @Log4j2
-@RequestMapping(value = "/data",
-        produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = "/data", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 @RestController
 public class ChartDataController {
 

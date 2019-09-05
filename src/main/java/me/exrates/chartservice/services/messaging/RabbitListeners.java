@@ -34,11 +34,9 @@ public class RabbitListeners {
 
     @RabbitListener(id = "${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
     public void receiveTrade(TradeDataDto message) {
-        log.info("Received message from core service {}", message);
+        log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
 
-        log.info("Start processing new data: pair name: {}, trade date: {}", message.getPairName(), message.getTradeDate());
         CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
-        log.info("End processing new trade data");
     }
 
     @PreDestroy

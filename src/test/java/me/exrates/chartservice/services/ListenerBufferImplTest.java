@@ -1,11 +1,13 @@
 package me.exrates.chartservice.services;
 
+import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.model.TradeDataDto;
 import me.exrates.chartservice.services.impl.ListenerBufferImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -52,7 +54,7 @@ public class ListenerBufferImplTest extends AbstractTest {
         listenerBuffer = spy(new ListenerBufferImpl(
                 tradeDataService,
                 redisProcessingService,
-                xSync));
+                new XSync<>()));
     }
 
     @Test

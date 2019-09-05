@@ -19,11 +19,13 @@ import java.util.stream.Stream;
 public class CommonConfiguration {
 
     public static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
+    public static final BackDealInterval ONE_DAY_INTERVAL = new BackDealInterval(1, IntervalType.DAY);
 
     public static final String JSON_MAPPER = "jsonMapper";
 
     public static final String ALL_SUPPORTED_INTERVALS_LIST = "allSupportedIntervalsList";
 
+    public static final String TRADE_SYNC = "tradeSync";
     public static final String BUFFER_SYNC = "bufferSync";
 
     @Bean(JSON_MAPPER)
@@ -33,7 +35,7 @@ public class CommonConfiguration {
                 .registerModule(new JavaTimeModule());
     }
 
-    @Bean
+    @Bean(TRADE_SYNC)
     public XSync<String> xSync() {
         return new XSync<>();
     }

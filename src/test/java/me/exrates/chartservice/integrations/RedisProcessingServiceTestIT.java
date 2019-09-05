@@ -6,6 +6,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,10 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
     public void setUp() throws Exception {
         key = RedisGeneratorUtil.generateKey(TEST_PAIR);
         hashKey = RedisGeneratorUtil.generateHashKey(NOW);
+    }
 
+    @After
+    public void tearDown() throws Exception {
         processingService.deleteKey(key);
     }
 
@@ -121,7 +125,7 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.batchInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
+        processingService.bulkInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
 
         models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
 

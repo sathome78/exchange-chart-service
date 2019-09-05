@@ -44,9 +44,11 @@ swagger:
 candles:
   store-in-cache: 300
 
+generator:
+  min-period: 3 #months
+
 scheduled:
   clean-cache: 0 */30 * ? * *
-  update-cache: 0 */5 * ? * *
 
 logging:
   level:

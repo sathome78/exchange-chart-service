@@ -10,6 +10,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +52,10 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
     public void setUp() throws Exception {
         index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
         key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+    }
 
+    @After
+    public void tearDown() throws Exception {
         // clear elasticsearch cluster
 
         elasticsearchProcessingService.deleteIndex(index);
@@ -83,11 +87,13 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         elasticsearchProcessingService.insert(candleModel, index);
 
+        TimeUnit.SECONDS.sleep(1);
+
         //update redis cache for all available intervals
 
         cacheDataInitializerService.updateCacheByKey(index);
 
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(1);
 
         //check data from redis cache for all intervals
 

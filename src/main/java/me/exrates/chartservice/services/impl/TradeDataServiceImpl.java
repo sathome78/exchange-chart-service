@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
+import static me.exrates.chartservice.configuration.CommonConfiguration.TRADE_SYNC;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
@@ -51,7 +52,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
-                                XSync<String> xSync,
+                                @Qualifier(TRADE_SYNC) XSync<String> xSync,
                                 @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                 @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;

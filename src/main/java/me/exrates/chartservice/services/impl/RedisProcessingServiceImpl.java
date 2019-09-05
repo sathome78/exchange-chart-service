@@ -124,7 +124,7 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public void batchInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval) {
+    public void bulkInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval) {
         models.forEach(model -> this.insertOrUpdate(model, key, interval));
     }
 

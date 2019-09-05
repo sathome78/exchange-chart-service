@@ -41,6 +41,34 @@ public class OrderServiceTest extends AbstractTest {
     }
 
     @Test
+    public void getAllCurrencyPairNames_ok() {
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderRepository)
+                .getAllCurrencyPairNames();
+
+        List<String> pairs = orderService.getAllCurrencyPairNames();
+
+        assertFalse(CollectionUtils.isEmpty(pairs));
+        assertEquals(1, pairs.size());
+        assertEquals(TEST_PAIR, pairs.get(0));
+
+        verify(orderRepository, atLeastOnce()).getAllCurrencyPairNames();
+    }
+
+    @Test
+    public void getAllCurrencyPairNames_empty_pairs_list() {
+        doReturn(Collections.emptyList())
+                .when(orderRepository)
+                .getAllCurrencyPairNames();
+
+        List<String> pairs = orderService.getAllCurrencyPairNames();
+
+        assertTrue(CollectionUtils.isEmpty(pairs));
+
+        verify(orderRepository, atLeastOnce()).getAllCurrencyPairNames();
+    }
+
+    @Test
     public void getFilteredOrders_ok() {
         doReturn(Collections.singletonList(OrderDto.builder()
                 .id(1)
