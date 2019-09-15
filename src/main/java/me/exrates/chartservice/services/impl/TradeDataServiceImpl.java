@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,7 +37,6 @@ import static java.util.Objects.nonNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 import static me.exrates.chartservice.configuration.CommonConfiguration.TRADE_SYNC;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @Log4j2
 @Service
@@ -70,10 +71,17 @@ public class TradeDataServiceImpl implements TradeDataService {
     private CandleModel getCandle(String pairName, LocalDateTime dateTime, BackDealInterval interval) {
         LocalDateTime candleTime = getNearestBackTimeForBackdealInterval(dateTime, interval);
 
-        final String key = RedisGeneratorUtil.generateKey(pairName);
-        final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
+        final String key = RedisGeneratorUtil.generateKey(candleTime.toLocalDate());
+        final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-        return redisProcessingService.get(key, hashKey, interval);
+        List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
+        if (CollectionUtils.isEmpty(models)) {
+            return null;
+        }
+        return models.stream()
+                .filter(model -> model.getCandleOpenTime().isEqual(candleTime))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -82,23 +90,23 @@ public class TradeDataServiceImpl implements TradeDataService {
             return Collections.emptyList();
         }
 
-        from = getNearestBackTimeForBackdealInterval(from, interval);
-        to = getNearestBackTimeForBackdealInterval(to, interval);
+        LocalDate fromDate = from.toLocalDate();
+        LocalDate toDate = to.toLocalDate();
 
-        final LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
-        final String key = RedisGeneratorUtil.generateKey(pairName);
+        final LocalDate boundaryDate = getBoundaryTime(interval);
 
         List<CandleModel> models;
-        if (to.isBefore(oldestCachedCandleTime)) {
-            models = getCandlesFromElasticAndAggregateToInterval(pairName, from, to, interval);
-        } else if (from.isBefore(oldestCachedCandleTime) && to.isAfter(oldestCachedCandleTime)) {
-            models = Stream.of(redisProcessingService.getByRange(oldestCachedCandleTime, to, key, interval),
-                    getCandlesFromElasticAndAggregateToInterval(pairName, from, oldestCachedCandleTime.minusSeconds(1), interval))
+        if (toDate.isBefore(boundaryDate)) {
+            models = getCandlesFromElasticAndAggregateToInterval(pairName, fromDate, toDate, interval);
+        } else if (fromDate.isBefore(boundaryDate) && toDate.isAfter(boundaryDate)) {
+            models = Stream.of(
+                    getCandlesFromElasticAndAggregateToInterval(pairName, fromDate, boundaryDate.minusDays(1), interval),
+                    getCandlesFromRedis(pairName, boundaryDate, toDate, interval))
                     .flatMap(Collection::stream)
                     .distinct()
                     .collect(Collectors.toList());
         } else {
-            models = redisProcessingService.getByRange(from, to, key, interval);
+            models = getCandlesFromRedis(pairName, fromDate, toDate, interval);
         }
 
         CandleDataConverter.fixOpenRate(models);
@@ -115,14 +123,14 @@ public class TradeDataServiceImpl implements TradeDataService {
         if (CollectionUtils.isEmpty(bufferedModels)) {
             CandleModel previousCandle = getPreviousCandle(pairName, from, interval);
 
-            initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+            initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(pairName, BigDecimal.ZERO, null);
 
             while (from.isBefore(to)) {
-                bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), from));
+                bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
 
                 from = from.plusMinutes(minutes);
             }
-            bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), to));
+            bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), to));
         } else {
             bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
@@ -133,21 +141,21 @@ public class TradeDataServiceImpl implements TradeDataService {
             if (from.isBefore(initialCandle.getCandleOpenTime())) {
                 CandleModel previousCandle = getPreviousCandle(pairName, from, interval);
 
-                initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(BigDecimal.ZERO, null);
+                initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(pairName, BigDecimal.ZERO, null);
             }
 
             while (from.isBefore(to)) {
                 CandleModel model = modelsMap.get(from);
 
                 if (isNull(model)) {
-                    bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), from));
+                    bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
                 } else {
                     initialCandle = model;
                 }
                 from = from.plusMinutes(minutes);
             }
             if (isNull(modelsMap.get(to))) {
-                bufferedModels.add(CandleModel.empty(initialCandle.getCloseRate(), to));
+                bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), to));
             }
         }
         bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
@@ -156,37 +164,47 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime date, BackDealInterval interval) {
-        if (isNull(date)) {
+    public LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval) {
+        if (isNull(candleDateTime)) {
             return null;
         }
 
-        date = getNearestBackTimeForBackdealInterval(date, interval);
+        candleDateTime = getNearestBackTimeForBackdealInterval(candleDateTime, interval);
 
-        final LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
-        final String key = RedisGeneratorUtil.generateKey(pairName);
+        final LocalDate boundaryTime = getBoundaryTime(interval);
 
-        if (date.isAfter(oldestCachedCandleTime)) {
-            return redisProcessingService.getLastCandleTimeBeforeDate(date, key, interval);
+        if (candleDateTime.isAfter(boundaryTime.atTime(0, 0))) {
+            final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
+
+            return redisProcessingService.getLastCandleTimeBeforeDate(candleDateTime, hashKey, interval);
         } else {
-            return elasticsearchProcessingService.getLastCandleTimeBeforeDate(date, key);
+            final String id = ElasticsearchGeneratorUtil.generateId(pairName);
+
+            return elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, id);
         }
     }
 
     @Override
     public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
         dto.stream()
-                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-                .forEach((key, value) -> groupTradesAndSave(pairName, value));
+                .collect(Collectors.groupingBy(p -> TimeUtil.getNearestTimeBeforeForMinInterval(p.getTradeDate())))
+                .values()
+                .forEach(trades -> groupTradesAndSave(pairName, trades));
     }
 
     @Override
-    public void defineAndSaveLastInitializedCandleTime(String key, List<CandleModel> models) {
+    public void defineAndSaveLastInitializedCandleTime(String hashKey, List<CandleModel> models) {
         if (!CollectionUtils.isEmpty(models)) {
             models.stream()
                     .map(CandleModel::getCandleOpenTime)
                     .max(LocalDateTime::compareTo)
-                    .ifPresent(dateTime -> redisProcessingService.insertLastInitializedCandleTimeToCache(key, dateTime));
+                    .ifPresent(dateTime -> {
+                        LocalDateTime lastInitializedCandleTime = redisProcessingService.getLastInitializedCandleTimeFromCache(hashKey);
+
+                        if (Objects.isNull(lastInitializedCandleTime) || lastInitializedCandleTime.isBefore(dateTime)) {
+                            redisProcessingService.insertLastInitializedCandleTimeToCache(hashKey, dateTime);
+                        }
+                    });
         }
     }
 
@@ -197,67 +215,127 @@ public class TradeDataServiceImpl implements TradeDataService {
                 return;
             }
 
-            supportedIntervals.forEach(interval -> {
-                final LocalDateTime candleTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
-                newCandle.setCandleOpenTime(candleTime);
+            supportedIntervals.parallelStream().forEach(interval -> {
+                final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
+                newCandle.setCandleOpenTime(candleDateTime);
 
-                final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+                final CandleModel previousCandle = getPreviousCandle(pairName, candleDateTime, interval);
                 newCandle.setOpenRate(previousCandle.getCloseRate());
 
-                final String key = RedisGeneratorUtil.generateKey(pairName);
-                final String hashKey = RedisGeneratorUtil.generateHashKey(candleTime);
+                final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
+                final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-                CandleModel cachedCandleModel = redisProcessingService.get(key, hashKey, interval);
-                CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
-                redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
+                List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
+
+                CandleModel cachedModel = null;
+                if (!CollectionUtils.isEmpty(cachedModels)) {
+                    cachedModel = cachedModels.stream()
+                            .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
+                            .findFirst()
+                            .orElse(null);
+                }
+                final CandleModel mergedModel = CandleDataConverter.merge(cachedModel, newCandle);
+
+                boolean replaced = Collections.replaceAll(cachedModels, cachedModel, mergedModel);
+
+                if (replaced) {
+                    redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
+                }
             });
         });
     }
 
-    private CandleModel getPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
-        final String key = RedisGeneratorUtil.generateKey(pairName);
-        final LocalDateTime defaultPreviousCandleTime = candleTime.minusMinutes(TimeUtil.convertToMinutes(interval));
+    private CandleModel getPreviousCandle(String pairName, LocalDateTime candleDateTime, BackDealInterval interval) {
+        final LocalDateTime defaultPreviousCandleTime = candleDateTime.minusMinutes(TimeUtil.convertToMinutes(interval));
 
-        final LocalDateTime oldestCachedCandleTime = getCandleTimeByCount(candlesToStoreInCache, interval);
+        final LocalDate boundaryTime = getBoundaryTime(interval);
 
         CandleModel previousModel;
-        if (candleTime.isAfter(oldestCachedCandleTime)) {
-            LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleTime, key, interval);
-            if (isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(BigDecimal.ZERO, defaultPreviousCandleTime);
+        if (candleDateTime.isAfter(boundaryTime.atTime(0, 0))) {
+            final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
+
+            LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleDateTime, hashKey, interval);
+            if (Objects.isNull(lastCandleTimeBeforeDate)) {
+                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
             }
 
-            final String hashKey = RedisGeneratorUtil.generateHashKey(lastCandleTimeBeforeDate);
+            final String key = RedisGeneratorUtil.generateKey(lastCandleTimeBeforeDate.toLocalDate());
 
-            previousModel = redisProcessingService.get(key, hashKey, interval);
+            List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
+            if (CollectionUtils.isEmpty(models)) {
+                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+            }
+            previousModel = models.stream()
+                    .filter(model -> model.getCandleOpenTime().isEqual(lastCandleTimeBeforeDate))
+                    .findFirst()
+                    .orElse(CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime));
         } else {
-            LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleTime, key);
-            if (isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(BigDecimal.ZERO, defaultPreviousCandleTime);
+            final String id = ElasticsearchGeneratorUtil.generateId(pairName);
+
+            LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, id);
+            if (Objects.isNull(lastCandleTimeBeforeDate)) {
+                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
             }
 
-            final String id = ElasticsearchGeneratorUtil.generateId(lastCandleTimeBeforeDate);
+            final String index = ElasticsearchGeneratorUtil.generateIndex(lastCandleTimeBeforeDate.toLocalDate());
 
-            previousModel = elasticsearchProcessingService.get(key, id);
+            List<CandleModel> models = elasticsearchProcessingService.get(index, id);
+            if (CollectionUtils.isEmpty(models)) {
+                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+            }
+            previousModel = models.stream()
+                    .filter(model -> model.getCandleOpenTime().isEqual(lastCandleTimeBeforeDate))
+                    .findFirst()
+                    .orElse(CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime));
         }
         return previousModel;
     }
 
-    private LocalDateTime getCandleTimeByCount(long count, BackDealInterval interval) {
-        LocalDateTime timeForLastCandle = getNearestBackTimeForBackdealInterval(LocalDateTime.now(), interval);
-        long candlesFromBeginInterval = interval.getIntervalValue() * count;
+    private List<CandleModel> getCandlesFromElasticAndAggregateToInterval(String pairName, LocalDate fromDate, LocalDate toDate, BackDealInterval interval) {
+        final String id = ElasticsearchGeneratorUtil.generateId(pairName);
 
-        return timeForLastCandle.minus(candlesFromBeginInterval, interval.getIntervalType().getCorrespondingTimeUnit());
+        List<CandleModel> bufferedModels = new ArrayList<>();
+        while (fromDate.isBefore(toDate) || fromDate.isEqual(toDate)) {
+            final String index = ElasticsearchGeneratorUtil.generateIndex(fromDate);
+
+            try {
+                List<CandleModel> models = elasticsearchProcessingService.get(index, id);
+                if (!CollectionUtils.isEmpty(models)) {
+                    bufferedModels.addAll(models);
+                }
+            } catch (Exception ex) {
+                log.error(ex);
+            }
+
+            fromDate = fromDate.plusDays(1);
+        }
+        return CandleDataConverter.convertByInterval(bufferedModels, interval);
     }
 
-    private List<CandleModel> getCandlesFromElasticAndAggregateToInterval(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval) {
-        final String index = ElasticsearchGeneratorUtil.generateIndex(pairName);
+    private List<CandleModel> getCandlesFromRedis(String pairName, LocalDate fromDate, LocalDate toDate, BackDealInterval interval) {
+        final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-        try {
-            return CandleDataConverter.convertByInterval(elasticsearchProcessingService.getByRange(from, to, index), interval);
-        } catch (Exception e) {
-            log.error(e);
-            return Collections.emptyList();
+        List<CandleModel> bufferedModels = new ArrayList<>();
+        while (fromDate.isBefore(toDate) || fromDate.isEqual(toDate)) {
+            final String key = RedisGeneratorUtil.generateKey(fromDate);
+
+            try {
+                List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
+                if (!CollectionUtils.isEmpty(models)) {
+                    bufferedModels.addAll(models);
+                }
+            } catch (Exception ex) {
+                log.error(ex);
+            }
+
+            fromDate = fromDate.plusDays(1);
         }
+        return bufferedModels;
+    }
+
+    private LocalDate getBoundaryTime(BackDealInterval interval) {
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        return currentDateTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval)).toLocalDate();
     }
 }

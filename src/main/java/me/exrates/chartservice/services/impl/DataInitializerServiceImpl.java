@@ -9,7 +9,6 @@ import me.exrates.chartservice.services.DataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
-import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -63,23 +62,16 @@ public class DataInitializerServiceImpl implements DataInitializerService {
         LocalDate minFrom = fromDate;
         LocalDate minTo = fromDate.plusMonths(minPeriod);
 
-        List<Boolean> generated = new ArrayList<>();
         while (minTo.isBefore(toDate)) {
-            generated.add(generateForMinPeriod(minFrom, minTo, pair));
+            generateForMinPeriod(minFrom, minTo, pair);
 
             minFrom = minTo;
             minTo = minTo.plusMonths(minPeriod);
         }
-        generated.add(generateForMinPeriod(minFrom, toDate, pair));
-
-        if (generated.stream().anyMatch(g -> g)) {
-            log.debug("<<< GENERATOR >>> Start update cache");
-            cacheDataInitializerService.updateCacheByKey(RedisGeneratorUtil.generateKey(pair));
-            log.debug("<<< GENERATOR >>> End update cache");
-        }
+        generateForMinPeriod(minFrom, toDate, pair);
     }
 
-    private boolean generateForMinPeriod(LocalDate fromDate, LocalDate toDate, String pair) {
+    private void generateForMinPeriod(LocalDate fromDate, LocalDate toDate, String pair) {
         try {
             StopWatch stopWatch = StopWatch.createStarted();
             log.info("<<< GENERATOR >>> Start generate data for pair: {} [Period: {} - {}]", pair, fromDate, toDate);
@@ -89,28 +81,38 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
 
             if (CollectionUtils.isEmpty(orders)) {
-                return false;
+                return;
             }
 
-            log.debug("<<< GENERATOR >>> Start transform orders to candles");
-            List<CandleModel> models = CandleDataConverter.convert(orders);
-            log.debug("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
+            log.debug("<<< GENERATOR >>> Start divide orders by days");
+            Map<LocalDate, List<OrderDto>> mapOfOrders = orders.stream()
+                    .collect(Collectors.groupingBy(orderDto -> orderDto.getDateAcception().toLocalDate()));
+            log.debug("<<< GENERATOR >>> End divide orders by days");
 
-            log.debug("<<< GENERATOR >>> Start fix candles open rate");
-            CandleDataConverter.fixOpenRate(models);
-            log.debug("<<< GENERATOR >>> End fix candles open rate");
+            mapOfOrders.forEach((k, v) -> {
+                log.debug("<<< GENERATOR >>> Start transform orders to candles");
+                List<CandleModel> models = CandleDataConverter.convert(v);
+                log.debug("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
 
-            log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
-            elasticsearchProcessingService.bulkInsertOrUpdate(models, ElasticsearchGeneratorUtil.generateIndex(pair));
-            log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
+                log.debug("<<< GENERATOR >>> Start fix candles open rate");
+                CandleDataConverter.fixOpenRate(models);
+                log.debug("<<< GENERATOR >>> End fix candles open rate");
 
-            log.info("<<< GENERATOR >>> End generate data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));
+                log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
+                final String index = ElasticsearchGeneratorUtil.generateIndex(k);
+                final String id = ElasticsearchGeneratorUtil.generateId(pair);
 
-            return true;
+                elasticsearchProcessingService.insert(models, index, id);
+                log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
+
+                log.debug("<<< GENERATOR >>> Start update cache");
+                cacheDataInitializerService.updateCacheByIndexAndId(index, id);
+                log.debug("<<< GENERATOR >>> End update cache");
+
+                log.info("<<< GENERATOR >>> End generate data for pair: {} [Period: {} - {}]. Time: {} s", pair, fromDate, toDate, stopWatch.getTime(TimeUnit.SECONDS));
+            });
         } catch (Exception ex) {
             log.error("<<< GENERATOR >>> Process of generation data was failed for pair: {} [Period: {} - {}]", pair, fromDate, toDate, ex);
-
-            return false;
         }
     }
 }

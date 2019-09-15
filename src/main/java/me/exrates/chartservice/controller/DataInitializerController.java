@@ -25,6 +25,18 @@ public class DataInitializerController {
         this.initializerService = initializerService;
     }
 
+    @PostMapping("/generate/all")
+    public ResponseEntity generateAllData(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                          @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        log.info("Generate for all pairs - from: {}, to: {}", fromDate, toDate);
+
+        initializerService.generate(fromDate, toDate);
+
+        log.info("Process of generation cache data for: ALL is DONE!");
+
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/generate")
     public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
                                                  @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -34,18 +46,6 @@ public class DataInitializerController {
         initializerService.generate(fromDate, toDate, pairs);
 
         log.info("Process of generation cache data for: {} is DONE!", pairs.toString());
-
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/generate/all")
-    public ResponseEntity generateAllData(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-                                          @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
-        log.info("Generate for all pairs - from: {}, to: {}", fromDate, toDate);
-
-        initializerService.generate(fromDate, toDate);
-
-        log.info("Process of generation cache data for: ALL is DONE!");
 
         return ResponseEntity.ok().build();
     }

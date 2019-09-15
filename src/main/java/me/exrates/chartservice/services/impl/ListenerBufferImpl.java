@@ -89,9 +89,9 @@ public class ListenerBufferImpl implements ListenerBuffer {
     }
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeCandleTime) {
-        final String key = RedisGeneratorUtil.generateKey(pairName);
+        final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-        LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(key);
+        LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(hashKey);
         return isNull(initTime) || tradeCandleTime.isAfter(initTime);
     }
 }

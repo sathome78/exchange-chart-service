@@ -82,7 +82,7 @@ public final class CandleDataConverter {
         return CandleModel.builder()
                 .firstTradeTime(firstTrade.getTradeDate())
                 .lastTradeTime(lastTrade.getTradeDate())
-                .candleOpenTime(getNearestTimeBeforeForMinInterval(firstTrade.getTradeDate()))
+                .candleOpenTime(TimeUtil.getNearestTimeBeforeForMinInterval(firstTrade.getTradeDate()))
                 .openRate(firstTrade.getExrate())
                 .closeRate(lastTrade.getExrate())
                 .volume(volume)
@@ -123,7 +123,7 @@ public final class CandleDataConverter {
                 .collect(Collectors.toList());
     }
 
-    public static List<CandleModel> fillGaps(List<CandleModel> models, BackDealInterval interval) {
+    public static List<CandleModel> fillGaps(List<CandleModel> models, String pairName, BackDealInterval interval) {
         CandleModel initialCandle = models.get(0);
         LocalDateTime from = initialCandle.getCandleOpenTime();
         LocalDateTime to = models.get(models.size() - 1).getCandleOpenTime();
@@ -139,7 +139,7 @@ public final class CandleDataConverter {
             CandleModel model = modelsMap.get(from);
 
             if (isNull(model)) {
-                models.add(CandleModel.empty(initialCandle.getCloseRate(), from));
+                models.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
             } else {
                 initialCandle = model;
             }

@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.ModelList;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -31,25 +33,25 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.Max;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.stream.Collectors.toList;
 import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
 
 @Log4j2
@@ -97,7 +99,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public CandleModel get(String index, String id) {
+    public List<CandleModel> get(String index, String id) {
         GetRequest request = new GetRequest(index, id);
 
         try {
@@ -107,7 +109,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             if (isNull(sourceAsString)) {
                 return null;
             }
-            return mapper.readValue(sourceAsString, CandleModel.class);
+            return getModels(sourceAsString);
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
@@ -116,7 +118,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public List<CandleModel> getAllByIndex(String index) {
+    public Map<String, List<CandleModel>> getAllByIndex(String index) {
         final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
 
         SearchRequest request = new SearchRequest(index)
@@ -128,9 +130,9 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
             String scrollId = response.getScrollId();
             SearchHit[] searchHits = response.getHits().getHits();
 
-            List<CandleModel> result = new ArrayList<>();
+            Map<String, List<CandleModel>> result = new HashMap<>();
             while (Objects.nonNull(searchHits) && searchHits.length > 0) {
-                result.addAll(getSearchResult(searchHits));
+                result.putAll(getSearchResult(searchHits));
 
                 SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
                 scrollRequest.scroll(scroll);
@@ -144,86 +146,39 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         } catch (IOException | ElasticsearchStatusException ex) {
             log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
 
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
     }
 
     @Override
-    public List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index) {
-        final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
-        final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-                .query(QueryBuilders.rangeQuery("time_in_millis")
-                        .gte(Timestamp.valueOf(fromDate).getTime())
-                        .lte(Timestamp.valueOf(toDate).getTime()));
+    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, String id) {
+        return getLastCandleTimeBeforeDate(candleDateTime, candleDateTime.toLocalDate(), id);
+    }
 
-        SearchRequest request = new SearchRequest(index)
-                .scroll(scroll)
-                .source(sourceBuilder);
+    private LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDate date, String id) {
+        final String index = ElasticsearchGeneratorUtil.generateIndex(date);
 
-        try {
-            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
-
-            String scrollId = response.getScrollId();
-            SearchHit[] searchHits = response.getHits().getHits();
-
-            List<CandleModel> result = new ArrayList<>();
-            while (Objects.nonNull(searchHits) && searchHits.length > 0) {
-                result.addAll(getSearchResult(searchHits));
-
-                SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
-                        .scroll(scroll);
-
-                response = client.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-                scrollId = response.getScrollId();
-                searchHits = response.getHits().getHits();
-            }
-            return result;
-        } catch (IOException | ElasticsearchStatusException ex) {
-            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
-
-            return Collections.emptyList();
+        List<CandleModel> models = get(index, id);
+        if (!CollectionUtils.isEmpty(models)) {
+            return models.stream()
+                    .map(CandleModel::getCandleOpenTime)
+                    .filter(candleOpenTime -> candleOpenTime.isBefore(candleDateTime))
+                    .max(Comparator.naturalOrder())
+                    .orElse(null);
         }
+        return getLastCandleTimeBeforeDate(candleDateTime, date.minusDays(1), id);
     }
 
     @Override
-    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String index) {
-        final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-                .query(QueryBuilders
-                        .rangeQuery("time_in_millis")
-                        .lt(Timestamp.valueOf(date).getTime()))
-                .aggregation(AggregationBuilders
-                        .max("last_candle_time")
-                        .field("time_in_millis"));
-
-        SearchRequest request = new SearchRequest(index)
-                .source(sourceBuilder);
-
-        try {
-            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
-
-            Max lastCandleTime = response.getAggregations().get("last_candle_time");
-
-            return new Timestamp((long) lastCandleTime.getValue()).toLocalDateTime();
-        } catch (IOException | ElasticsearchStatusException ex) {
-            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
-
-            return null;
-        }
-    }
-
-    @Override
-    public void bulkInsertOrUpdate(List<CandleModel> models, String index) {
+    public void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String index) {
         if (!this.existsIndex(index)) {
             this.createIndex(index);
         }
 
         BulkRequest bulkRequest = new BulkRequest();
 
-        models.forEach(model -> {
-            final String id = ElasticsearchGeneratorUtil.generateId(model.getCandleOpenTime());
-
-            String sourceString = getSourceString(model);
+        mapOfModels.forEach((id, models) -> {
+            String sourceString = getSourceString(models);
             if (nonNull(sourceString)) {
                 IndexRequest request = new IndexRequest(index)
                         .id(id)
@@ -240,12 +195,15 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public void insert(CandleModel model, String index) {
-        String sourceString = getSourceString(model);
+    public void insert(List<CandleModel> models, String index, String id) {
+        String sourceString = getSourceString(models);
         if (isNull(sourceString)) {
             return;
         }
-        final String id = ElasticsearchGeneratorUtil.generateId(model.getCandleOpenTime());
+
+        if (!this.existsIndex(index)) {
+            this.createIndex(index);
+        }
 
         IndexRequest request = new IndexRequest(index)
                 .id(id)
@@ -259,12 +217,11 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public void update(CandleModel model, String index) {
-        String sourceString = getSourceString(model);
+    public void update(List<CandleModel> models, String index, String id) {
+        String sourceString = getSourceString(models);
         if (isNull(sourceString)) {
             return;
         }
-        final String id = ElasticsearchGeneratorUtil.generateId(model.getCandleOpenTime());
 
         UpdateRequest request = new UpdateRequest(index, id)
                 .doc(sourceString, XContentType.JSON);
@@ -322,7 +279,7 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         CreateIndexRequest request = new CreateIndexRequest(index)
                 .settings(Settings.builder()
                         .put("index.number_of_shards", 3)
-                        .put("index.number_of_replicas", 1)
+                        .put("index.number_of_replicas", 0)
                         .build());
 
         try {
@@ -349,26 +306,37 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
         }
     }
 
-    private List<CandleModel> getSearchResult(SearchHit[] searchHits) {
+    private Map<String, List<CandleModel>> getSearchResult(SearchHit[] searchHits) {
         return Arrays.stream(searchHits)
                 .map(hit -> {
-                    try {
-                        return mapper.readValue(hit.getSourceAsString(), CandleModel.class);
-                    } catch (IOException ex) {
-                        log.error("Problem with read model object from string", ex);
+                    final String id = hit.getId();
+                    final List<CandleModel> models = getModels(hit.getSourceAsString());
 
-                        return null;
-                    }
+                    return Pair.of(id, models);
                 })
-                .filter(Objects::nonNull)
-                .collect(toList());
+                .filter(pair -> Objects.nonNull(pair.getValue()))
+                .collect(Collectors.toMap(
+                        Pair::getKey,
+                        Pair::getValue));
     }
 
-    private String getSourceString(final CandleModel model) {
+    private String getSourceString(final List<CandleModel> models) {
         try {
-            return mapper.writeValueAsString(model);
+            return mapper.writeValueAsString(new ModelList(models));
         } catch (JsonProcessingException ex) {
             log.error("Problem with writing model object to string", ex);
+
+            return null;
+        }
+    }
+
+    private List<CandleModel> getModels(final String sourceString) {
+        try {
+            ModelList modelList = mapper.readValue(sourceString, ModelList.class);
+
+            return modelList.getModels();
+        } catch (IOException ex) {
+            log.error("Problem with getting response from elasticsearch cluster", ex);
 
             return null;
         }

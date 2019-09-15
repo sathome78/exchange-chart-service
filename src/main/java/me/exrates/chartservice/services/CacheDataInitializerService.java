@@ -2,6 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.ModelList;
 
 import java.util.List;
 
@@ -9,9 +10,11 @@ public interface CacheDataInitializerService {
 
     void updateCache();
 
-    void updateCacheByKey(String key);
+    void updateCacheByIndex(String index);
 
-    void updateCache(List<CandleModel> models, String key, BackDealInterval interval);
+    void updateCacheByIndexAndId(String index, String id);
+
+    void updateCache(List<CandleModel> models, String key, String hashKey, BackDealInterval interval);
 
     void cleanCache();
 
