@@ -228,6 +228,8 @@ public class TradeDataServiceImpl implements TradeDataService {
                 List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
 
                 if (!CollectionUtils.isEmpty(cachedModels)) {
+                    cachedModels = new ArrayList<>(cachedModels);
+
                     CandleModel cachedModel = cachedModels.stream()
                             .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
                             .peek(model -> CandleDataConverter.merge(model, newModel))
