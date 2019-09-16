@@ -210,37 +210,38 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
         xSync.execute(pairName, () -> {
-            CandleModel newCandle = CandleDataConverter.reduceToCandle(dto);
-            if (isNull(newCandle)) {
+            CandleModel newModel = CandleDataConverter.reduceToCandle(dto);
+            if (isNull(newModel)) {
                 return;
             }
 
-            supportedIntervals.parallelStream().forEach(interval -> {
-                final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newCandle.getCandleOpenTime(), interval);
-                newCandle.setCandleOpenTime(candleDateTime);
+            supportedIntervals.forEach(interval -> {
+                final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
+                newModel.setCandleOpenTime(candleDateTime);
 
                 final CandleModel previousCandle = getPreviousCandle(pairName, candleDateTime, interval);
-                newCandle.setOpenRate(previousCandle.getCloseRate());
+                newModel.setOpenRate(previousCandle.getCloseRate());
 
                 final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
                 final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
                 List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
 
-                CandleModel cachedModel = null;
                 if (!CollectionUtils.isEmpty(cachedModels)) {
-                    cachedModel = cachedModels.stream()
+                    CandleModel cachedModel = cachedModels.stream()
                             .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
+                            .peek(model -> CandleDataConverter.merge(model, newModel))
                             .findFirst()
                             .orElse(null);
-                }
-                final CandleModel mergedModel = CandleDataConverter.merge(cachedModel, newCandle);
 
-                boolean replaced = Collections.replaceAll(cachedModels, cachedModel, mergedModel);
-
-                if (replaced) {
-                    redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
+                    if (Objects.isNull(cachedModel)) {
+                        cachedModels.add(newModel);
+                    }
+                } else {
+                    cachedModels = Collections.singletonList(newModel);
                 }
+
+                redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
             });
         });
     }

@@ -23,7 +23,6 @@ import java.util.stream.IntStream;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @NoArgsConstructor(access = AccessLevel.NONE)
 public final class CandleDataConverter {
@@ -49,7 +48,7 @@ public final class CandleDataConverter {
                                     .lowRate(left.getLowRate().min(right.getLowRate()))
                                     .volume(left.getVolume().add(right.getVolume()))
                                     .build())
-                            .map(candleModel -> candleModel.toBuilder()
+                            .map(model -> model.toBuilder()
                                     .firstTradeTime(groupedCandles.get(0).getFirstTradeTime())
                                     .lastTradeTime(groupedCandles.get(groupedCandles.size() - 1).getLastTradeTime())
                                     .openRate(groupedCandles.get(0).getOpenRate())
@@ -80,6 +79,7 @@ public final class CandleDataConverter {
                 .mapToDouble(p -> p.getExrate().doubleValue()).summaryStatistics();
 
         return CandleModel.builder()
+                .pairName(firstTrade.getPairName())
                 .firstTradeTime(firstTrade.getTradeDate())
                 .lastTradeTime(lastTrade.getTradeDate())
                 .candleOpenTime(TimeUtil.getNearestTimeBeforeForMinInterval(firstTrade.getTradeDate()))
@@ -91,24 +91,17 @@ public final class CandleDataConverter {
                 .build();
     }
 
-    public static CandleModel merge(CandleModel cachedCandle, @NotNull CandleModel newCandle) {
-        if (isNull(cachedCandle)) {
-            return newCandle;
-        }
+    public static void merge(CandleModel cachedModel, @NotNull CandleModel newModel) {
+        boolean leftStartFirst = cachedModel.getFirstTradeTime().isBefore(newModel.getFirstTradeTime());
+        boolean leftEndLast = cachedModel.getLastTradeTime().isAfter(newModel.getLastTradeTime());
 
-        boolean leftStartFirst = cachedCandle.getFirstTradeTime().isBefore(newCandle.getFirstTradeTime());
-        boolean leftEndLast = cachedCandle.getLastTradeTime().isAfter(newCandle.getLastTradeTime());
-
-        return CandleModel.builder()
-                .firstTradeTime(leftStartFirst ? cachedCandle.getFirstTradeTime() : newCandle.getFirstTradeTime())
-                .lastTradeTime(leftEndLast ? cachedCandle.getLastTradeTime() : newCandle.getLastTradeTime())
-                .candleOpenTime(cachedCandle.getCandleOpenTime())
-                .openRate(leftStartFirst ? cachedCandle.getOpenRate() : newCandle.getOpenRate())
-                .closeRate(leftEndLast ? cachedCandle.getCloseRate() : newCandle.getCloseRate())
-                .volume(cachedCandle.getVolume().add(newCandle.getVolume()))
-                .highRate(cachedCandle.getHighRate().max(newCandle.getHighRate()))
-                .lowRate(cachedCandle.getLowRate().min(newCandle.getLowRate()))
-                .build();
+        cachedModel.setFirstTradeTime(leftStartFirst ? cachedModel.getFirstTradeTime() : newModel.getFirstTradeTime());
+        cachedModel.setLastTradeTime(leftEndLast ? cachedModel.getLastTradeTime() : newModel.getLastTradeTime());
+        cachedModel.setOpenRate(leftStartFirst ? cachedModel.getOpenRate() : newModel.getOpenRate());
+        cachedModel.setCloseRate(leftEndLast ? cachedModel.getCloseRate() : newModel.getCloseRate());
+        cachedModel.setHighRate(cachedModel.getHighRate().max(newModel.getHighRate()));
+        cachedModel.setLowRate(cachedModel.getLowRate().min(newModel.getLowRate()));
+        cachedModel.setVolume(cachedModel.getVolume().add(newModel.getVolume()));
     }
 
     public static List<CandleModel> convert(List<OrderDto> orders) {

@@ -7,7 +7,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -25,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -51,50 +51,50 @@ public class ListenerBufferImplTest extends AbstractTest {
 
     @Before
     public void setUp() throws Exception {
-//        listenerBuffer = spy(new ListenerBufferImpl(
-//                tradeDataService,
-//                redisProcessingService,
-//                new XSync<>()));
+        listenerBuffer = spy(new ListenerBufferImpl(
+                tradeDataService,
+                redisProcessingService,
+                new XSync<>()));
     }
 
     @Test
     public void receive() throws InterruptedException {
-//        ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
-//
-//        List<TradeDataDto> usdTrades = generateTestListForPair(BTC_USD);
-//        List<TradeDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
-//
-//        doReturn(null).when(redisProcessingService).getLastInitializedCandleTimeFromCache(any());
-//
-//        Collection<Callable<ObjectUtils.Null>> tasks = new ArrayList<>();
-//        Stream.concat(usdTrades.stream(),
-//                usdtTrades.stream())
-//                .collect(Collectors.toList())
-//                .forEach(p -> tasks.add(() -> {
-//                    listenerBuffer.receive(p);
-//                    return null;
-//                }));
-//
-//        executor.invokeAll(tasks);
-//
-//        verify(tradeDataService, times(1))
-//                .handleReceivedTrades(eq(BTC_USD), usdCaptor.capture());
-//        verify(tradeDataService, times(1))
-//                .handleReceivedTrades(eq(BTC_USDT), usdtCaptor.capture());
-//
-//        assertThat(usdTrades, containsInAnyOrder(usdCaptor.getValue().toArray()));
-//        assertThat(usdtTrades, containsInAnyOrder(usdtCaptor.getValue().toArray()));
-//        Assert.assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
-//        Assert.assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
+        ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
+
+        List<TradeDataDto> usdTrades = generateTestListForPair(BTC_USD);
+        List<TradeDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
+
+        doReturn(null).when(redisProcessingService).getLastInitializedCandleTimeFromCache(any());
+
+        Collection<Callable<ObjectUtils.Null>> tasks = new ArrayList<>();
+        Stream.concat(usdTrades.stream(),
+                usdtTrades.stream())
+                .collect(Collectors.toList())
+                .forEach(p -> tasks.add(() -> {
+                    listenerBuffer.receive(p);
+                    return null;
+                }));
+
+        executor.invokeAll(tasks);
+
+        verify(tradeDataService, times(1))
+                .handleReceivedTrades(eq(BTC_USD), usdCaptor.capture());
+        verify(tradeDataService, times(1))
+                .handleReceivedTrades(eq(BTC_USDT), usdtCaptor.capture());
+
+        assertThat(usdTrades, containsInAnyOrder(usdCaptor.getValue().toArray()));
+        assertThat(usdtTrades, containsInAnyOrder(usdtCaptor.getValue().toArray()));
+        assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
+        assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
     }
 
     @Test
     public void isReadyToClose() throws InterruptedException {
-//        receive();
-//
-//        boolean result = listenerBuffer.isReadyToClose();
-//
-//        Assert.assertTrue(result);
+        receive();
+
+        boolean result = listenerBuffer.isReadyToClose();
+
+        Assert.assertTrue(result);
     }
 
     private List<TradeDataDto> generateTestListForPair(String currencyPair) {
