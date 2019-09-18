@@ -14,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -144,25 +141,16 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
         updatedModels.add(model2);
 
         Map<String, List<CandleModel>> mapOfModels = new HashMap<>();
-        mapOfModels.put(hashKey, updatedModels);
+        mapOfModels.put(key, updatedModels);
 
-        processingService.bulkInsertOrUpdate(mapOfModels, key, DEFAULT_INTERVAL);
+        processingService.bulkInsertOrUpdate(mapOfModels, hashKey, DEFAULT_INTERVAL);
 
-        mapOfModels = processingService.getAllByKey(key, DEFAULT_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        Collection<List<CandleModel>> modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
-        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, hashKey, DEFAULT_INTERVAL);
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, NOW.minusDays(1), hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(lastCandleTime);
 
@@ -174,7 +162,7 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
     }
 
     @Test
-    public void insertAndGetLastInitializedCandleTimeEndToEnd() {
+    public void insertLastInitializedCandleTimeToCacheEndToEnd() {
         LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
 
         processingService.insertLastInitializedCandleTimeToCache(hashKey, dateTimeWithoutNano);
@@ -193,6 +181,29 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
-        processingService.deleteKeyByDbIndexAndKey(0, key);
+        processingService.deleteKeyByDbIndexAndKey(0, hashKey);
+    }
+
+    @Test
+    public void insertFirstInitializedCandleTimeToHistoryEndToEnd() {
+        LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
+
+        processingService.insertFirstInitializedCandleTimeToHistory(hashKey, dateTimeWithoutNano);
+
+        LocalDateTime dateTime = processingService.getFirstInitializedCandleTimeFromHistory(hashKey);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
+
+        processingService.insertFirstInitializedCandleTimeToHistory(hashKey, dateTimeWithoutNano);
+
+        dateTime = processingService.getFirstInitializedCandleTimeFromHistory(hashKey);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        processingService.deleteKeyByDbIndexAndKey(0, hashKey);
     }
 }

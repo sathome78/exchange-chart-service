@@ -19,4 +19,6 @@ public interface TradeDataService {
     void handleReceivedTrades(String pairname, List<TradeDataDto> dto);
 
     void defineAndSaveLastInitializedCandleTime(String hashKey, List<CandleModel> models);
+
+    void defineAndSaveFirstInitializedCandleTime(String hashKey, List<CandleModel> models);
 }

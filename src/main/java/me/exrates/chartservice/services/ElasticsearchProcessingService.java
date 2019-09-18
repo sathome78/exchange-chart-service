@@ -14,11 +14,9 @@ public interface ElasticsearchProcessingService {
 
     List<CandleModel> get(String index, String id);
 
-    Map<String, List<CandleModel>> getAllByIndex(String index);
+    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDateTime boundaryTime, String id);
 
-    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, String id);
-
-    void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String index);
+    void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String id);
 
     void insert(List<CandleModel> models, String index, String id);
 

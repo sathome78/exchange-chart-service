@@ -13,6 +13,7 @@ import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
@@ -61,7 +62,7 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .insert(anyList(), anyString(), anyString());
+                .bulkInsertOrUpdate(anyMap(), anyString());
         doNothing()
                 .when(cacheDataInitializerService)
                 .updateCacheByIndexAndId(anyString(), anyString());
@@ -70,7 +71,7 @@ public class DataInitializerServiceTest extends AbstractTest {
 
         verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).insert(anyList(), anyString(), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
         verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
 
@@ -88,7 +89,7 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .insert(anyList(), anyString(), anyString());
+                .bulkInsertOrUpdate(anyMap(), anyString());
         doNothing()
                 .when(cacheDataInitializerService)
                 .updateCacheByIndexAndId(anyString(), anyString());
@@ -96,7 +97,7 @@ public class DataInitializerServiceTest extends AbstractTest {
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).insert(anyList(), anyString(), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
         verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
 

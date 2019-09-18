@@ -241,46 +241,46 @@ public class TradeDataServiceImplTest extends AbstractTest {
 
     @Test
     public void getLastCandleTimeBeforeDate_fromDateIsNull() {
-        doReturn(NOW)
-                .when(redisProcessingService)
-                .getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
-
         LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, null, M5_INTERVAL);
 
         assertNull(lastCandleTimeBeforeDate);
 
-        verify(redisProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
     }
 
     @Test
     public void getLastCandleTimeBeforeDate_dateFromRedis() {
         doReturn(NOW)
                 .when(redisProcessingService)
-                .getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
+                .getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
 
         LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW, M5_INTERVAL);
 
         assertNotNull(lastCandleTimeBeforeDate);
         assertEquals(NOW, lastCandleTimeBeforeDate);
 
-        verify(redisProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
     }
 
     @Test
     public void getLastCandleTimeBeforeDate_dateFromElasticsearch() {
         doReturn(NOW)
                 .when(elasticsearchProcessingService)
-                .getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString());
+                .getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        doReturn(NOW)
+                .when(redisProcessingService)
+                .getFirstInitializedCandleTimeFromHistory(anyString());
 
         LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW.minusDays(5), M5_INTERVAL);
 
         assertNotNull(lastCandleTimeBeforeDate);
         assertEquals(NOW, lastCandleTimeBeforeDate);
 
-        verify(redisProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, atLeastOnce()).getFirstInitializedCandleTimeFromHistory(anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
     }
 
     private CandleModel buildDefaultCandle(LocalDateTime candleTime) {

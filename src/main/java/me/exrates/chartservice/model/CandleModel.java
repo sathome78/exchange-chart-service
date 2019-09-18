@@ -33,12 +33,6 @@ public class CandleModel {
     @JsonProperty("time")
     private LocalDateTime candleOpenTime;
 
-    public CandleModel(BigDecimal highRate, BigDecimal lowRate, BigDecimal volume) {
-        this.highRate = highRate;
-        this.lowRate = lowRate;
-        this.volume = volume;
-    }
-
     public static CandleModel empty(String pairName, BigDecimal closeRate, LocalDateTime candleOpenTime) {
         return CandleModel.builder()
                 .pairName(pairName)

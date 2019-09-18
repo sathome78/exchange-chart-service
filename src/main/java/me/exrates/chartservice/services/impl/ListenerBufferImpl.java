@@ -92,6 +92,6 @@ public class ListenerBufferImpl implements ListenerBuffer {
         final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
         LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(hashKey);
-        return isNull(initTime) || tradeCandleTime.isAfter(initTime);
+        return isNull(initTime) || initTime.isBefore(tradeCandleTime);
     }
 }

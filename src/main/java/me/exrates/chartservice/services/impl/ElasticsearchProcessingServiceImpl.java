@@ -7,16 +7,12 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.ModelList;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
-import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -26,13 +22,10 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.search.Scroll;
-import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -44,11 +37,9 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -118,66 +109,41 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
     }
 
     @Override
-    public Map<String, List<CandleModel>> getAllByIndex(String index) {
-        final Scroll scroll = new Scroll(TimeValue.timeValueSeconds(30));
+    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDateTime boundaryTime, String id) {
+        return getLastCandleTimeBeforeDate(candleDateTime, boundaryTime.toLocalDate(), candleDateTime.toLocalDate(), id);
+    }
 
-        SearchRequest request = new SearchRequest(index)
-                .scroll(scroll);
-
-        try {
-            SearchResponse response = client.search(request, RequestOptions.DEFAULT);
-
-            String scrollId = response.getScrollId();
-            SearchHit[] searchHits = response.getHits().getHits();
-
-            Map<String, List<CandleModel>> result = new HashMap<>();
-            while (Objects.nonNull(searchHits) && searchHits.length > 0) {
-                result.putAll(getSearchResult(searchHits));
-
-                SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-                scrollRequest.scroll(scroll);
-
-                response = client.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-                scrollId = response.getScrollId();
-                searchHits = response.getHits().getHits();
-            }
-            return result;
-        } catch (IOException | ElasticsearchStatusException ex) {
-            log.error("Problem with getting response from elasticsearch cluster: {}", ex.getMessage());
-
-            return Collections.emptyMap();
+    private LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDate boundaryDate, LocalDate date, String id) {
+        if (date.isBefore(boundaryDate)) {
+            return null;
         }
-    }
 
-    @Override
-    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, String id) {
-        return getLastCandleTimeBeforeDate(candleDateTime, candleDateTime.toLocalDate(), id);
-    }
-
-    private LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDate date, String id) {
         final String index = ElasticsearchGeneratorUtil.generateIndex(date);
 
         List<CandleModel> models = get(index, id);
         if (!CollectionUtils.isEmpty(models)) {
-            return models.stream()
+            LocalDateTime lastCandleTime = models.stream()
                     .map(CandleModel::getCandleOpenTime)
                     .filter(candleOpenTime -> candleOpenTime.isBefore(candleDateTime))
                     .max(Comparator.naturalOrder())
                     .orElse(null);
+
+            if (Objects.nonNull(lastCandleTime)) {
+                return lastCandleTime;
+            }
         }
-        return getLastCandleTimeBeforeDate(candleDateTime, date.minusDays(1), id);
+        return getLastCandleTimeBeforeDate(candleDateTime, boundaryDate, date.minusDays(1), id);
     }
 
     @Override
-    public void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String index) {
-        if (!this.existsIndex(index)) {
-            this.createIndex(index);
-        }
-
+    public void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String id) {
         BulkRequest bulkRequest = new BulkRequest();
 
-        mapOfModels.forEach((id, models) -> {
+        mapOfModels.forEach((index, models) -> {
+            if (!this.existsIndex(index)) {
+                this.createIndex(index);
+            }
+
             String sourceString = getSourceString(models);
             if (nonNull(sourceString)) {
                 IndexRequest request = new IndexRequest(index)
@@ -304,20 +270,6 @@ public class ElasticsearchProcessingServiceImpl implements ElasticsearchProcessi
 
             return false;
         }
-    }
-
-    private Map<String, List<CandleModel>> getSearchResult(SearchHit[] searchHits) {
-        return Arrays.stream(searchHits)
-                .map(hit -> {
-                    final String id = hit.getId();
-                    final List<CandleModel> models = getModels(hit.getSourceAsString());
-
-                    return Pair.of(id, models);
-                })
-                .filter(pair -> Objects.nonNull(pair.getValue()))
-                .collect(Collectors.toMap(
-                        Pair::getKey,
-                        Pair::getValue));
     }
 
     private String getSourceString(final List<CandleModel> models) {

@@ -109,91 +109,37 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //check data from redis cache for all intervals
 
-        Map<String, List<CandleModel>> mapOfModels = redisProcessingService.getAllByKey(index, FIVE_MINUTE_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        Collection<List<CandleModel>> modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, FIVE_MINUTE_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        mapOfModels = redisProcessingService.getAllByKey(index, FIFTEEN_MINUTE_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, FIFTEEN_MINUTE_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIFTEEN_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        mapOfModels = redisProcessingService.getAllByKey(index, THIRTY_MINUTE_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, THIRTY_MINUTE_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, THIRTY_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        mapOfModels = redisProcessingService.getAllByKey(index, ONE_HOUR_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, ONE_HOUR_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_HOUR_INTERVAL), models.get(0).getCandleOpenTime());
 
-        mapOfModels = redisProcessingService.getAllByKey(index, SIX_HOUR_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, SIX_HOUR_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
         assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, SIX_HOUR_INTERVAL), models.get(0).getCandleOpenTime());
 
-        mapOfModels = redisProcessingService.getAllByKey(index, ONE_DAY_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(index, id, ONE_DAY_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
@@ -228,27 +174,7 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //check data from redis cache for five minute interval (should be empty)
 
-        Map<String, List<CandleModel>> mapOfModels = redisProcessingService.getAllByKey(key, FIVE_MINUTE_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        Collection<List<CandleModel>> modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertTrue(modelsCollection.isEmpty());
-
-        //check data from elasticsearch cluster (should not be empty)
-
-        mapOfModels = elasticsearchProcessingService.getAllByIndex(key);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(key, hashKey, FIVE_MINUTE_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());
@@ -301,27 +227,7 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //check data from redis cache for five minute interval (should be empty)
 
-        Map<String, List<CandleModel>> mapOfModels = redisProcessingService.getAllByKey(key, FIVE_MINUTE_INTERVAL);
-
-        assertNotNull(mapOfModels);
-
-        Collection<List<CandleModel>> modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertTrue(modelsCollection.isEmpty());
-
-        //check data from elasticsearch cluster (should not be empty)
-
-        mapOfModels = elasticsearchProcessingService.getAllByIndex(key);
-
-        assertNotNull(mapOfModels);
-
-        modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = redisProcessingService.get(key, hashKey, FIVE_MINUTE_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(1, models.size());

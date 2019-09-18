@@ -17,11 +17,9 @@ import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.Objects.isNull;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 
 @NoArgsConstructor(access = AccessLevel.NONE)
@@ -33,9 +31,10 @@ public final class CandleDataConverter {
      * @return unsorted list of candles, aggregated to specified backDealInterval
      */
     public static List<CandleModel> convertByInterval(List<CandleModel> models, BackDealInterval interval) {
-        return models.stream()
-                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .collect(Collectors.groupingBy(p -> getNearestBackTimeForBackdealInterval(p.getCandleOpenTime(), interval)))
+        Map<LocalDateTime, List<CandleModel>> mapOfModels = models.stream()
+                .collect(Collectors.groupingBy(model -> getNearestBackTimeForBackdealInterval(model.getCandleOpenTime(), interval)));
+
+        return mapOfModels
                 .entrySet().stream()
                 .map(entry -> {
                     List<CandleModel> groupedCandles = entry.getValue();
@@ -44,6 +43,7 @@ public final class CandleDataConverter {
 
                     return groupedCandles.stream()
                             .reduce((left, right) -> CandleModel.builder()
+                                    .pairName(left.getPairName())
                                     .highRate(left.getHighRate().max(right.getHighRate()))
                                     .lowRate(left.getLowRate().min(right.getLowRate()))
                                     .volume(left.getVolume().add(right.getVolume()))
@@ -112,32 +112,6 @@ public final class CandleDataConverter {
         return groupedByTradeDate.entrySet().stream()
                 .map(entry -> CandleDataConverter.reduceToCandle(entry.getValue()))
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .collect(Collectors.toList());
-    }
-
-    public static List<CandleModel> fillGaps(List<CandleModel> models, String pairName, BackDealInterval interval) {
-        CandleModel initialCandle = models.get(0);
-        LocalDateTime from = initialCandle.getCandleOpenTime();
-        LocalDateTime to = models.get(models.size() - 1).getCandleOpenTime();
-
-        final Map<LocalDateTime, CandleModel> modelsMap = models.stream()
-                .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
-
-        final int minutes = TimeUtil.convertToMinutes(interval);
-
-        while (from.isBefore(to)) {
-            from = from.plusMinutes(minutes);
-
-            CandleModel model = modelsMap.get(from);
-
-            if (isNull(model)) {
-                models.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
-            } else {
-                initialCandle = model;
-            }
-        }
-        return models.stream()
                 .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
                 .collect(Collectors.toList());
     }

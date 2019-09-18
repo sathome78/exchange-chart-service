@@ -2,7 +2,6 @@ package me.exrates.chartservice.integrations;
 
 import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.ModelList;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import org.junit.After;
@@ -14,7 +13,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -174,29 +172,20 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
         updatedModels.add(model2);
 
         Map<String, List<CandleModel>> mapOfModels = new HashMap<>();
-        mapOfModels.put(id, updatedModels);
+        mapOfModels.put(index, updatedModels);
 
-        processingService.bulkInsertOrUpdate(mapOfModels, index);
+        processingService.bulkInsertOrUpdate(mapOfModels, id);
 
         TimeUnit.SECONDS.sleep(1);
 
-        mapOfModels = processingService.getAllByIndex(index);
-
-        assertNotNull(mapOfModels);
-
-        Collection<List<CandleModel>> modelsCollection = mapOfModels.values();
-
-        assertNotNull(modelsCollection);
-        assertFalse(modelsCollection.isEmpty());
-
-        models = modelsCollection.iterator().next();
+        models = processingService.get(index, id);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
         TimeUnit.SECONDS.sleep(1);
 
-        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, id);
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, NOW.minusDays(1), id);
 
         assertNotNull(lastCandleTime);
 

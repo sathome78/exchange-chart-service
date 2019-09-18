@@ -7,28 +7,25 @@ import lombok.Cleanup;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.ModelList;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Pipeline;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
@@ -39,6 +36,9 @@ import static me.exrates.chartservice.configuration.RedisConfiguration.DB_INDEX_
 public class RedisProcessingServiceImpl implements RedisProcessingService {
 
     private static final String ALL = "*";
+
+    private static final String LAST = "last_cached_candle_time";
+    private static final String FIRST = "first_history_candle_time";
 
     private Map<String, Integer> dbIndexMap;
 
@@ -93,42 +93,45 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public Map<String, List<CandleModel>> getAllByKey(String key, BackDealInterval interval) {
-        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDateTime boundaryTime, String hashKey, BackDealInterval interval) {
+        return getLastCandleTimeBeforeDate(candleDateTime, boundaryTime.toLocalDate(), candleDateTime.toLocalDate(), hashKey, interval);
+    }
 
-        if (!jedis.exists(key)) {
-            return Collections.emptyMap();
+    private LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDate boundaryDate, LocalDate date, String hashKey, BackDealInterval interval) {
+        if (date.isBefore(boundaryDate)) {
+            return null;
         }
-        return jedis.hgetAll(key).entrySet().stream()
-                .map(entry -> Pair.of(entry.getKey(), getModels(entry.getValue())))
-                .filter(pair -> Objects.nonNull(pair.getValue()))
-                .collect(Collectors.toMap(
-                        Pair::getKey,
-                        Pair::getValue));
-    }
 
-    @Override
-    public LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, String hashKey, BackDealInterval interval) {
-        return getLastCandleTimeBeforeDate(candleDateTime, candleDateTime.toLocalDate(), hashKey, interval);
-    }
-
-    private LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDate date, String hashKey, BackDealInterval interval) {
         final String key = RedisGeneratorUtil.generateKey(date);
 
         List<CandleModel> models = get(key, hashKey, interval);
         if (!CollectionUtils.isEmpty(models)) {
-            return models.stream()
+            LocalDateTime lastCandleTime = models.stream()
                     .map(CandleModel::getCandleOpenTime)
                     .filter(candleOpenTime -> candleOpenTime.isBefore(candleDateTime))
                     .max(Comparator.naturalOrder())
                     .orElse(null);
+
+            if (Objects.nonNull(lastCandleTime)) {
+                return lastCandleTime;
+            }
         }
-        return getLastCandleTimeBeforeDate(candleDateTime, date.minusDays(1), hashKey, interval);
+        return getLastCandleTimeBeforeDate(candleDateTime, boundaryDate, date.minusDays(1), hashKey, interval);
     }
 
     @Override
-    public void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String key, BackDealInterval interval) {
-        mapOfModels.forEach((hashKey, models) -> insertOrUpdate(models, key, hashKey, interval));
+    public void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String hashKey, BackDealInterval interval) {
+        @Cleanup Jedis jedis = getJedis(dbIndexMap.get(interval.getInterval()));
+
+        Pipeline pipeline = jedis.pipelined();
+
+        mapOfModels.forEach((key, models) -> {
+            String valueString = getSourceString(models);
+            if (Objects.nonNull(valueString)) {
+                pipeline.hset(key, hashKey, valueString);
+            }
+        });
+        pipeline.sync();
     }
 
     @Override
@@ -180,17 +183,37 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
     }
 
     @Override
-    public void insertLastInitializedCandleTimeToCache(String hashKey, LocalDateTime dateTime) {
+    public void insertLastInitializedCandleTimeToCache(String key, LocalDateTime dateTime) {
         @Cleanup Jedis jedis = getJedis(0);
 
-        jedis.set(hashKey, TimeUtil.generateDateTimeString(dateTime));
+        jedis.hset(key, LAST, TimeUtil.generateDateTimeString(dateTime));
     }
 
     @Override
-    public LocalDateTime getLastInitializedCandleTimeFromCache(String hashKey) {
+    public LocalDateTime getLastInitializedCandleTimeFromCache(String key) {
         @Cleanup Jedis jedis = getJedis(0);
 
-        return TimeUtil.generateDateTime(jedis.get(hashKey));
+        if (!jedis.hexists(key, LAST)) {
+            return null;
+        }
+        return TimeUtil.generateDateTime(jedis.hget(key, LAST));
+    }
+
+    @Override
+    public void insertFirstInitializedCandleTimeToHistory(String key, LocalDateTime dateTime) {
+        @Cleanup Jedis jedis = getJedis(0);
+
+        jedis.hset(key, FIRST, TimeUtil.generateDateTimeString(dateTime));
+    }
+
+    @Override
+    public LocalDateTime getFirstInitializedCandleTimeFromHistory(String key) {
+        @Cleanup Jedis jedis = getJedis(0);
+
+        if (!jedis.hexists(key, FIRST)) {
+            return null;
+        }
+        return TimeUtil.generateDateTime(jedis.hget(key, FIRST));
     }
 
     /**
