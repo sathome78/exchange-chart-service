@@ -14,8 +14,8 @@ spring:
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://exprod-3-cluster.cluster-ro-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: okostiukevych
-  password: 943AJNzKGiUsWtqU
+  username: chartservice
+  password: 89tn0sgiGPyLMarmMp23
 
 redis:
   host: redis-chart-prod.service
