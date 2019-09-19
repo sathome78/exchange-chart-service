@@ -10,6 +10,7 @@ import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -102,7 +104,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
 
         assertFalse(models.isEmpty());
 
-        verify(redisProcessingService, times(14)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, atLeast(13)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, times(1)).get(anyString(), anyString());
     }
 
