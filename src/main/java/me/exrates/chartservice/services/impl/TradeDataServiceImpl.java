@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -108,90 +107,46 @@ public class TradeDataServiceImpl implements TradeDataService {
                     .collect(Collectors.toList());
         }
 
-        if (!CollectionUtils.isEmpty(models)) {
-            fixOpenRate(models, pairName, interval);
-
-            models = fillGaps(models, pairName, to, interval);
+        if (CollectionUtils.isEmpty(models)) {
+            return models;
         }
-        return models;
+
+        fixOpenRate(models, pairName, interval);
+
+        return fillGaps(models, pairName, to, interval);
     }
 
     private void fixOpenRate(List<CandleModel> models, String pairName, BackDealInterval interval) {
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
-        CandleModel previousCandle = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
-
-        models.get(0).setOpenRate(previousCandle.getCloseRate());
+        CandleModel previousModel = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
+        if (Objects.nonNull(previousModel)) {
+            models.get(0).setOpenRate(previousModel.getCloseRate());
+        }
 
         IntStream.range(1, models.size())
                 .forEach(i -> models.get(i).setOpenRate(models.get(i - 1).getCloseRate()));
     }
 
     private List<CandleModel> fillGaps(List<CandleModel> models, String pairName, LocalDateTime to, BackDealInterval interval) {
-//        from = TimeUtil.getNearestBackTimeForBackdealInterval(from, interval);
-//        to = TimeUtil.getNearestBackTimeForBackdealInterval(to, interval);
-//
-//        List<CandleModel> bufferedModels = new ArrayList<>(models);
-//        final int minutes = TimeUtil.convertToMinutes(interval);
-//
-//        CandleModel initialCandle;
-//
-//        if (CollectionUtils.isEmpty(bufferedModels)) {
-//            CandleModel previousCandle = getPreviousCandle(pairName, from, interval);
-//
-//            initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(pairName, BigDecimal.ZERO, null);
-//
-//            while (from.isBefore(to)) {
-//                bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
-//
-//                from = from.plusMinutes(minutes);
-//            }
-//            bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), to));
-//        } else {
-//            bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-//
-//            final Map<LocalDateTime, CandleModel> modelsMap = bufferedModels.stream()
-//                    .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
-//
-//            initialCandle = bufferedModels.get(0);
-//            if (from.isBefore(initialCandle.getCandleOpenTime())) {
-//                CandleModel previousCandle = getPreviousCandle(pairName, from, interval);
-//
-//                initialCandle = nonNull(previousCandle) ? previousCandle : CandleModel.empty(pairName, BigDecimal.ZERO, null);
-//            }
-//
-//            while (from.isBefore(to)) {
-//                CandleModel model = modelsMap.get(from);
-//
-//                if (isNull(model)) {
-//                    bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), from));
-//                } else {
-//                    initialCandle = model;
-//                }
-//                from = from.plusMinutes(minutes);
-//            }
-//            if (isNull(modelsMap.get(to))) {
-//                bufferedModels.add(CandleModel.empty(pairName, initialCandle.getCloseRate(), to));
-//            }
-//        }
-//        bufferedModels.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
-//
-//        return bufferedModels;
         to = TimeUtil.getNearestBackTimeForBackdealInterval(to, interval);
 
-        final int minutes = TimeUtil.convertToMinutes(interval);
-
-        CandleModel lastModel = models.stream()
-                .max(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .orElse(null);
-
-        if (Objects.isNull(lastModel)) {
+        final CandleModel previousModel = getPreviousCandle(pairName, to, interval);
+        if (Objects.isNull(previousModel)) {
             return models;
         }
 
-        LocalDateTime from = lastModel.getCandleOpenTime().plusMinutes(minutes);
+        final int minutes = TimeUtil.convertToMinutes(interval);
+
+        LocalDateTime from = previousModel.getCandleOpenTime().plusMinutes(minutes);
+
         while (from.isBefore(to) || from.isEqual(to)) {
-            models.add(CandleModel.empty(pairName, lastModel.getCloseRate(), from));
+            LocalDateTime finalFrom = from;
+            boolean notPresent = models.stream().noneMatch(model -> model.getCandleOpenTime().isEqual(finalFrom));
+
+            if (notPresent) {
+                models.add(CandleModel.empty(pairName, previousModel.getCloseRate(), from));
+            }
 
             from = from.plusMinutes(minutes);
         }
@@ -275,8 +230,10 @@ public class TradeDataServiceImpl implements TradeDataService {
                 final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
                 newModel.setCandleOpenTime(candleDateTime);
 
-                final CandleModel previousCandle = getPreviousCandle(pairName, candleDateTime, interval);
-                newModel.setOpenRate(previousCandle.getCloseRate());
+                final CandleModel previousModel = getPreviousCandle(pairName, candleDateTime, interval);
+                if (Objects.nonNull(previousModel)) {
+                    newModel.setOpenRate(previousModel.getCloseRate());
+                }
 
                 final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
                 final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
@@ -308,8 +265,6 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     private CandleModel getPreviousCandle(String pairName, LocalDateTime candleDateTime, BackDealInterval interval) {
-        final LocalDateTime defaultPreviousCandleTime = candleDateTime.minusMinutes(TimeUtil.convertToMinutes(interval));
-
         LocalDateTime boundaryTime = getBoundaryTime(interval).atTime(0, 0);
 
         CandleModel previousModel;
@@ -318,19 +273,19 @@ public class TradeDataServiceImpl implements TradeDataService {
 
             LocalDateTime lastCandleTimeBeforeDate = redisProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, hashKey, interval);
             if (Objects.isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+                return null;
             }
 
             final String key = RedisGeneratorUtil.generateKey(lastCandleTimeBeforeDate.toLocalDate());
 
             List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
             if (CollectionUtils.isEmpty(models)) {
-                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+                return null;
             }
             previousModel = models.stream()
                     .filter(model -> model.getCandleOpenTime().isEqual(lastCandleTimeBeforeDate))
                     .findFirst()
-                    .orElse(CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime));
+                    .orElse(null);
         } else {
             final String id = ElasticsearchGeneratorUtil.generateId(pairName);
 
@@ -338,19 +293,19 @@ public class TradeDataServiceImpl implements TradeDataService {
 
             LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, id);
             if (Objects.isNull(lastCandleTimeBeforeDate)) {
-                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+                return null;
             }
 
             final String index = ElasticsearchGeneratorUtil.generateIndex(lastCandleTimeBeforeDate.toLocalDate());
 
             List<CandleModel> models = elasticsearchProcessingService.get(index, id);
             if (CollectionUtils.isEmpty(models)) {
-                return CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime);
+                return null;
             }
             previousModel = models.stream()
                     .filter(model -> model.getCandleOpenTime().isEqual(lastCandleTimeBeforeDate))
                     .findFirst()
-                    .orElse(CandleModel.empty(pairName, BigDecimal.ZERO, defaultPreviousCandleTime));
+                    .orElse(null);
         }
         return previousModel;
     }
