@@ -34,6 +34,8 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
     private RedisProcessingService redisProcessingService;
     @Mock
     private TradeDataService tradeDataService;
+    @Mock
+    private OrderService orderService;
 
     private CacheDataInitializerService cacheDataInitializerService;
 
@@ -41,12 +43,13 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Before
     public void setUp() throws Exception {
-        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+        key = RedisGeneratorUtil.generateKey(NOW.toLocalDate());
 
         cacheDataInitializerService = spy(new CacheDataInitializerServiceImpl(
                 elasticsearchProcessingService,
                 redisProcessingService,
                 tradeDataService,
+                orderService,
                 candlesToStoreInCache,
                 supportedIntervals));
     }
@@ -56,33 +59,40 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
-        doReturn(Collections.singletonList(CandleModel.builder()
+
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
                 .candleOpenTime(NOW)
-                .build()))
+                .build();
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
+        doReturn(Collections.singletonList(model))
                 .when(elasticsearchProcessingService)
-                .getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+                .get(anyString(), anyString());
         doNothing()
                 .when(tradeDataService)
                 .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        doReturn(null)
+        doReturn(false)
                 .when(redisProcessingService)
-                .get(anyString(), anyString(), any(BackDealInterval.class));
+                .exists(anyString(), anyString(), any(BackDealInterval.class));
         doNothing()
                 .when(redisProcessingService)
-                .insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
+                .insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
 
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, atLeastOnce()).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
+        verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, times(6)).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, times(6)).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(6)).exists(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(6)).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -94,10 +104,11 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, never()).getAllByIndex(anyString());
+        verify(orderService, never()).getAllCurrencyPairNames();
+        verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).exists(anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -105,65 +116,81 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
         doReturn(Collections.emptyList())
                 .when(elasticsearchProcessingService)
-                .getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+                .get(anyString(), anyString());
 
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(elasticsearchProcessingService, atLeastOnce()).getByRange(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
+        verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, never()).insertOrUpdate(any(CandleModel.class), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
     public void cleanCache_ok_with_insert() {
+        key = RedisGeneratorUtil.generateKey(NOW.minusDays(10).toLocalDate());
+
         doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
-        doReturn(Collections.singletonList(CandleModel.builder()
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
+
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
                 .candleOpenTime(NOW.minusDays(2))
-                .build()))
+                .build();
+        doReturn(Collections.singletonList(model))
                 .when(redisProcessingService)
-                .getAllByKey(anyString(), any(BackDealInterval.class));
+                .get(anyString(), anyString(), any(BackDealInterval.class));
         doReturn(false)
                 .when(elasticsearchProcessingService)
                 .exists(anyString(), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .insert(any(CandleModel.class), anyString());
+                .insert(anyList(), anyString(), anyString());
         doNothing()
                 .when(redisProcessingService)
                 .deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        doNothing()
-                .when(tradeDataService)
-                .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
 
         cacheDataInitializerService.cleanCache();
 
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(7)).getAllByKey(anyString(), any(BackDealInterval.class));
+        verify(orderService, times(6)).getAllCurrencyPairNames();
+        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).insert(any(CandleModel.class), anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).insert(anyList(), anyString(), anyString());
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
-        verify(elasticsearchProcessingService, never()).update(any(CandleModel.class), anyString());
-        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(elasticsearchProcessingService, never()).update(anyList(), anyString(), anyString());
     }
 
     @Test
     public void cleanCache_ok_with_update() {
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
+
+        key = RedisGeneratorUtil.generateKey(NOW.minusDays(10).toLocalDate());
+
         doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
-        doReturn(Collections.singletonList(CandleModel.builder()
+
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -171,79 +198,74 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .volume(BigDecimal.TEN)
                 .lastTradeTime(NOW.minusMinutes(50))
                 .candleOpenTime(NOW.minusDays(2))
-                .build()))
+                .build();
+        doReturn(Collections.singletonList(model))
                 .when(redisProcessingService)
-                .getAllByKey(anyString(), any(BackDealInterval.class));
+                .get(anyString(), anyString(), any(BackDealInterval.class));
         doReturn(true)
                 .when(elasticsearchProcessingService)
                 .exists(anyString(), anyString());
-        doReturn(CandleModel.builder()
-                .openRate(BigDecimal.TEN)
-                .closeRate(BigDecimal.TEN)
-                .highRate(BigDecimal.TEN)
-                .lowRate(BigDecimal.TEN)
-                .volume(BigDecimal.TEN)
-                .lastTradeTime(NOW.minusMinutes(100))
-                .candleOpenTime(NOW.minusDays(2))
-                .build())
-                .when(elasticsearchProcessingService)
-                .get(anyString(), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .update(any(CandleModel.class), anyString());
+                .update(anyList(), anyString(), anyString());
         doNothing()
                 .when(redisProcessingService)
                 .deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        doNothing()
-                .when(tradeDataService)
-                .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
 
         cacheDataInitializerService.cleanCache();
 
+        verify(orderService, times(6)).getAllCurrencyPairNames();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(7)).getAllByKey(anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
-        verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
+        verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).update(any(CandleModel.class), anyString());
-        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+        verify(elasticsearchProcessingService, atLeastOnce()).update(anyList(), anyString(), anyString());
     }
 
     @Test
     public void cleanCache_key_lists_empty() {
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
         doReturn(Collections.emptyList())
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
 
         cacheDataInitializerService.cleanCache();
 
+        verify(orderService, times(6)).getAllCurrencyPairNames();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, never()).getAllByKey(anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
-        verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
+        verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
+        verify(elasticsearchProcessingService, never()).update(anyList(), anyString(), anyString());
         verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
     public void cleanCache_empty_data_list() {
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(orderService)
+                .getAllCurrencyPairNames();
+
+        key = RedisGeneratorUtil.generateKey(NOW.minusDays(10).toLocalDate());
+
         doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
         doReturn(Collections.emptyList())
                 .when(redisProcessingService)
-                .getAllByKey(anyString(), any(BackDealInterval.class));
-        doNothing()
-                .when(tradeDataService)
-                .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
+                .get(anyString(), anyString(), any(BackDealInterval.class));
 
         cacheDataInitializerService.cleanCache();
 
+        verify(orderService, times(6)).getAllCurrencyPairNames();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(7)).getAllByKey(anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
-        verify(elasticsearchProcessingService, never()).insert(any(CandleModel.class), anyString());
+        verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
+        verify(elasticsearchProcessingService, never()).update(anyList(), anyString(), anyString());
         verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
-        verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
     }
 }

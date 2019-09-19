@@ -8,4 +8,6 @@ public interface DataInitializerService {
     void generate(LocalDate fromDate, LocalDate toDate);
 
     void generate(LocalDate fromDate, LocalDate toDate, List<String> pairs);
+
+    void generate(LocalDate fromDate, LocalDate toDate, String pair);
 }

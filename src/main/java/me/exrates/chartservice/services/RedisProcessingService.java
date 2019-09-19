@@ -5,6 +5,7 @@ import me.exrates.chartservice.model.CandleModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface RedisProcessingService {
 
@@ -14,17 +15,15 @@ public interface RedisProcessingService {
 
     boolean exists(String key, int dbIndex);
 
-    CandleModel get(String key, String hashKey, BackDealInterval interval);
+    boolean exists(String key, String hashKey, BackDealInterval interval);
 
-    List<CandleModel> getAllByKey(String key, BackDealInterval interval);
+    List<CandleModel> get(String key, String hashKey, BackDealInterval interval);
 
-    List<CandleModel> getByRange(LocalDateTime from, LocalDateTime to, String key, BackDealInterval interval);
+    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDateTime boundaryTime, String hashKey, BackDealInterval interval);
 
-    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String key, BackDealInterval interval);
+    void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String hashKey, BackDealInterval interval);
 
-    void bulkInsertOrUpdate(List<CandleModel> models, String key, BackDealInterval interval);
-
-    void insertOrUpdate(CandleModel model, String key, BackDealInterval interval);
+    void insertOrUpdate(List<CandleModel> models, String key, String hashKey, BackDealInterval interval);
 
     void deleteAllKeys();
 
@@ -37,4 +36,8 @@ public interface RedisProcessingService {
     void insertLastInitializedCandleTimeToCache(String key, LocalDateTime dateTime);
 
     LocalDateTime getLastInitializedCandleTimeFromCache(String key);
+
+    void insertFirstInitializedCandleTimeToHistory(String key, LocalDateTime dateTime);
+
+    LocalDateTime getFirstInitializedCandleTimeFromHistory(String key);
 }

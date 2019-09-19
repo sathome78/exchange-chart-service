@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,9 +15,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CandleModel {
 
+    @JsonProperty("pair_name")
+    private String pairName;
     @JsonProperty("open")
     private BigDecimal openRate;
-    @JsonProperty("closed")
+    @JsonProperty("close")
     private BigDecimal closeRate;
     @JsonProperty("high")
     private BigDecimal highRate;
@@ -31,21 +32,10 @@ public class CandleModel {
     private LocalDateTime firstTradeTime;
     @JsonProperty("time")
     private LocalDateTime candleOpenTime;
-    @JsonProperty("time_in_millis")
-    private long timeInMillis;
 
-    public long getTimeInMillis() {
-        return Timestamp.valueOf(candleOpenTime).getTime();
-    }
-
-    public CandleModel(BigDecimal highRate, BigDecimal lowRate, BigDecimal volume) {
-        this.highRate = highRate;
-        this.lowRate = lowRate;
-        this.volume = volume;
-    }
-
-    public static CandleModel empty(BigDecimal closeRate, LocalDateTime candleOpenTime) {
+    public static CandleModel empty(String pairName, BigDecimal closeRate, LocalDateTime candleOpenTime) {
         return CandleModel.builder()
+                .pairName(pairName)
                 .firstTradeTime(null)
                 .lastTradeTime(null)
                 .openRate(closeRate)

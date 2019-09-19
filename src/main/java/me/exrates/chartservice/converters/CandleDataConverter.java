@@ -17,13 +17,10 @@ import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.Objects.isNull;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
-import static me.exrates.chartservice.utils.TimeUtil.getNearestTimeBeforeForMinInterval;
 
 @NoArgsConstructor(access = AccessLevel.NONE)
 public final class CandleDataConverter {
@@ -34,9 +31,10 @@ public final class CandleDataConverter {
      * @return unsorted list of candles, aggregated to specified backDealInterval
      */
     public static List<CandleModel> convertByInterval(List<CandleModel> models, BackDealInterval interval) {
-        return models.stream()
-                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .collect(Collectors.groupingBy(p -> getNearestBackTimeForBackdealInterval(p.getCandleOpenTime(), interval)))
+        Map<LocalDateTime, List<CandleModel>> mapOfModels = models.stream()
+                .collect(Collectors.groupingBy(model -> getNearestBackTimeForBackdealInterval(model.getCandleOpenTime(), interval)));
+
+        return mapOfModels
                 .entrySet().stream()
                 .map(entry -> {
                     List<CandleModel> groupedCandles = entry.getValue();
@@ -45,11 +43,12 @@ public final class CandleDataConverter {
 
                     return groupedCandles.stream()
                             .reduce((left, right) -> CandleModel.builder()
+                                    .pairName(left.getPairName())
                                     .highRate(left.getHighRate().max(right.getHighRate()))
                                     .lowRate(left.getLowRate().min(right.getLowRate()))
                                     .volume(left.getVolume().add(right.getVolume()))
                                     .build())
-                            .map(candleModel -> candleModel.toBuilder()
+                            .map(model -> model.toBuilder()
                                     .firstTradeTime(groupedCandles.get(0).getFirstTradeTime())
                                     .lastTradeTime(groupedCandles.get(groupedCandles.size() - 1).getLastTradeTime())
                                     .openRate(groupedCandles.get(0).getOpenRate())
@@ -80,9 +79,10 @@ public final class CandleDataConverter {
                 .mapToDouble(p -> p.getExrate().doubleValue()).summaryStatistics();
 
         return CandleModel.builder()
+                .pairName(firstTrade.getPairName())
                 .firstTradeTime(firstTrade.getTradeDate())
                 .lastTradeTime(lastTrade.getTradeDate())
-                .candleOpenTime(getNearestTimeBeforeForMinInterval(firstTrade.getTradeDate()))
+                .candleOpenTime(TimeUtil.getNearestTimeBeforeForMinInterval(firstTrade.getTradeDate()))
                 .openRate(firstTrade.getExrate())
                 .closeRate(lastTrade.getExrate())
                 .volume(volume)
@@ -91,24 +91,17 @@ public final class CandleDataConverter {
                 .build();
     }
 
-    public static CandleModel merge(CandleModel cachedCandle, @NotNull CandleModel newCandle) {
-        if (isNull(cachedCandle)) {
-            return newCandle;
-        }
+    public static void merge(CandleModel cachedModel, @NotNull CandleModel newModel) {
+        boolean leftStartFirst = cachedModel.getFirstTradeTime().isBefore(newModel.getFirstTradeTime());
+        boolean leftEndLast = cachedModel.getLastTradeTime().isAfter(newModel.getLastTradeTime());
 
-        boolean leftStartFirst = cachedCandle.getFirstTradeTime().isBefore(newCandle.getFirstTradeTime());
-        boolean leftEndLast = cachedCandle.getLastTradeTime().isAfter(newCandle.getLastTradeTime());
-
-        return CandleModel.builder()
-                .firstTradeTime(leftStartFirst ? cachedCandle.getFirstTradeTime() : newCandle.getFirstTradeTime())
-                .lastTradeTime(leftEndLast ? cachedCandle.getLastTradeTime() : newCandle.getLastTradeTime())
-                .candleOpenTime(cachedCandle.getCandleOpenTime())
-                .openRate(leftStartFirst ? cachedCandle.getOpenRate() : newCandle.getOpenRate())
-                .closeRate(leftEndLast ? cachedCandle.getCloseRate() : newCandle.getCloseRate())
-                .volume(cachedCandle.getVolume().add(newCandle.getVolume()))
-                .highRate(cachedCandle.getHighRate().max(newCandle.getHighRate()))
-                .lowRate(cachedCandle.getLowRate().min(newCandle.getLowRate()))
-                .build();
+        cachedModel.setFirstTradeTime(leftStartFirst ? cachedModel.getFirstTradeTime() : newModel.getFirstTradeTime());
+        cachedModel.setLastTradeTime(leftEndLast ? cachedModel.getLastTradeTime() : newModel.getLastTradeTime());
+        cachedModel.setOpenRate(leftStartFirst ? cachedModel.getOpenRate() : newModel.getOpenRate());
+        cachedModel.setCloseRate(leftEndLast ? cachedModel.getCloseRate() : newModel.getCloseRate());
+        cachedModel.setHighRate(cachedModel.getHighRate().max(newModel.getHighRate()));
+        cachedModel.setLowRate(cachedModel.getLowRate().min(newModel.getLowRate()));
+        cachedModel.setVolume(cachedModel.getVolume().add(newModel.getVolume()));
     }
 
     public static List<CandleModel> convert(List<OrderDto> orders) {
@@ -119,32 +112,6 @@ public final class CandleDataConverter {
         return groupedByTradeDate.entrySet().stream()
                 .map(entry -> CandleDataConverter.reduceToCandle(entry.getValue()))
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
-                .collect(Collectors.toList());
-    }
-
-    public static List<CandleModel> fillGaps(List<CandleModel> models, BackDealInterval interval) {
-        CandleModel initialCandle = models.get(0);
-        LocalDateTime from = initialCandle.getCandleOpenTime();
-        LocalDateTime to = models.get(models.size() - 1).getCandleOpenTime();
-
-        final Map<LocalDateTime, CandleModel> modelsMap = models.stream()
-                .collect(Collectors.toMap(CandleModel::getCandleOpenTime, Function.identity()));
-
-        final int minutes = TimeUtil.convertToMinutes(interval);
-
-        while (from.isBefore(to)) {
-            from = from.plusMinutes(minutes);
-
-            CandleModel model = modelsMap.get(from);
-
-            if (isNull(model)) {
-                models.add(CandleModel.empty(initialCandle.getCloseRate(), from));
-            } else {
-                initialCandle = model;
-            }
-        }
-        return models.stream()
                 .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
                 .collect(Collectors.toList());
     }

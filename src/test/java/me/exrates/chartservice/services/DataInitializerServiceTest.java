@@ -13,6 +13,7 @@ import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
@@ -61,17 +62,17 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .bulkInsertOrUpdate(anyList(), anyString());
+                .bulkInsertOrUpdate(anyMap(), anyString());
         doNothing()
                 .when(cacheDataInitializerService)
-                .updateCacheByKey(anyString());
+                .updateCacheByIndexAndId(anyString(), anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE);
 
         verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
-        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
+        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
 
     @Test
@@ -88,16 +89,16 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
-                .bulkInsertOrUpdate(anyList(), anyString());
+                .bulkInsertOrUpdate(anyMap(), anyString());
         doNothing()
                 .when(cacheDataInitializerService)
-                .updateCacheByKey(anyString());
+                .updateCacheByIndexAndId(anyString(), anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyList(), anyString());
-        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByKey(anyString());
+        verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
+        verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
 
     @Test
@@ -109,6 +110,6 @@ public class DataInitializerServiceTest extends AbstractTest {
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
         verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
-        verify(elasticsearchProcessingService, never()).bulkInsertOrUpdate(anyList(), anyString());
+        verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
     }
 }

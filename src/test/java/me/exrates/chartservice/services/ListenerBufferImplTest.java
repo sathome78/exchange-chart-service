@@ -7,7 +7,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -25,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -84,13 +84,12 @@ public class ListenerBufferImplTest extends AbstractTest {
 
         assertThat(usdTrades, containsInAnyOrder(usdCaptor.getValue().toArray()));
         assertThat(usdtTrades, containsInAnyOrder(usdtCaptor.getValue().toArray()));
-        Assert.assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
-        Assert.assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
+        assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
+        assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
     }
 
     @Test
     public void isReadyToClose() throws InterruptedException {
-
         receive();
 
         boolean result = listenerBuffer.isReadyToClose();
