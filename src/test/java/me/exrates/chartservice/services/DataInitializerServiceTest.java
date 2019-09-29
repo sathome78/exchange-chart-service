@@ -1,5 +1,6 @@
 package me.exrates.chartservice.services;
 
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.services.impl.DataInitializerServiceImpl;
 import org.junit.Before;
@@ -47,7 +48,9 @@ public class DataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void generate_ok1() {
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
         doReturn(Collections.singletonList(OrderDto.builder()

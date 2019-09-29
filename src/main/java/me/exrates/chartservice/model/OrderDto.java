@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder(builderClassName = "Builder", toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDto implements Serializable {
+public class OrderDto {
 
     private int id;
     private String currencyPairName;
@@ -21,4 +20,7 @@ public class OrderDto implements Serializable {
     private BigDecimal amountBase;
     private BigDecimal amountConvert;
     private LocalDateTime dateAcception;
+    private LocalDateTime dateCreation;
+    private int operationTypeId;
+    private int statusId;
 }

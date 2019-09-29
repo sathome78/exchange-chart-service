@@ -1,6 +1,7 @@
 package me.exrates.chartservice.repositories.impl;
 
 import lombok.extern.log4j.Log4j2;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import org.apache.commons.lang3.StringUtils;
@@ -28,16 +29,28 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<String> getAllCurrencyPairNames() {
-        final String sql = "SELECT cp.name FROM CURRENCY_PAIR cp";
+    public List<CurrencyPairDto> getAllCurrencyPairNames() {
+        final String sql = "SELECT " +
+                "cp.name, " +
+                "cp.hidden, " +
+                "cp.market, " +
+                "cp.scale, " +
+                "cp.top_market, " +
+                "cp.top_market_volume " +
+                "FROM CURRENCY_PAIR cp";
 
-        return slaveJdbcTemplate.query(sql, (rs, i) -> rs.getString("name"));
+        return slaveJdbcTemplate.query(sql, (rs, i) -> CurrencyPairDto.builder()
+                .name(rs.getString("name"))
+                .hidden(rs.getBoolean("hidden"))
+                .matket(rs.getString("market"))
+                .scale(rs.getBigDecimal("scale"))
+                .topMarket(rs.getBoolean("top_market"))
+                .topMarketVolume(rs.getBigDecimal("top_market_volume"))
+                .build());
     }
 
     @Override
     public List<OrderDto> getFilteredOrders(LocalDate fromDate, LocalDate toDate, String pairName) {
-        String currencyPairClause = " AND cp.name = :pairName ";
-
         String acceptedClause = StringUtils.EMPTY;
         if (Objects.nonNull(fromDate) && Objects.nonNull(toDate)) {
             acceptedClause = " AND (o.date_acception BETWEEN :dateFrom AND :dateTo) ";
@@ -50,14 +63,16 @@ public class OrderRepositoryImpl implements OrderRepository {
         final String sql = "SELECT " +
                 "o.id AS order_id, " +
                 "cp.name AS currency_pair_name, " +
+                "o.exrate, " +
                 "o.amount_base, " +
                 "o.amount_convert, " +
-                "o.exrate, " +
-                "o.date_acception " +
+                "o.date_acception, " +
+                "o.date_creation, " +
+                "o.operation_type_id, " +
+                "o.status_id " +
                 "FROM EXORDERS o " +
                 "JOIN CURRENCY_PAIR cp ON cp.id = o.currency_pair_id " +
-                "WHERE o.status_id = 3 "
-                + currencyPairClause
+                "WHERE cp.name = :pairName "
                 + acceptedClause;
 
         Map<String, Object> params = new HashMap<>();
@@ -75,10 +90,17 @@ public class OrderRepositoryImpl implements OrderRepository {
         return slaveJdbcTemplate.query(sql, params, (rs, rowNum) -> OrderDto.builder()
                 .id(rs.getInt("order_id"))
                 .currencyPairName(rs.getString("currency_pair_name"))
+                .exRate(rs.getBigDecimal("exrate"))
                 .amountBase(rs.getBigDecimal("amount_base"))
                 .amountConvert(rs.getBigDecimal("amount_convert"))
-                .exRate(rs.getBigDecimal("exrate"))
-                .dateAcception(rs.getTimestamp("date_acception").toLocalDateTime())
+                .dateAcception(Objects.nonNull(rs.getTimestamp("date_acception"))
+                        ? rs.getTimestamp("date_acception").toLocalDateTime()
+                        : null)
+                .dateCreation(Objects.nonNull(rs.getTimestamp("date_creation"))
+                        ? rs.getTimestamp("date_creation").toLocalDateTime()
+                        : null)
+                .operationTypeId(rs.getInt("operation_type_id"))
+                .statusId(rs.getInt("status_id"))
                 .build());
     }
 }

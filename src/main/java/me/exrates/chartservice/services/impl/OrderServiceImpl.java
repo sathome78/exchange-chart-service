@@ -1,6 +1,7 @@
 package me.exrates.chartservice.services.impl;
 
 import lombok.extern.log4j.Log4j2;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import me.exrates.chartservice.services.OrderService;
@@ -25,7 +26,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<String> getAllCurrencyPairNames() {
+    public List<CurrencyPairDto> getAllCurrencyPairNames() {
         return orderRepository.getAllCurrencyPairNames();
     }
 

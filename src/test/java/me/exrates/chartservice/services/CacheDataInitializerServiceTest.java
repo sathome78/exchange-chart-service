@@ -2,6 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.services.impl.CacheDataInitializerServiceImpl;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.junit.Before;
@@ -69,7 +70,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .volume(BigDecimal.TEN)
                 .candleOpenTime(NOW)
                 .build();
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
         doReturn(Collections.singletonList(model))
@@ -116,7 +119,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(elasticsearchProcessingService)
                 .getAllIndices();
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
         doReturn(Collections.emptyList())
@@ -140,7 +145,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doReturn(Collections.singletonList(key))
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
 
@@ -179,7 +186,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void cleanCache_ok_with_update() {
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
 
@@ -225,7 +234,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void cleanCache_key_lists_empty() {
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
         doReturn(Collections.emptyList())
@@ -245,7 +256,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
     @Test
     public void cleanCache_empty_data_list() {
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderService)
                 .getAllCurrencyPairNames();
 

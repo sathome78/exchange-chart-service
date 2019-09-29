@@ -16,24 +16,31 @@ import java.time.LocalDateTime;
 @Builder(builderClassName = "Builder")
 @NoArgsConstructor
 @AllArgsConstructor
-public class TradeDataDto {
+public class OrderDataDto {
 
     private int orderId;
-    private String pairName;
+    private String currencyPairName;
     private BigDecimal exrate;
     private BigDecimal amountBase;
     private BigDecimal amountConvert;
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime tradeDate;
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    private LocalDateTime createDate;
+    private int operationTypeId;
+    private int statusId;
 
-
-    public TradeDataDto(OrderDto order) {
+    public OrderDataDto(OrderDto order) {
         this.orderId = order.getId();
-        this.pairName = order.getCurrencyPairName();
+        this.currencyPairName = order.getCurrencyPairName();
         this.exrate = order.getExRate();
         this.amountBase = order.getAmountBase();
         this.amountConvert = order.getAmountConvert();
         this.tradeDate = order.getDateAcception();
+        this.createDate = order.getDateCreation();
+        this.operationTypeId = order.getOperationTypeId();
+        this.statusId = order.getStatusId();
     }
 }

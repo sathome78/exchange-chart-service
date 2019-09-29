@@ -1,5 +1,6 @@
 package me.exrates.chartservice.services;
 
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import me.exrates.chartservice.services.impl.OrderServiceImpl;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -42,15 +44,19 @@ public class OrderServiceTest extends AbstractTest {
 
     @Test
     public void getAllCurrencyPairNames_ok() {
-        doReturn(Collections.singletonList(TEST_PAIR))
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .name(TEST_PAIR)
+                .build()))
                 .when(orderRepository)
                 .getAllCurrencyPairNames();
 
-        List<String> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
 
         assertFalse(CollectionUtils.isEmpty(pairs));
         assertEquals(1, pairs.size());
-        assertEquals(TEST_PAIR, pairs.get(0));
+        assertNotNull(pairs.get(0));
+        assertEquals(TEST_PAIR, pairs.get(0).getName());
+        assertFalse(pairs.get(0).isHidden());
 
         verify(orderRepository, atLeastOnce()).getAllCurrencyPairNames();
     }
@@ -61,7 +67,7 @@ public class OrderServiceTest extends AbstractTest {
                 .when(orderRepository)
                 .getAllCurrencyPairNames();
 
-        List<String> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
 
         assertTrue(CollectionUtils.isEmpty(pairs));
 

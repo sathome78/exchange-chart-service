@@ -3,14 +3,13 @@ package me.exrates.chartservice.services;
 import com.antkorwin.xsync.XSync;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.impl.TradeDataServiceImpl;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
@@ -114,7 +113,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
         BigDecimal group1HighRate = BigDecimal.valueOf(6500);
         BigDecimal group1LowRRate = BigDecimal.valueOf(2000);
 
-        List<TradeDataDto> trades = new ArrayList<>();
+        List<OrderDataDto> trades = new ArrayList<>();
         trades.add(buildTradeData(baseTradeTime.plusSeconds(4), BigDecimal.valueOf(1), BigDecimal.valueOf(5000), BTC_USD));
         trades.add(buildTradeData(baseTradeTime.plusSeconds(2), BigDecimal.valueOf(0.5), group1HighRate, BTC_USD));
         trades.add(buildTradeData(baseTradeTime, BigDecimal.valueOf(2), group1LowRRate, BTC_USD));
@@ -304,8 +303,8 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 .build();
     }
 
-    private TradeDataDto buildTradeData(LocalDateTime tradeTime, BigDecimal amount, BigDecimal exrate, String pairName) {
-        return TradeDataDto.builder()
+    private OrderDataDto buildTradeData(LocalDateTime tradeTime, BigDecimal amount, BigDecimal exrate, String pairName) {
+        return OrderDataDto.builder()
                 .tradeDate(tradeTime)
                 .amountBase(amount)
                 .exrate(exrate)

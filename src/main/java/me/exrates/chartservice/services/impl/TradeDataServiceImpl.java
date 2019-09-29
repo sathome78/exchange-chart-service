@@ -5,7 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
@@ -180,7 +180,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
+    public void handleReceivedTrades(String pairName, List<OrderDataDto> dto) {
         dto.stream()
                 .collect(Collectors.groupingBy(p -> TimeUtil.getNearestTimeBeforeForMinInterval(p.getTradeDate())))
                 .values()
@@ -219,7 +219,7 @@ public class TradeDataServiceImpl implements TradeDataService {
         }
     }
 
-    private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
+    private void groupTradesAndSave(String pairName, List<OrderDataDto> dto) {
         xSync.execute(pairName, () -> {
             CandleModel newModel = CandleDataConverter.reduceToCandle(dto);
             if (isNull(newModel)) {

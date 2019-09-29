@@ -1,7 +1,7 @@
 package me.exrates.chartservice.services;
 
 import com.antkorwin.xsync.XSync;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.impl.ListenerBufferImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
@@ -38,9 +38,9 @@ public class ListenerBufferImplTest extends AbstractTest {
     private static final int GENERATED_TRADES_COUNT = 5;
 
     @Captor
-    private ArgumentCaptor<ArrayList<TradeDataDto>> usdCaptor;
+    private ArgumentCaptor<ArrayList<OrderDataDto>> usdCaptor;
     @Captor
-    private ArgumentCaptor<ArrayList<TradeDataDto>> usdtCaptor;
+    private ArgumentCaptor<ArrayList<OrderDataDto>> usdtCaptor;
 
     @Mock
     private TradeDataService tradeDataService;
@@ -61,8 +61,8 @@ public class ListenerBufferImplTest extends AbstractTest {
     public void receive() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
 
-        List<TradeDataDto> usdTrades = generateTestListForPair(BTC_USD);
-        List<TradeDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
+        List<OrderDataDto> usdTrades = generateTestListForPair(BTC_USD);
+        List<OrderDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
 
         doReturn(null).when(redisProcessingService).getLastInitializedCandleTimeFromCache(any());
 
@@ -97,8 +97,8 @@ public class ListenerBufferImplTest extends AbstractTest {
         Assert.assertTrue(result);
     }
 
-    private List<TradeDataDto> generateTestListForPair(String currencyPair) {
-        List<TradeDataDto> trades = new ArrayList<>();
+    private List<OrderDataDto> generateTestListForPair(String currencyPair) {
+        List<OrderDataDto> trades = new ArrayList<>();
         int counter = 0;
         while (counter < GENERATED_TRADES_COUNT) {
             counter++;
@@ -107,10 +107,10 @@ public class ListenerBufferImplTest extends AbstractTest {
         return trades;
     }
 
-    public TradeDataDto createTradeWithRandomTime(String currencyPair) {
-        TradeDataDto tradeDataDto = new TradeDataDto();
-        tradeDataDto.setPairName(currencyPair);
-        tradeDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
-        return tradeDataDto;
+    public OrderDataDto createTradeWithRandomTime(String currencyPair) {
+        OrderDataDto orderDataDto = new OrderDataDto();
+        orderDataDto.setCurrencyPairName(currencyPair);
+        orderDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
+        return orderDataDto;
     }
 }

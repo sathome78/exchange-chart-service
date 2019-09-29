@@ -33,6 +33,19 @@ public class CandleModel {
     @JsonProperty("time")
     private LocalDateTime candleOpenTime;
 
+    @JsonProperty("pred_last_rate")
+    private BigDecimal predLastRate;
+    @JsonProperty("percent_change")
+    private BigDecimal percentChange;
+    @JsonProperty("value_change")
+    private BigDecimal valueChange;
+    @JsonProperty("currency_volume")
+    private BigDecimal currencyVolume;
+    @JsonProperty("highest_bid")
+    private BigDecimal highestBid;
+    @JsonProperty("lowest_ask")
+    private BigDecimal lowestAsk;
+
     public static CandleModel empty(String pairName, BigDecimal closeRate, LocalDateTime candleOpenTime) {
         return CandleModel.builder()
                 .pairName(pairName)
@@ -44,6 +57,10 @@ public class CandleModel {
                 .lowRate(closeRate)
                 .volume(BigDecimal.ZERO)
                 .candleOpenTime(candleOpenTime)
+                .predLastRate(closeRate)
+                .currencyVolume(BigDecimal.ZERO)
+                .highestBid(closeRate)
+                .lowestAsk(closeRate)
                 .build();
     }
 }
