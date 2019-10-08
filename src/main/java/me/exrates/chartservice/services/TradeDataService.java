@@ -15,7 +15,7 @@ public interface TradeDataService {
 
     LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval);
 
-    void handleReceivedTrades(String pairname, List<OrderDataDto> dto);
+    void handleReceivedTrades(String pairname, List<OrderDataDto> ordersData);
 
     void defineAndSaveLastInitializedCandleTime(String hashKey, List<CandleModel> models);
 

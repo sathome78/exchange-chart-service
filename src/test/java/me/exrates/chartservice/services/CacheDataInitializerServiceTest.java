@@ -74,7 +74,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
         doReturn(Collections.singletonList(model))
                 .when(elasticsearchProcessingService)
                 .get(anyString(), anyString());
@@ -91,7 +91,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
+        verify(orderService, atLeastOnce()).getAllCurrencyPairs();
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, times(6)).exists(anyString(), anyString(), any(BackDealInterval.class));
@@ -107,7 +107,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(orderService, never()).getAllCurrencyPairNames();
+        verify(orderService, never()).getAllCurrencyPairs();
         verify(elasticsearchProcessingService, never()).get(anyString(), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).exists(anyString(), anyString(), any(BackDealInterval.class));
@@ -123,7 +123,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
         doReturn(Collections.emptyList())
                 .when(elasticsearchProcessingService)
                 .get(anyString(), anyString());
@@ -131,7 +131,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCache();
 
         verify(elasticsearchProcessingService, atLeastOnce()).getAllIndices();
-        verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
+        verify(orderService, atLeastOnce()).getAllCurrencyPairs();
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
@@ -149,7 +149,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
 
         CandleModel model = CandleModel.builder()
                 .pairName(TEST_PAIR)
@@ -176,7 +176,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.cleanCache();
 
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(orderService, times(6)).getAllCurrencyPairNames();
+        verify(orderService, times(6)).getAllCurrencyPairs();
         verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).insert(anyList(), anyString(), anyString());
@@ -190,7 +190,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
 
         key = RedisGeneratorUtil.generateKey(NOW.minusDays(10).toLocalDate());
 
@@ -223,7 +223,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getAllCurrencyPairNames();
+        verify(orderService, times(6)).getAllCurrencyPairs();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
         verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
@@ -238,14 +238,14 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
         doReturn(Collections.emptyList())
                 .when(redisProcessingService)
                 .getAllKeys(any(BackDealInterval.class));
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getAllCurrencyPairNames();
+        verify(orderService, times(6)).getAllCurrencyPairs();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
@@ -260,7 +260,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
 
         key = RedisGeneratorUtil.generateKey(NOW.minusDays(10).toLocalDate());
 
@@ -273,7 +273,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getAllCurrencyPairNames();
+        verify(orderService, times(6)).getAllCurrencyPairs();
         verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
         verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());

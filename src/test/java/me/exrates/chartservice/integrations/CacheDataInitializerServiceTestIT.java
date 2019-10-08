@@ -71,9 +71,11 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         // clear redis cache
 
-        redisProcessingService.deleteKey(index);
+        redisProcessingService.deleteKey(key);
 
-        redisProcessingService.deleteKeyByDbIndexAndKey(0, index);
+        redisProcessingService.deleteKeyByDbIndexAndKey(0, key);
+
+        redisProcessingService.deleteKeyByDbIndexAndKey(15, hashKey);
     }
 
     @Test
@@ -93,6 +95,10 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
                 .candleOpenTime(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL))
+                .currencyVolume(BigDecimal.TEN)
+                .percentChange(BigDecimal.ZERO)
+                .valueChange(BigDecimal.ZERO)
+                .predLastRate(BigDecimal.ONE)
                 .build();
 
         List<CandleModel> models = Collections.singletonList(model);

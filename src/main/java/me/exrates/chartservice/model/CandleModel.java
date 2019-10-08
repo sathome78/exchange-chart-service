@@ -41,10 +41,6 @@ public class CandleModel {
     private BigDecimal valueChange;
     @JsonProperty("currency_volume")
     private BigDecimal currencyVolume;
-    @JsonProperty("highest_bid")
-    private BigDecimal highestBid;
-    @JsonProperty("lowest_ask")
-    private BigDecimal lowestAsk;
 
     public static CandleModel empty(String pairName, BigDecimal closeRate, LocalDateTime candleOpenTime) {
         return CandleModel.builder()
@@ -59,8 +55,6 @@ public class CandleModel {
                 .candleOpenTime(candleOpenTime)
                 .predLastRate(closeRate)
                 .currencyVolume(BigDecimal.ZERO)
-                .highestBid(closeRate)
-                .lowestAsk(closeRate)
                 .build();
     }
 }

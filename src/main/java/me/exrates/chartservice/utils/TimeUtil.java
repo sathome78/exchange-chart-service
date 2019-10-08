@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.DEFAULT_INTERVAL;
+import static me.exrates.chartservice.configuration.CommonConfiguration.ONE_DAY_INTERVAL;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.NONE)
@@ -87,5 +88,17 @@ public final class TimeUtil {
 
     public static String generateDateTimeString(LocalDateTime dateTime) {
         return dateTime.format(FORMATTER_DATE_TIME);
+    }
+
+    public static LocalDate getBoundaryTime(long candlesToStoreInCache, BackDealInterval interval) {
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        return currentDateTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval)).toLocalDate();
+    }
+
+    public static LocalDateTime getOneDayBeforeNowTime() {
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        return currentDateTime.minusMinutes(TimeUtil.convertToMinutes(ONE_DAY_INTERVAL));
     }
 }

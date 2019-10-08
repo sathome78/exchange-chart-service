@@ -2,6 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.DailyDataModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,4 +41,16 @@ public interface RedisProcessingService {
     void insertFirstInitializedCandleTimeToHistory(String key, LocalDateTime dateTime);
 
     LocalDateTime getFirstInitializedCandleTimeFromHistory(String key);
+
+    List<String> getDailyDataKeys();
+
+    void insertDailyData(DailyDataModel dataModel, String key, String hashKey);
+
+    DailyDataModel getDailyData(String key, String hashKey);
+
+    List<DailyDataModel> getDailyDataByKey(String key);
+
+    void deleteAllDailyDataKeys();
+
+    void deleteDailyData(String key, String hashKey);
 }

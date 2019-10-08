@@ -7,20 +7,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Builder(builderClassName = "Builder", toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class CurrencyPairDto {
+public class DailyDataModel {
 
-    private int id;
-    private String name;
-    private boolean hidden;
-    private String matket;
-    private BigDecimal scale;
-    @JsonProperty("top_market")
-    private boolean topMarket;
-    @JsonProperty("top_market_volume")
-    private BigDecimal topMarketVolume;
+    @JsonProperty("time")
+    private LocalDateTime candleOpenTime;
+    @JsonProperty("highest_bid")
+    private BigDecimal highestBid;
+    @JsonProperty("lowest_ask")
+    private BigDecimal lowestAsk;
 }

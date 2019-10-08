@@ -3,6 +3,7 @@ package me.exrates.chartservice.integrations;
 import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
@@ -23,6 +24,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RedisProcessingServiceTestIT extends AbstractTestIT {
@@ -205,5 +207,42 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
         assertEquals(dateTimeWithoutNano, dateTime);
 
         processingService.deleteKeyByDbIndexAndKey(0, hashKey);
+    }
+
+    @Test
+    public void getDailyDataEndToEnd() {
+        DailyDataModel dailyDataModel = DailyDataModel.builder()
+                .candleOpenTime(NOW)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.ONE)
+                .build();
+
+        String key = RedisGeneratorUtil.generateKeyForCoinmarketcapData(TEST_PAIR);
+        String hashKey = RedisGeneratorUtil.generateHashKeyForCoinmarketcapData(NOW);
+
+        DailyDataModel savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNull(savedDailyDataModel);
+
+        processingService.insertDailyData(dailyDataModel, key, hashKey);
+
+        savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNotNull(savedDailyDataModel);
+        assertEquals(NOW, savedDailyDataModel.getCandleOpenTime());
+        assertEquals(BigDecimal.TEN, savedDailyDataModel.getHighestBid());
+        assertEquals(BigDecimal.ONE, savedDailyDataModel.getLowestAsk());
+
+        List<DailyDataModel> list = processingService.getDailyDataByKey(key);
+
+        assertNotNull(list);
+        assertFalse(list.isEmpty());
+        assertEquals(1, list.size());
+
+        processingService.deleteDailyData(key, hashKey);
+
+        savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNull(savedDailyDataModel);
     }
 }

@@ -52,7 +52,7 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderService)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
         doReturn(Collections.singletonList(OrderDto.builder()
                 .id(1)
                 .currencyPairName(TEST_PAIR)
@@ -62,7 +62,7 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
                 .build()))
                 .when(orderService)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+                .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
                 .bulkInsertOrUpdate(anyMap(), anyString());
@@ -72,8 +72,8 @@ public class DataInitializerServiceTest extends AbstractTest {
 
         dataInitializerService.generate(FROM_DATE, TO_DATE);
 
-        verify(orderService, atLeastOnce()).getAllCurrencyPairNames();
-        verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+        verify(orderService, atLeastOnce()).getAllCurrencyPairs();
+        verify(orderService, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
         verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
@@ -89,7 +89,7 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
                 .build()))
                 .when(orderService)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+                .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         doNothing()
                 .when(elasticsearchProcessingService)
                 .bulkInsertOrUpdate(anyMap(), anyString());
@@ -99,7 +99,7 @@ public class DataInitializerServiceTest extends AbstractTest {
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
-        verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+        verify(orderService, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).bulkInsertOrUpdate(anyMap(), anyString());
         verify(cacheDataInitializerService, atLeastOnce()).updateCacheByIndexAndId(anyString(), anyString());
     }
@@ -108,11 +108,11 @@ public class DataInitializerServiceTest extends AbstractTest {
     public void generate_empty_orders_list() {
         doReturn(Collections.emptyList())
                 .when(orderService)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+                .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
         dataInitializerService.generate(FROM_DATE, TO_DATE, Collections.singletonList(TEST_PAIR));
 
-        verify(orderService, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+        verify(orderService, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
         verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
     }
 }

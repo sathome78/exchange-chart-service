@@ -308,7 +308,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 .tradeDate(tradeTime)
                 .amountBase(amount)
                 .exrate(exrate)
-                .pairName(pairName)
+                .currencyPairName(pairName)
                 .build();
     }
 

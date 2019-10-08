@@ -4,8 +4,10 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.OrderDto;
+import me.exrates.chartservice.model.CoinmarketcapApiDto;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDataDto;
+import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.util.CollectionUtils;
 
@@ -67,17 +69,6 @@ public final class CandleDataConverter {
                             .min(Comparator.naturalOrder())
                             .orElse(BigDecimal.ZERO);
 
-                    final BigDecimal highestBid = groupedCandles.stream()
-                            .map(CandleModel::getHighestBid)
-                            .filter(Objects::nonNull)
-                            .max(Comparator.naturalOrder())
-                            .orElse(null);
-                    final BigDecimal lowestAsk = groupedCandles.stream()
-                            .map(CandleModel::getLowestAsk)
-                            .filter(Objects::nonNull)
-                            .min(Comparator.naturalOrder())
-                            .orElse(null);
-
                     return CandleModel.builder()
                             .pairName(firstCandle.getPairName())
                             .firstTradeTime(firstTradeTime)
@@ -92,8 +83,6 @@ public final class CandleDataConverter {
                             .percentChange(getPercentChange(closeRate, openRate))
                             .valueChange(getValueChange(closeRate, openRate))
                             .currencyVolume(currencyVolume)
-                            .highestBid(highestBid)
-                            .lowestAsk(lowestAsk)
                             .build();
                 })
                 .filter(Objects::nonNull)
@@ -138,17 +127,6 @@ public final class CandleDataConverter {
                 .min(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
 
-        final BigDecimal highestBid = tradeData.stream()
-                .filter(order -> order.getOperationTypeId() == 4)
-                .map(OrderDataDto::getExrate)
-                .max(Comparator.naturalOrder())
-                .orElse(null);
-        final BigDecimal lowestAsk = tradeData.stream()
-                .filter(order -> order.getOperationTypeId() == 3)
-                .map(OrderDataDto::getExrate)
-                .min(Comparator.naturalOrder())
-                .orElse(null);
-
         return CandleModel.builder()
                 .pairName(firstTrade.getCurrencyPairName())
                 .firstTradeTime(firstTradeTime)
@@ -163,9 +141,72 @@ public final class CandleDataConverter {
                 .percentChange(getPercentChange(closeRate, openRate))
                 .valueChange(getValueChange(closeRate, openRate))
                 .currencyVolume(currencyVolume)
-                .highestBid(highestBid)
-                .lowestAsk(lowestAsk)
                 .build();
+    }
+
+    public static CoinmarketcapApiDto reduceToCoinmarketcapData(List<CandleModel> models, CurrencyPairDto currencyPairDto) {
+        if (CollectionUtils.isEmpty(models)) {
+            return null;
+        }
+
+        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
+        CandleModel firstCandle = models.get(0);
+        final BigDecimal openRate = firstCandle.getOpenRate();
+
+        CandleModel lastCandle = models.get(models.size() - 1);
+        final BigDecimal closeRate = lastCandle.getCloseRate();
+
+        final BigDecimal volume = models.stream()
+                .map(CandleModel::getVolume)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+        final BigDecimal currencyVolume = models.stream()
+                .map(CandleModel::getCurrencyVolume)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+
+        final BigDecimal highRate = models.stream()
+                .map(CandleModel::getHighRate)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+        final BigDecimal lowRate = models.stream()
+                .map(CandleModel::getLowRate)
+                .min(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        return CoinmarketcapApiDto.builder()
+                .currencyPairId(currencyPairDto.getId())
+                .currencyPairName(currencyPairDto.getName())
+                .first(openRate)
+                .last(closeRate)
+                .baseVolume(volume)
+                .quoteVolume(currencyVolume)
+                .high24hr(highRate)
+                .low24hr(lowRate)
+                .isFrozen(currencyPairDto.isHidden() ? 1 : 0)
+                .percentChange(getPercentChange(closeRate, openRate))
+                .build();
+    }
+
+    public static void merge(CandleModel cachedModel, @NotNull CandleModel newModel) {
+        boolean leftStartFirst = cachedModel.getFirstTradeTime().isBefore(newModel.getFirstTradeTime());
+        boolean leftEndLast = cachedModel.getLastTradeTime().isAfter(newModel.getLastTradeTime());
+
+        final BigDecimal closeRate = leftEndLast ? cachedModel.getCloseRate() : newModel.getCloseRate();
+        final BigDecimal predLastRate = leftEndLast ? newModel.getCloseRate() : cachedModel.getCloseRate();
+
+        cachedModel.setFirstTradeTime(leftStartFirst ? cachedModel.getFirstTradeTime() : newModel.getFirstTradeTime());
+        cachedModel.setLastTradeTime(leftEndLast ? cachedModel.getLastTradeTime() : newModel.getLastTradeTime());
+        cachedModel.setOpenRate(leftStartFirst ? cachedModel.getOpenRate() : newModel.getOpenRate());
+        cachedModel.setCloseRate(closeRate);
+        cachedModel.setHighRate(cachedModel.getHighRate().max(newModel.getHighRate()));
+        cachedModel.setLowRate(cachedModel.getLowRate().min(newModel.getLowRate()));
+        cachedModel.setVolume(cachedModel.getVolume().add(newModel.getVolume()));
+        cachedModel.setPredLastRate(predLastRate);
+        cachedModel.setPercentChange(getPercentChange(cachedModel.getCloseRate(), cachedModel.getOpenRate()));
+        cachedModel.setValueChange(getValueChange(cachedModel.getCloseRate(), cachedModel.getOpenRate()));
+        cachedModel.setCurrencyVolume(cachedModel.getCurrencyVolume().add(newModel.getCurrencyVolume()));
     }
 
     private static BigDecimal getPercentChange(BigDecimal closeRate, BigDecimal openRate) {
@@ -190,45 +231,32 @@ public final class CandleDataConverter {
         return valueChange;
     }
 
-    public static void merge(CandleModel cachedModel, @NotNull CandleModel newModel) {
-        boolean leftStartFirst = cachedModel.getFirstTradeTime().isBefore(newModel.getFirstTradeTime());
-        boolean leftEndLast = cachedModel.getLastTradeTime().isAfter(newModel.getLastTradeTime());
-
+    public static BigDecimal getCurrentHighestBid(BigDecimal savedHighestBid, BigDecimal newHighestBid) {
         BigDecimal highestBid;
-        if (Objects.isNull(cachedModel.getHighestBid()) && Objects.isNull(newModel.getHighestBid())) {
+        if (Objects.isNull(savedHighestBid) && Objects.isNull(newHighestBid)) {
             highestBid = null;
-        } else if (Objects.isNull(cachedModel.getHighestBid())) {
-            highestBid = newModel.getHighestBid();
-        } else if (Objects.isNull(newModel.getHighestBid())) {
-            highestBid = cachedModel.getHighestBid();
+        } else if (Objects.isNull(savedHighestBid)) {
+            highestBid = newHighestBid;
+        } else if (Objects.isNull(newHighestBid)) {
+            highestBid = savedHighestBid;
         } else {
-            highestBid = cachedModel.getHighestBid().max(newModel.getHighestBid());
+            highestBid = savedHighestBid.max(newHighestBid);
         }
+        return highestBid;
+    }
 
+    public static BigDecimal getCurrentLowestAsk(BigDecimal savedLowestAsk, BigDecimal newLowestAsk) {
         BigDecimal lowestAsk;
-        if (Objects.isNull(cachedModel.getLowestAsk()) && Objects.isNull(newModel.getLowestAsk())) {
+        if (Objects.isNull(savedLowestAsk) && Objects.isNull(newLowestAsk)) {
             lowestAsk = null;
-        } else if (Objects.isNull(cachedModel.getLowestAsk())) {
-            lowestAsk = newModel.getLowestAsk();
-        } else if (Objects.isNull(newModel.getLowestAsk())) {
-            lowestAsk = cachedModel.getLowestAsk();
+        } else if (Objects.isNull(savedLowestAsk)) {
+            lowestAsk = newLowestAsk;
+        } else if (Objects.isNull(newLowestAsk)) {
+            lowestAsk = savedLowestAsk;
         } else {
-            lowestAsk = cachedModel.getLowestAsk().min(newModel.getLowestAsk());
+            lowestAsk = savedLowestAsk.min(newLowestAsk);
         }
-
-        cachedModel.setFirstTradeTime(leftStartFirst ? cachedModel.getFirstTradeTime() : newModel.getFirstTradeTime());
-        cachedModel.setLastTradeTime(leftEndLast ? cachedModel.getLastTradeTime() : newModel.getLastTradeTime());
-        cachedModel.setOpenRate(leftStartFirst ? cachedModel.getOpenRate() : newModel.getOpenRate());
-        cachedModel.setCloseRate(leftEndLast ? cachedModel.getCloseRate() : newModel.getCloseRate());
-        cachedModel.setHighRate(cachedModel.getHighRate().max(newModel.getHighRate()));
-        cachedModel.setLowRate(cachedModel.getLowRate().min(newModel.getLowRate()));
-        cachedModel.setVolume(cachedModel.getVolume().add(newModel.getVolume()));
-        cachedModel.setPredLastRate(leftEndLast ? newModel.getCloseRate() : cachedModel.getCloseRate());
-        cachedModel.setPercentChange(getPercentChange(cachedModel.getCloseRate(), cachedModel.getOpenRate()));
-        cachedModel.setValueChange(getValueChange(cachedModel.getCloseRate(), cachedModel.getOpenRate()));
-        cachedModel.setCurrencyVolume(cachedModel.getCurrencyVolume().add(newModel.getCurrencyVolume()));
-        cachedModel.setHighestBid(highestBid);
-        cachedModel.setLowestAsk(lowestAsk);
+        return lowestAsk;
     }
 
     public static List<CandleModel> convert(List<OrderDto> orders) {

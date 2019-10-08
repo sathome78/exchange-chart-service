@@ -29,8 +29,8 @@ public class OrderDataDto {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime createDate;
-    private int operationTypeId;
     private int statusId;
+    private int operationTypeId;
 
     public OrderDataDto(OrderDto order) {
         this.orderId = order.getId();
@@ -40,7 +40,7 @@ public class OrderDataDto {
         this.amountConvert = order.getAmountConvert();
         this.tradeDate = order.getDateAcception();
         this.createDate = order.getDateCreation();
-        this.operationTypeId = order.getOperationTypeId();
         this.statusId = order.getStatusId();
+        this.operationTypeId = order.getOperationTypeId();
     }
 }

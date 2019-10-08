@@ -21,8 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -80,9 +78,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void updateCacheByIndex(String index) {
-        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
-
-        pairs.forEach(pair -> {
+        orderService.getCurrencyPairsFromCache(null).forEach(pair -> {
             final String id = ElasticsearchGeneratorUtil.generateId(pair.getName());
 
             List<CandleModel> models = elasticsearchProcessingService.get(index, id);
@@ -117,7 +113,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
         final LocalDate keyDate = TimeUtil.generateDate(key);
-        final LocalDate boundaryTime = getBoundaryTime(interval);
+        final LocalDate boundaryTime = TimeUtil.getBoundaryTime(candlesToStoreInCache, interval);
 
         if (!redisProcessingService.exists(key, hashKey, interval)
                 && Objects.nonNull(keyDate)
@@ -137,12 +133,12 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void cleanCache(BackDealInterval interval) {
-        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getCurrencyPairsFromCache(null);
 
         redisProcessingService.getAllKeys(interval).forEach(key -> {
             final LocalDate keyDate = TimeUtil.generateDate(key);
 
-            if (Objects.nonNull(keyDate) && getBoundaryTime(interval).isAfter(keyDate)) {
+            if (Objects.nonNull(keyDate) && TimeUtil.getBoundaryTime(candlesToStoreInCache, interval).isAfter(keyDate)) {
                 pairs.forEach(pair -> {
                     final String hashKey = RedisGeneratorUtil.generateHashKey(pair.getName());
 
@@ -162,11 +158,5 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                 });
             }
         });
-    }
-
-    private LocalDate getBoundaryTime(BackDealInterval interval) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-
-        return currentDateTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval)).toLocalDate();
     }
 }

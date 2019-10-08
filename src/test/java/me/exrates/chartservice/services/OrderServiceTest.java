@@ -39,7 +39,7 @@ public class OrderServiceTest extends AbstractTest {
 
     @Before
     public void setUp() throws Exception {
-        orderService = spy(new OrderServiceImpl(orderRepository));
+        orderService = spy(new OrderServiceImpl(orderRepository, currencyPairsCache, currencyRatesCache));
     }
 
     @Test
@@ -48,9 +48,9 @@ public class OrderServiceTest extends AbstractTest {
                 .name(TEST_PAIR)
                 .build()))
                 .when(orderRepository)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
 
-        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairs();
 
         assertFalse(CollectionUtils.isEmpty(pairs));
         assertEquals(1, pairs.size());
@@ -58,20 +58,20 @@ public class OrderServiceTest extends AbstractTest {
         assertEquals(TEST_PAIR, pairs.get(0).getName());
         assertFalse(pairs.get(0).isHidden());
 
-        verify(orderRepository, atLeastOnce()).getAllCurrencyPairNames();
+        verify(orderRepository, atLeastOnce()).getAllCurrencyPairs();
     }
 
     @Test
     public void getAllCurrencyPairNames_empty_pairs_list() {
         doReturn(Collections.emptyList())
                 .when(orderRepository)
-                .getAllCurrencyPairNames();
+                .getAllCurrencyPairs();
 
-        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getAllCurrencyPairs();
 
         assertTrue(CollectionUtils.isEmpty(pairs));
 
-        verify(orderRepository, atLeastOnce()).getAllCurrencyPairNames();
+        verify(orderRepository, atLeastOnce()).getAllCurrencyPairs();
     }
 
     @Test
@@ -85,26 +85,26 @@ public class OrderServiceTest extends AbstractTest {
                 .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
                 .build()))
                 .when(orderRepository)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+                .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
-        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, TEST_PAIR);
+        List<OrderDto> orders = orderService.getClosedOrders(FROM_DATE, TO_DATE, TEST_PAIR);
 
         assertFalse(CollectionUtils.isEmpty(orders));
         assertEquals(1, orders.size());
 
-        verify(orderRepository, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+        verify(orderRepository, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
     }
 
     @Test
     public void getFilteredOrders_empty_orders_list() {
         doReturn(Collections.emptyList())
                 .when(orderRepository)
-                .getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+                .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
 
-        List<OrderDto> orders = orderService.getFilteredOrders(FROM_DATE, TO_DATE, TEST_PAIR);
+        List<OrderDto> orders = orderService.getClosedOrders(FROM_DATE, TO_DATE, TEST_PAIR);
 
         assertTrue(CollectionUtils.isEmpty(orders));
 
-        verify(orderRepository, atLeastOnce()).getFilteredOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+        verify(orderRepository, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
     }
 }

@@ -49,6 +49,7 @@ generator:
 
 scheduled:
   clean-cache: 0 */30 * ? * *
+  clean-daily-data: 0 */5 * ? * *
 
 logging:
   level:
