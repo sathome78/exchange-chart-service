@@ -108,139 +108,6 @@ public class TradeDataServiceImplTest extends AbstractTest {
     }
 
     @Test
-    public void handleReceivedTrades() {
-        LocalDateTime baseTradeTime = LocalDateTime.of(2019, 7, 18, 16, 54);
-        BigDecimal group1HighRate = BigDecimal.valueOf(6500);
-        BigDecimal group1LowRRate = BigDecimal.valueOf(2000);
-
-        List<OrderDataDto> trades = new ArrayList<>();
-        trades.add(buildTradeData(baseTradeTime.plusSeconds(4), BigDecimal.valueOf(1), BigDecimal.valueOf(5000), BTC_USD));
-        trades.add(buildTradeData(baseTradeTime.plusSeconds(2), BigDecimal.valueOf(0.5), group1HighRate, BTC_USD));
-        trades.add(buildTradeData(baseTradeTime, BigDecimal.valueOf(2), group1LowRRate, BTC_USD));
-
-        LocalDateTime time0Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M5_INTERVAL);
-        LocalDateTime lastTradeTime = baseTradeTime.minusMinutes(5);
-        doReturn(null)
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time0Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M5_INTERVAL));
-
-        LocalDateTime time1Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M15_INTERVAL);
-        CandleModel model1 = CandleModel.builder()
-                .pairName(BTC_USD)
-                .volume(new BigDecimal(1))
-                .candleOpenTime(time1Candle)
-                .closeRate(new BigDecimal(5000))
-                .openRate(new BigDecimal(6000))
-                .highRate(new BigDecimal(6000))
-                .lowRate(new BigDecimal(5000))
-                .lastTradeTime(lastTradeTime)
-                .firstTradeTime(lastTradeTime.minusMinutes(5))
-                .build();
-        doReturn(Collections.singletonList(model1))
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time1Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M15_INTERVAL));
-
-        LocalDateTime time2Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M30_INTERVAL);
-        CandleModel model2 = CandleModel.builder()
-                .pairName(BTC_USD)
-                .volume(new BigDecimal(2))
-                .candleOpenTime(time2Candle)
-                .closeRate(new BigDecimal(5500))
-                .openRate(new BigDecimal(5000))
-                .highRate(new BigDecimal(6000))
-                .lowRate(new BigDecimal(5000))
-                .lastTradeTime(lastTradeTime)
-                .firstTradeTime(lastTradeTime.minusMinutes(35))
-                .build();
-        doReturn(Collections.singletonList(model2))
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time2Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M30_INTERVAL));
-
-        LocalDateTime time3Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, ONE_HOUR_INTERVAL);
-        CandleModel model3 = CandleModel.builder()
-                .pairName(BTC_USD)
-                .volume(new BigDecimal(4))
-                .candleOpenTime(time3Candle)
-                .closeRate(new BigDecimal(5000))
-                .openRate(new BigDecimal(4500))
-                .highRate(new BigDecimal(6000))
-                .lowRate(new BigDecimal(4500))
-                .lastTradeTime(lastTradeTime)
-                .firstTradeTime(lastTradeTime.minusMinutes(65))
-                .build();
-        doReturn(Collections.singletonList(model3))
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time3Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(ONE_HOUR_INTERVAL));
-
-        LocalDateTime time4Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, SIX_HOUR_INTERVAL);
-        CandleModel model4 = CandleModel.builder()
-                .pairName(BTC_USD)
-                .volume(new BigDecimal(5))
-                .candleOpenTime(time4Candle)
-                .closeRate(new BigDecimal(5000))
-                .openRate(new BigDecimal(4500))
-                .highRate(new BigDecimal(6000))
-                .lowRate(new BigDecimal(4500))
-                .lastTradeTime(lastTradeTime)
-                .firstTradeTime(lastTradeTime.minusMinutes(365))
-                .build();
-        doReturn(Collections.singletonList(model4))
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time4Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(SIX_HOUR_INTERVAL));
-
-        LocalDateTime time5Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, ONE_DAY_INTERVAL);
-        CandleModel model5 = CandleModel.builder()
-                .pairName(BTC_USD)
-                .volume(new BigDecimal(8))
-                .candleOpenTime(time5Candle)
-                .closeRate(new BigDecimal(5400))
-                .openRate(new BigDecimal(5000))
-                .highRate(new BigDecimal(8000))
-                .lowRate(new BigDecimal(1100))
-                .lastTradeTime(lastTradeTime)
-                .firstTradeTime(lastTradeTime.minusMinutes(725))
-                .build();
-        doReturn(Collections.singletonList(model5))
-                .when(redisProcessingService)
-                .get(eq(RedisGeneratorUtil.generateKey(time5Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(ONE_DAY_INTERVAL));
-
-        tradeDataService.handleReceivedTrades(BTC_USD, trades);
-
-        verify(redisProcessingService, times(supportedIntervals.size())).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, times(supportedIntervals.size())).get(anyString(), anyString(), any(BackDealInterval.class));
-    }
-
-    @Test
-    public void defineAndSaveLastInitializedCandleTime() {
-        List<CandleModel> models = new ArrayList<>();
-        LocalDateTime time = TimeUtil.getNearestTimeBeforeForMinInterval(NOW);
-
-        models.add(buildDefaultCandle(time));
-        models.add(buildDefaultCandle(time.plusMinutes(1)));
-        models.add(buildDefaultCandle(time.plusMinutes(3)));
-
-        doReturn(null)
-                .when(redisProcessingService)
-                .getLastInitializedCandleTimeFromCache(anyString());
-        doNothing()
-                .when(redisProcessingService)
-                .insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
-
-        tradeDataService.defineAndSaveLastInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), models);
-
-        verify(redisProcessingService, times(1)).getLastInitializedCandleTimeFromCache(anyString());
-        verify(redisProcessingService, times(1)).insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
-    }
-
-    @Test
-    public void defineAndSaveLastInitializedCandleTime_EMPTY_CNADLES() {
-        tradeDataService.defineAndSaveLastInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), Collections.emptyList());
-
-        verify(redisProcessingService, never()).getLastInitializedCandleTimeFromCache(anyString());
-        verify(redisProcessingService, never()).insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
-    }
-
-    @Test
     public void getLastCandleTimeBeforeDate_fromDateIsNull() {
         LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, null, M5_INTERVAL);
 
@@ -284,6 +151,174 @@ public class TradeDataServiceImplTest extends AbstractTest {
         verify(elasticsearchProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
     }
 
+    @Test
+    public void handleReceivedTrades() {
+        LocalDateTime baseTradeTime = LocalDateTime.of(2019, 7, 18, 16, 54);
+        BigDecimal group1HighRate = BigDecimal.valueOf(6500);
+        BigDecimal group1LowRRate = BigDecimal.valueOf(2000);
+
+        List<OrderDataDto> trades = new ArrayList<>();
+        trades.add(buildTradeData(baseTradeTime.plusSeconds(4), BigDecimal.valueOf(1), BigDecimal.valueOf(5000), BTC_USD));
+        trades.add(buildTradeData(baseTradeTime.plusSeconds(2), BigDecimal.valueOf(0.5), group1HighRate, BTC_USD));
+        trades.add(buildTradeData(baseTradeTime, BigDecimal.valueOf(2), group1LowRRate, BTC_USD));
+
+        LocalDateTime time0Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M5_INTERVAL);
+        LocalDateTime lastTradeTime = baseTradeTime.minusMinutes(5);
+        doReturn(null)
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time0Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M5_INTERVAL));
+
+        LocalDateTime time1Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M15_INTERVAL);
+        CandleModel model1 = CandleModel.builder()
+                .pairName(BTC_USD)
+                .volume(new BigDecimal(1))
+                .currencyVolume(new BigDecimal(10))
+                .candleOpenTime(time1Candle)
+                .closeRate(new BigDecimal(5000))
+                .openRate(new BigDecimal(6000))
+                .highRate(new BigDecimal(6000))
+                .lowRate(new BigDecimal(5000))
+                .lastTradeTime(lastTradeTime)
+                .firstTradeTime(lastTradeTime.minusMinutes(5))
+                .build();
+        doReturn(Collections.singletonList(model1))
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time1Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M15_INTERVAL));
+
+        LocalDateTime time2Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M30_INTERVAL);
+        CandleModel model2 = CandleModel.builder()
+                .pairName(BTC_USD)
+                .volume(new BigDecimal(2))
+                .currencyVolume(new BigDecimal(20))
+                .candleOpenTime(time2Candle)
+                .closeRate(new BigDecimal(5500))
+                .openRate(new BigDecimal(5000))
+                .highRate(new BigDecimal(6000))
+                .lowRate(new BigDecimal(5000))
+                .lastTradeTime(lastTradeTime)
+                .firstTradeTime(lastTradeTime.minusMinutes(35))
+                .build();
+        doReturn(Collections.singletonList(model2))
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time2Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(M30_INTERVAL));
+
+        LocalDateTime time3Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, ONE_HOUR_INTERVAL);
+        CandleModel model3 = CandleModel.builder()
+                .pairName(BTC_USD)
+                .volume(new BigDecimal(4))
+                .currencyVolume(new BigDecimal(40))
+                .candleOpenTime(time3Candle)
+                .closeRate(new BigDecimal(5000))
+                .openRate(new BigDecimal(4500))
+                .highRate(new BigDecimal(6000))
+                .lowRate(new BigDecimal(4500))
+                .lastTradeTime(lastTradeTime)
+                .firstTradeTime(lastTradeTime.minusMinutes(65))
+                .build();
+        doReturn(Collections.singletonList(model3))
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time3Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(ONE_HOUR_INTERVAL));
+
+        LocalDateTime time4Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, SIX_HOUR_INTERVAL);
+        CandleModel model4 = CandleModel.builder()
+                .pairName(BTC_USD)
+                .volume(new BigDecimal(5))
+                .currencyVolume(new BigDecimal(50))
+                .candleOpenTime(time4Candle)
+                .closeRate(new BigDecimal(5000))
+                .openRate(new BigDecimal(4500))
+                .highRate(new BigDecimal(6000))
+                .lowRate(new BigDecimal(4500))
+                .lastTradeTime(lastTradeTime)
+                .firstTradeTime(lastTradeTime.minusMinutes(365))
+                .build();
+        doReturn(Collections.singletonList(model4))
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time4Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(SIX_HOUR_INTERVAL));
+
+        LocalDateTime time5Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, ONE_DAY_INTERVAL);
+        CandleModel model5 = CandleModel.builder()
+                .pairName(BTC_USD)
+                .volume(new BigDecimal(8))
+                .currencyVolume(new BigDecimal(80))
+                .candleOpenTime(time5Candle)
+                .closeRate(new BigDecimal(5400))
+                .openRate(new BigDecimal(5000))
+                .highRate(new BigDecimal(8000))
+                .lowRate(new BigDecimal(1100))
+                .lastTradeTime(lastTradeTime)
+                .firstTradeTime(lastTradeTime.minusMinutes(725))
+                .build();
+        doReturn(Collections.singletonList(model5))
+                .when(redisProcessingService)
+                .get(eq(RedisGeneratorUtil.generateKey(time5Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(ONE_DAY_INTERVAL));
+
+        tradeDataService.handleReceivedTrades(BTC_USD, trades);
+
+        verify(redisProcessingService, times(supportedIntervals.size())).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(supportedIntervals.size())).get(anyString(), anyString(), any(BackDealInterval.class));
+    }
+
+    @Test
+    public void defineAndSaveLastInitializedCandleTime() {
+        List<CandleModel> models = new ArrayList<>();
+        LocalDateTime time = TimeUtil.getNearestTimeBeforeForMinInterval(NOW);
+
+        models.add(buildDefaultCandle(time));
+        models.add(buildDefaultCandle(time.plusMinutes(1)));
+        models.add(buildDefaultCandle(time.plusMinutes(3)));
+
+        doReturn(null)
+                .when(redisProcessingService)
+                .getLastInitializedCandleTimeFromCache(anyString());
+        doNothing()
+                .when(redisProcessingService)
+                .insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
+
+        tradeDataService.defineAndSaveLastInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), models);
+
+        verify(redisProcessingService, times(1)).getLastInitializedCandleTimeFromCache(anyString());
+        verify(redisProcessingService, times(1)).insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
+    }
+
+    @Test
+    public void defineAndSaveLastInitializedCandleTime_empty_candles() {
+        tradeDataService.defineAndSaveLastInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), Collections.emptyList());
+
+        verify(redisProcessingService, never()).getLastInitializedCandleTimeFromCache(anyString());
+        verify(redisProcessingService, never()).insertLastInitializedCandleTimeToCache(anyString(), any(LocalDateTime.class));
+    }
+
+    @Test
+    public void defineAndSaveFirstInitializedCandleTime() {
+        List<CandleModel> models = new ArrayList<>();
+        LocalDateTime time = TimeUtil.getNearestTimeBeforeForMinInterval(NOW);
+
+        models.add(buildDefaultCandle(time));
+        models.add(buildDefaultCandle(time.plusMinutes(1)));
+        models.add(buildDefaultCandle(time.plusMinutes(3)));
+
+        doReturn(null)
+                .when(redisProcessingService)
+                .getFirstInitializedCandleTimeFromHistory(anyString());
+        doNothing()
+                .when(redisProcessingService)
+                .insertFirstInitializedCandleTimeToHistory(anyString(), any(LocalDateTime.class));
+
+        tradeDataService.defineAndSaveFirstInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), models);
+
+        verify(redisProcessingService, times(1)).getFirstInitializedCandleTimeFromHistory(anyString());
+        verify(redisProcessingService, times(1)).insertFirstInitializedCandleTimeToHistory(anyString(), any(LocalDateTime.class));
+    }
+
+    @Test
+    public void defineAndSaveFirstInitializedCandleTime_empty_candles() {
+        tradeDataService.defineAndSaveFirstInitializedCandleTime(RedisGeneratorUtil.generateHashKey(BTC_USD), Collections.emptyList());
+
+        verify(redisProcessingService, never()).getFirstInitializedCandleTimeFromHistory(anyString());
+        verify(redisProcessingService, never()).insertFirstInitializedCandleTimeToHistory(anyString(), any(LocalDateTime.class));
+    }
+
     private CandleModel buildDefaultCandle(LocalDateTime candleTime) {
         return buildDefaultCandle(candleTime, candleTime, candleTime);
     }
@@ -296,6 +331,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 .lastTradeTime(lastTradeTime)
                 .candleOpenTime(candleTime)
                 .volume(getRandomBigDecimal())
+                .currencyVolume(getRandomBigDecimal())
                 .highRate(highRate)
                 .lowRate(highRate.divide(BigDecimal.valueOf(2)))
                 .closeRate(getRandomBigDecimal())
@@ -307,6 +343,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
         return OrderDataDto.builder()
                 .tradeDate(tradeTime)
                 .amountBase(amount)
+                .amountConvert(amount)
                 .exrate(exrate)
                 .currencyPairName(pairName)
                 .build();

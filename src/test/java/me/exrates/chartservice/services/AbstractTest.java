@@ -9,15 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.Cache;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static me.exrates.chartservice.configuration.CacheConfiguration.CURRENCY_PAIRS_CACHE;
-import static me.exrates.chartservice.configuration.CacheConfiguration.CURRENCY_RATES_CACHE;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
 
 @RunWith(SpringRunner.class)
@@ -50,12 +47,4 @@ public abstract class AbstractTest {
     @Autowired
     @Qualifier(ALL_SUPPORTED_INTERVALS_LIST)
     List<BackDealInterval> supportedIntervals;
-
-    @Autowired
-    @Qualifier(CURRENCY_PAIRS_CACHE)
-    Cache currencyPairsCache;
-
-    @Autowired
-    @Qualifier(CURRENCY_RATES_CACHE)
-    Cache currencyRatesCache;
 }

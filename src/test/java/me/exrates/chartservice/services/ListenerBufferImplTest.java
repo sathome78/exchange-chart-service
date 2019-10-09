@@ -25,9 +25,9 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,8 +64,6 @@ public class ListenerBufferImplTest extends AbstractTest {
         List<OrderDataDto> usdTrades = generateTestListForPair(BTC_USD);
         List<OrderDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
 
-        doReturn(null).when(redisProcessingService).getLastInitializedCandleTimeFromCache(any());
-
         Collection<Callable<ObjectUtils.Null>> tasks = new ArrayList<>();
         Stream.concat(usdTrades.stream(),
                 usdtTrades.stream())
@@ -86,6 +84,8 @@ public class ListenerBufferImplTest extends AbstractTest {
         assertThat(usdtTrades, containsInAnyOrder(usdtCaptor.getValue().toArray()));
         assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
         assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
+
+        verify(redisProcessingService, atLeastOnce()).getLastInitializedCandleTimeFromCache(anyString());
     }
 
     @Test

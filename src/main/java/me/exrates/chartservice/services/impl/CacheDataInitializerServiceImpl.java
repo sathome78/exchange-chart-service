@@ -10,7 +10,6 @@ import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
-import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,39 +55,6 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         this.orderService = orderService;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
-    }
-
-//    @PostConstruct
-//    public void init() {
-//        try {
-//            updateCache();
-//        } catch (Exception ex) {
-//            log.error("--> PostConstruct 'init()' occurred error", ex);
-//        }
-//    }
-
-    @Override
-    public void updateCache() {
-        log.info("--> Start process of update cache <--");
-
-        elasticsearchProcessingService.getAllIndices().forEach(this::updateCacheByIndex);
-
-        log.info("--> End process of update cache <--");
-    }
-
-    @Override
-    public void updateCacheByIndex(String index) {
-        orderService.getCurrencyPairsFromCache(null).forEach(pair -> {
-            final String id = ElasticsearchGeneratorUtil.generateId(pair.getName());
-
-            List<CandleModel> models = elasticsearchProcessingService.get(index, id);
-
-            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveFirstInitializedCandleTime(id, models));
-
-            if (!CollectionUtils.isEmpty(models)) {
-                supportedIntervals.forEach(interval -> updateCache(models, index, id, interval));
-            }
-        });
     }
 
     @Override

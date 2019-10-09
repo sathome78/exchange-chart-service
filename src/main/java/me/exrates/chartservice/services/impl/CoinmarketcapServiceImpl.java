@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.DEFAULT_INTERVAL;
-import static me.exrates.chartservice.configuration.CommonConfiguration.ONE_DAY_INTERVAL;
 
 @Log4j2
 @Service
@@ -66,12 +65,7 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
         if (Objects.nonNull(pairName)) {
             CurrencyPairDto currencyPairDto = orderService.getCurrencyPairsFromCache(pairName).get(0);
 
-            List<CandleModel> models = getCandlesFromRedis(pairName, from.toLocalDate(), to.toLocalDate());
-
-            models = models.stream()
-                    .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
-                            (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
-                    .collect(Collectors.toList());
+            List<CandleModel> models = getFilteredModels(pairName, from, to);
 
             CoinmarketcapApiDto coinmarketcapApiDto = CandleDataConverter.reduceToCoinmarketcapData(models, currencyPairDto);
 
@@ -83,12 +77,7 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
         }
         return orderService.getCurrencyPairsFromCache(null).stream()
                 .map(currencyPairDto -> {
-                    List<CandleModel> models = getCandlesFromRedis(currencyPairDto.getName(), from.toLocalDate(), to.toLocalDate());
-
-                    models = models.stream()
-                            .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
-                                    (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
-                            .collect(Collectors.toList());
+                    List<CandleModel> models = getFilteredModels(currencyPairDto.getName(), from, to);
 
                     CoinmarketcapApiDto coinmarketcapApiDto = CandleDataConverter.reduceToCoinmarketcapData(models, currencyPairDto);
 
@@ -100,6 +89,36 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    private List<CandleModel> getFilteredModels(String pairName, LocalDateTime from, LocalDateTime to) {
+        List<CandleModel> models = getCandlesFromRedis(pairName, from.toLocalDate(), to.toLocalDate());
+
+        return models.stream()
+                .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
+                        (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
+                .collect(Collectors.toList());
+    }
+
+    private List<CandleModel> getCandlesFromRedis(String pairName, LocalDate fromDate, LocalDate toDate) {
+        final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
+
+        List<CandleModel> bufferedModels = new ArrayList<>();
+        while (fromDate.isBefore(toDate) || fromDate.isEqual(toDate)) {
+            final String key = RedisGeneratorUtil.generateKey(fromDate);
+
+            try {
+                List<CandleModel> models = redisProcessingService.get(key, hashKey, DEFAULT_INTERVAL);
+                if (!CollectionUtils.isEmpty(models)) {
+                    bufferedModels.addAll(models);
+                }
+            } catch (Exception ex) {
+                log.error(ex);
+            }
+
+            fromDate = fromDate.plusDays(1);
+        }
+        return bufferedModels;
     }
 
     private void updateCoinmarketcapDailyData(CoinmarketcapApiDto coinmarketcapApiDto) {
@@ -122,26 +141,5 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
                 .orElse(null);
 
         coinmarketcapApiDto.setLowestAsk(lowestAsk);
-    }
-
-    private List<CandleModel> getCandlesFromRedis(String pairName, LocalDate fromDate, LocalDate toDate) {
-        final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
-
-        List<CandleModel> bufferedModels = new ArrayList<>();
-        while (fromDate.isBefore(toDate) || fromDate.isEqual(toDate)) {
-            final String key = RedisGeneratorUtil.generateKey(fromDate);
-
-            try {
-                List<CandleModel> models = redisProcessingService.get(key, hashKey, DEFAULT_INTERVAL);
-                if (!CollectionUtils.isEmpty(models)) {
-                    bufferedModels.addAll(models);
-                }
-            } catch (Exception ex) {
-                log.error(ex);
-            }
-
-            fromDate = fromDate.plusDays(1);
-        }
-        return bufferedModels;
     }
 }
