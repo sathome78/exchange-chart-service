@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @Log4j2
-@RequestMapping(value = "/coinmarketcap", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = "/data", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 @RestController
 public class CoinmarketcapController {
 
@@ -27,7 +27,7 @@ public class CoinmarketcapController {
         this.coinmarketcapService = coinmarketcapService;
     }
 
-    @GetMapping("/data")
+    @GetMapping("/coinmarketcap")
     public ResponseEntity<List<CoinmarketcapApiDto>> getData(@RequestParam(required = false) String currencyPair,
                                                              @RequestParam IntervalType intervalType,
                                                              @RequestParam int intervalValue) {
