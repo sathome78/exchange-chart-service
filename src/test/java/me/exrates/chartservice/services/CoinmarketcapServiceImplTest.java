@@ -242,7 +242,6 @@ public class CoinmarketcapServiceImplTest extends AbstractTest {
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
         doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
                 .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)

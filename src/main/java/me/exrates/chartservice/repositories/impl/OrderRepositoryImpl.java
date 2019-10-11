@@ -113,7 +113,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName) {
         final String sql = "SELECT " +
-                "o.id AS order_id, " +
                 "cp.name AS currency_pair_name, " +
                 "o.exrate, " +
                 "o.amount_base, " +
@@ -137,7 +136,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName) {
         final String sql = "SELECT " +
-                "o.id AS order_id, " +
                 "cp.name AS currency_pair_name, " +
                 "o.exrate, " +
                 "o.amount_base, " +
@@ -160,7 +158,6 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private RowMapper<OrderDto> orderDtoRowMapper() {
         return (rs, row) -> OrderDto.builder()
-                .id(rs.getInt("order_id"))
                 .currencyPairName(rs.getString("currency_pair_name"))
                 .exRate(rs.getBigDecimal("exrate"))
                 .amountBase(rs.getBigDecimal("amount_base"))

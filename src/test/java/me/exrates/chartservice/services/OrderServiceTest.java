@@ -231,7 +231,6 @@ public class OrderServiceTest extends AbstractTest {
     @Test
     public void getClosedOrders_ok() {
         doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
                 .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)
@@ -251,7 +250,6 @@ public class OrderServiceTest extends AbstractTest {
 
         OrderDto orderDto = orders.get(0);
 
-        assertEquals(1, orderDto.getId());
         assertEquals(TEST_PAIR, orderDto.getCurrencyPairName());
         assertEquals(BigDecimal.TEN, orderDto.getExRate());
         assertEquals(BigDecimal.ONE, orderDto.getAmountBase());
@@ -280,7 +278,6 @@ public class OrderServiceTest extends AbstractTest {
     @Test
     public void getAllOrders_ok() {
         doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
                 .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)
@@ -300,7 +297,6 @@ public class OrderServiceTest extends AbstractTest {
 
         OrderDto orderDto = orders.get(0);
 
-        assertEquals(1, orderDto.getId());
         assertEquals(TEST_PAIR, orderDto.getCurrencyPairName());
         assertEquals(BigDecimal.TEN, orderDto.getExRate());
         assertEquals(BigDecimal.ONE, orderDto.getAmountBase());

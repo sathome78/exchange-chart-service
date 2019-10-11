@@ -54,7 +54,6 @@ public class DataInitializerServiceTest extends AbstractTest {
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
         doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
                 .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)
@@ -95,7 +94,6 @@ public class DataInitializerServiceTest extends AbstractTest {
     @Test
     public void generate_ok2() {
         doReturn(Collections.singletonList(OrderDto.builder()
-                .id(1)
                 .currencyPairName(TEST_PAIR)
                 .exRate(BigDecimal.TEN)
                 .amountBase(BigDecimal.ONE)

@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrderDto {
 
-    private int id;
     private String currencyPairName;
     private BigDecimal exRate;
     private BigDecimal amountBase;

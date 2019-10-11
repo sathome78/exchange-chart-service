@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class OrderDataDto {
 
-    private int orderId;
     private String currencyPairName;
     private BigDecimal exrate;
     private BigDecimal amountBase;
@@ -33,7 +32,6 @@ public class OrderDataDto {
     private int operationTypeId;
 
     public OrderDataDto(OrderDto order) {
-        this.orderId = order.getId();
         this.currencyPairName = order.getCurrencyPairName();
         this.exrate = order.getExRate();
         this.amountBase = order.getAmountBase();
