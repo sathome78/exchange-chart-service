@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +111,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderDto> getClosedOrders(LocalDate fromDate, LocalDate toDate, String pairName) {
+    public List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName) {
         final String sql = "SELECT " +
                 "o.id AS order_id, " +
                 "cp.name AS currency_pair_name, " +
@@ -127,10 +128,38 @@ public class OrderRepositoryImpl implements OrderRepository {
 
         Map<String, Object> params = new HashMap<>();
         params.put("pairName", pairName);
-        params.put("dateFrom", fromDate.atTime(LocalTime.MIN));
-        params.put("dateTo", toDate.minusDays(1).atTime(LocalTime.MAX));
+        params.put("dateFrom", from.atTime(LocalTime.MIN));
+        params.put("dateTo", to.minusDays(1).atTime(LocalTime.MAX));
 
-        return slaveJdbcTemplate.query(sql, params, (rs, row) -> OrderDto.builder()
+        return slaveJdbcTemplate.query(sql, params, orderDtoRowMapper());
+    }
+
+    @Override
+    public List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName) {
+        final String sql = "SELECT " +
+                "o.id AS order_id, " +
+                "cp.name AS currency_pair_name, " +
+                "o.exrate, " +
+                "o.amount_base, " +
+                "o.amount_convert, " +
+                "o.date_acception, " +
+                "o.date_creation, " +
+                "o.operation_type_id, " +
+                "o.status_id " +
+                "FROM EXORDERS o " +
+                "JOIN CURRENCY_PAIR cp ON cp.id = o.currency_pair_id " +
+                "WHERE cp.name = :pairName AND (o.date_creation BETWEEN :dateFrom AND :dateTo)";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("pairName", pairName);
+        params.put("dateFrom", from);
+        params.put("dateTo", to);
+
+        return slaveJdbcTemplate.query(sql, params, orderDtoRowMapper());
+    }
+
+    private RowMapper<OrderDto> orderDtoRowMapper() {
+        return (rs, row) -> OrderDto.builder()
                 .id(rs.getInt("order_id"))
                 .currencyPairName(rs.getString("currency_pair_name"))
                 .exRate(rs.getBigDecimal("exrate"))
@@ -144,6 +173,6 @@ public class OrderRepositoryImpl implements OrderRepository {
                         : null)
                 .operationTypeId(rs.getInt("operation_type_id"))
                 .statusId(rs.getInt("status_id"))
-                .build());
+                .build();
     }
 }

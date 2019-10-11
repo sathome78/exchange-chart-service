@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -78,7 +79,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<OrderDto> getClosedOrders(LocalDate fromDate, LocalDate toDate, String pairName) {
-        return orderRepository.getClosedOrders(fromDate, toDate, pairName);
+    public List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName) {
+        return orderRepository.getClosedOrders(from, to, pairName);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName) {
+        return orderRepository.getAllOrders(from, to, pairName);
     }
 }

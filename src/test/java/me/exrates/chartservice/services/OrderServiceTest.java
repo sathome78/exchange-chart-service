@@ -13,6 +13,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
@@ -273,5 +275,54 @@ public class OrderServiceTest extends AbstractTest {
         assertTrue(CollectionUtils.isEmpty(orders));
 
         verify(orderRepository, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
+    }
+
+    @Test
+    public void getAllOrders_ok() {
+        doReturn(Collections.singletonList(OrderDto.builder()
+                .id(1)
+                .currencyPairName(TEST_PAIR)
+                .exRate(BigDecimal.TEN)
+                .amountBase(BigDecimal.ONE)
+                .amountConvert(BigDecimal.TEN)
+                .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
+                .dateCreation(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
+                .statusId(3)
+                .operationTypeId(4)
+                .build()))
+                .when(orderRepository)
+                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+
+        List<OrderDto> orders = orderService.getAllOrders(FROM_DATE.atTime(LocalTime.MIN), TO_DATE.atTime(LocalTime.MAX), TEST_PAIR);
+
+        assertFalse(CollectionUtils.isEmpty(orders));
+        assertEquals(1, orders.size());
+
+        OrderDto orderDto = orders.get(0);
+
+        assertEquals(1, orderDto.getId());
+        assertEquals(TEST_PAIR, orderDto.getCurrencyPairName());
+        assertEquals(BigDecimal.TEN, orderDto.getExRate());
+        assertEquals(BigDecimal.ONE, orderDto.getAmountBase());
+        assertEquals(BigDecimal.TEN, orderDto.getAmountConvert());
+        assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateAcception());
+        assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateCreation());
+        assertEquals(3, orderDto.getStatusId());
+        assertEquals(4, orderDto.getOperationTypeId());
+
+        verify(orderRepository, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+    }
+
+    @Test
+    public void getAllOrders_empty_orders_list() {
+        doReturn(Collections.emptyList())
+                .when(orderRepository)
+                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+
+        List<OrderDto> orders = orderService.getAllOrders(FROM_DATE.atTime(LocalTime.MIN), TO_DATE.atTime(LocalTime.MAX), TEST_PAIR);
+
+        assertTrue(CollectionUtils.isEmpty(orders));
+
+        verify(orderRepository, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
     }
 }

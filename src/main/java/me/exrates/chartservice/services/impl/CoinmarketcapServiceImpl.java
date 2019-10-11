@@ -7,11 +7,14 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CoinmarketcapApiDto;
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.DailyDataModel;
+import me.exrates.chartservice.model.OrderDto;
+import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.CoinmarketcapService;
 import me.exrates.chartservice.services.OrderService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -24,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.DEFAULT_INTERVAL;
@@ -52,6 +56,52 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
 
                     redisProcessingService.deleteDailyData(key, hashKey);
                 }));
+    }
+
+    @Override
+    public void generate() {
+        int minutes = TimeUtil.convertToMinutes(new BackDealInterval(1, IntervalType.DAY));
+
+        LocalDateTime now = LocalDateTime.now();
+        final LocalDateTime from = now.minusMinutes(minutes);
+        final LocalDateTime to = now;
+
+        orderService.getCurrencyPairsFromCache(null).forEach(currencyPairDto -> {
+            final String pairName = currencyPairDto.getName();
+
+            StopWatch stopWatch = StopWatch.createStarted();
+            log.info("<<< GENERATOR >>> Start generate daily data for pair: {}", pairName);
+
+            try {
+                orderService.getAllOrders(from, to, pairName).stream()
+                        .collect(Collectors.groupingBy(dto -> TimeUtil.getNearestTimeBeforeForMinInterval(dto.getDateCreation())))
+                        .forEach((candleDateTime, orders) -> {
+                            BigDecimal highestBid = orders.stream()
+                                    .filter(dto -> dto.getOperationTypeId() == 4)
+                                    .map(OrderDto::getExRate)
+                                    .filter(Objects::nonNull)
+                                    .max(Comparator.naturalOrder())
+                                    .orElse(null);
+
+                            BigDecimal lowestAsk = orders.stream()
+                                    .filter(dto -> dto.getOperationTypeId() == 3)
+                                    .map(OrderDto::getExRate)
+                                    .filter(Objects::nonNull)
+                                    .min(Comparator.naturalOrder())
+                                    .orElse(null);
+
+                            DailyDataModel dataModel = new DailyDataModel(candleDateTime, highestBid, lowestAsk);
+
+                            final String key = RedisGeneratorUtil.generateKeyForCoinmarketcapData(pairName);
+                            final String hashKey = RedisGeneratorUtil.generateHashKeyForCoinmarketcapData(candleDateTime);
+
+                            redisProcessingService.insertDailyData(dataModel, key, hashKey);
+                        });
+            } catch (Exception ex) {
+                log.error("<<< GENERATOR >>> Process of generation daily data was failed for pair: {}", pairName, ex);
+            }
+            log.info("<<< GENERATOR >>> End generate daily data for pair: {}. Time: {} s", pairName, stopWatch.getTime(TimeUnit.SECONDS));
+        });
     }
 
     @Override

@@ -5,6 +5,7 @@ import me.exrates.chartservice.model.CurrencyRateDto;
 import me.exrates.chartservice.model.OrderDto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderService {
@@ -21,5 +22,7 @@ public interface OrderService {
 
     List<CurrencyRateDto> getCurrencyRateByName(String pairName);
 
-    List<OrderDto> getClosedOrders(LocalDate fromDate, LocalDate toDate, String pairName);
+    List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName);
+
+    List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName);
 }

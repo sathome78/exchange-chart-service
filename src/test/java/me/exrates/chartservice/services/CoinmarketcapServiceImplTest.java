@@ -5,6 +5,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CoinmarketcapApiDto;
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.DailyDataModel;
+import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.services.impl.CoinmarketcapServiceImpl;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Before;
@@ -12,6 +13,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 
@@ -227,5 +230,70 @@ public class CoinmarketcapServiceImplTest extends AbstractTest {
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(anyString());
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
+    }
+
+    @Test
+    public void generate_ok() {
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .id(1)
+                .name(TEST_PAIR)
+                .hidden(false)
+                .build()))
+                .when(orderService)
+                .getCurrencyPairsFromCache(null);
+        doReturn(Collections.singletonList(OrderDto.builder()
+                .id(1)
+                .currencyPairName(TEST_PAIR)
+                .exRate(BigDecimal.TEN)
+                .amountBase(BigDecimal.ONE)
+                .amountConvert(BigDecimal.TEN)
+                .dateAcception(NOW.plus(10, ChronoUnit.MINUTES))
+                .dateCreation(NOW.plus(10, ChronoUnit.MINUTES))
+                .operationTypeId(4)
+                .build()))
+                .when(orderService)
+                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        doNothing()
+                .when(redisProcessingService)
+                .insertDailyData(any(DailyDataModel.class), anyString(), anyString());
+
+        coinmarketcapService.generate();
+
+        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, atLeastOnce()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
+    }
+
+    @Test
+    public void generate_empty_currencies_list() {
+        doReturn(Collections.emptyList())
+                .when(orderService)
+                .getCurrencyPairsFromCache(null);
+
+        coinmarketcapService.generate();
+
+        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, never()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, never()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
+    }
+
+    @Test
+    public void generate_empty_orders_list() {
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .id(1)
+                .name(TEST_PAIR)
+                .hidden(false)
+                .build()))
+                .when(orderService)
+                .getCurrencyPairsFromCache(null);
+        doReturn(Collections.emptyList())
+                .when(orderService)
+                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+
+        coinmarketcapService.generate();
+
+        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(redisProcessingService, never()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
     }
 }
