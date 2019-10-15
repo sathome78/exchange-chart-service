@@ -109,7 +109,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         cacheDataInitializerService.updateCacheByIndexAndId(key, hashKey);
 
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
-        verify(tradeDataService, atLeastOnce()).defineAndSaveFirstInitializedCandleTime(anyString(), anyList());
+        verify(tradeDataService, after(100)).defineAndSaveFirstInitializedCandleTime(anyString(), anyList());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
         verify(redisProcessingService, never()).exists(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, never()).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
