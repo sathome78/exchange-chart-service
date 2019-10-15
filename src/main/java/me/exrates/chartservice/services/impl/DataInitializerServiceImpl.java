@@ -3,6 +3,7 @@ package me.exrates.chartservice.services.impl;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.DataInitializerService;
@@ -47,7 +48,8 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
     @Override
     public void generate(LocalDate fromDate, LocalDate toDate) {
-        final List<String> pairs = orderService.getAllCurrencyPairNames().stream()
+        final List<String> pairs = orderService.getCurrencyPairsFromCache(null).stream()
+                .map(CurrencyPairDto::getName)
                 .distinct()
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
@@ -101,19 +103,19 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
     private Map<String, List<CandleModel>> getTransformedData(LocalDate fromDate, LocalDate toDate, String pair) {
         log.debug("<<< GENERATOR >>> Start get closed orders from database");
-        final List<OrderDto> orders = orderService.getFilteredOrders(fromDate, toDate, pair);
-        log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", orders.size());
+        final List<OrderDto> closedOrders = orderService.getClosedOrders(fromDate, toDate, pair);
+        log.debug("<<< GENERATOR >>> End get closed orders from database, number of orders is: {}", closedOrders.size());
 
-        if (CollectionUtils.isEmpty(orders)) {
+        if (CollectionUtils.isEmpty(closedOrders)) {
             return Collections.emptyMap();
         }
 
         log.debug("<<< GENERATOR >>> Start divide orders by days");
-        Map<LocalDate, List<OrderDto>> mapOfOrders = orders.stream()
+        Map<LocalDate, List<OrderDto>> mapOfClosedOrders = closedOrders.stream()
                 .collect(Collectors.groupingBy(orderDto -> orderDto.getDateAcception().toLocalDate()));
         log.debug("<<< GENERATOR >>> End divide orders by days");
 
-        return mapOfOrders.entrySet().stream()
+        return mapOfClosedOrders.entrySet().stream()
                 .map(entry -> {
                     final LocalDate key = entry.getKey();
                     final List<OrderDto> value = entry.getValue();

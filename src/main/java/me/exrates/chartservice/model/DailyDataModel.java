@@ -1,5 +1,6 @@
 package me.exrates.chartservice.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,14 +13,12 @@ import java.time.LocalDateTime;
 @Builder(builderClassName = "Builder", toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDto {
+public class DailyDataModel {
 
-    private String currencyPairName;
-    private BigDecimal exRate;
-    private BigDecimal amountBase;
-    private BigDecimal amountConvert;
-    private LocalDateTime dateAcception;
-    private LocalDateTime dateCreation;
-    private int operationTypeId;
-    private int statusId;
+    @JsonProperty("time")
+    private LocalDateTime candleOpenTime;
+    @JsonProperty("highest_bid")
+    private BigDecimal highestBid;
+    @JsonProperty("lowest_ask")
+    private BigDecimal lowestAsk;
 }

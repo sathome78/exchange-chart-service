@@ -4,12 +4,12 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
-import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -59,41 +57,6 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         this.supportedIntervals = supportedIntervals;
     }
 
-//    @PostConstruct
-//    public void init() {
-//        try {
-//            updateCache();
-//        } catch (Exception ex) {
-//            log.error("--> PostConstruct 'init()' occurred error", ex);
-//        }
-//    }
-
-    @Override
-    public void updateCache() {
-        log.info("--> Start process of update cache <--");
-
-        elasticsearchProcessingService.getAllIndices().forEach(this::updateCacheByIndex);
-
-        log.info("--> End process of update cache <--");
-    }
-
-    @Override
-    public void updateCacheByIndex(String index) {
-        List<String> pairs = orderService.getAllCurrencyPairNames();
-
-        pairs.forEach(pair -> {
-            final String id = ElasticsearchGeneratorUtil.generateId(pair);
-
-            List<CandleModel> models = elasticsearchProcessingService.get(index, id);
-
-            CompletableFuture.runAsync(() -> tradeDataService.defineAndSaveFirstInitializedCandleTime(id, models));
-
-            if (!CollectionUtils.isEmpty(models)) {
-                supportedIntervals.forEach(interval -> updateCache(models, index, id, interval));
-            }
-        });
-    }
-
     @Override
     public void updateCacheByIndexAndId(String index, String id) {
         List<CandleModel> models = elasticsearchProcessingService.get(index, id);
@@ -116,7 +79,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
         final LocalDate keyDate = TimeUtil.generateDate(key);
-        final LocalDate boundaryTime = getBoundaryTime(interval);
+        final LocalDate boundaryTime = TimeUtil.getBoundaryTime(candlesToStoreInCache, interval);
 
         if (!redisProcessingService.exists(key, hashKey, interval)
                 && Objects.nonNull(keyDate)
@@ -136,14 +99,14 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
 
     @Override
     public void cleanCache(BackDealInterval interval) {
-        List<String> pairs = orderService.getAllCurrencyPairNames();
+        List<CurrencyPairDto> pairs = orderService.getCurrencyPairsFromCache(null);
 
         redisProcessingService.getAllKeys(interval).forEach(key -> {
             final LocalDate keyDate = TimeUtil.generateDate(key);
 
-            if (Objects.nonNull(keyDate) && getBoundaryTime(interval).isAfter(keyDate)) {
+            if (Objects.nonNull(keyDate) && TimeUtil.getBoundaryTime(candlesToStoreInCache, interval).isAfter(keyDate)) {
                 pairs.forEach(pair -> {
-                    final String hashKey = RedisGeneratorUtil.generateHashKey(pair);
+                    final String hashKey = RedisGeneratorUtil.generateHashKey(pair.getName());
 
                     List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
                     if (CollectionUtils.isEmpty(models)) {
@@ -161,11 +124,5 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                 });
             }
         });
-    }
-
-    private LocalDate getBoundaryTime(BackDealInterval interval) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-
-        return currentDateTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval)).toLocalDate();
     }
 }

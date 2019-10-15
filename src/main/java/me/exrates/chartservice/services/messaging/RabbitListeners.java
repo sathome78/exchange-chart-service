@@ -1,7 +1,7 @@
 package me.exrates.chartservice.services.messaging;
 
 import lombok.extern.log4j.Log4j2;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.ListenerBuffer;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
@@ -33,7 +33,7 @@ public class RabbitListeners {
     }
 
     @RabbitListener(id = "${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
-    public void receiveTrade(TradeDataDto message) {
+    public void receiveTrade(OrderDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
 
         CompletableFuture.runAsync(() -> listenerBuffer.receive(message));

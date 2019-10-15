@@ -2,8 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.ModelList;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,7 +15,7 @@ public interface TradeDataService {
 
     LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval);
 
-    void handleReceivedTrades(String pairname, List<TradeDataDto> dto);
+    void handleReceivedTrades(String pairname, List<OrderDataDto> ordersData);
 
     void defineAndSaveLastInitializedCandleTime(String hashKey, List<CandleModel> models);
 

@@ -1,7 +1,7 @@
 package me.exrates.chartservice.services;
 
 import com.antkorwin.xsync.XSync;
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.impl.ListenerBufferImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
@@ -25,9 +25,9 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,9 +38,9 @@ public class ListenerBufferImplTest extends AbstractTest {
     private static final int GENERATED_TRADES_COUNT = 5;
 
     @Captor
-    private ArgumentCaptor<ArrayList<TradeDataDto>> usdCaptor;
+    private ArgumentCaptor<ArrayList<OrderDataDto>> usdCaptor;
     @Captor
-    private ArgumentCaptor<ArrayList<TradeDataDto>> usdtCaptor;
+    private ArgumentCaptor<ArrayList<OrderDataDto>> usdtCaptor;
 
     @Mock
     private TradeDataService tradeDataService;
@@ -61,10 +61,8 @@ public class ListenerBufferImplTest extends AbstractTest {
     public void receive() throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(POOL_SIZE);
 
-        List<TradeDataDto> usdTrades = generateTestListForPair(BTC_USD);
-        List<TradeDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
-
-        doReturn(null).when(redisProcessingService).getLastInitializedCandleTimeFromCache(any());
+        List<OrderDataDto> usdTrades = generateTestListForPair(BTC_USD);
+        List<OrderDataDto> usdtTrades = generateTestListForPair(BTC_USDT);
 
         Collection<Callable<ObjectUtils.Null>> tasks = new ArrayList<>();
         Stream.concat(usdTrades.stream(),
@@ -86,6 +84,8 @@ public class ListenerBufferImplTest extends AbstractTest {
         assertThat(usdtTrades, containsInAnyOrder(usdtCaptor.getValue().toArray()));
         assertEquals(GENERATED_TRADES_COUNT, usdCaptor.getValue().size());
         assertEquals(GENERATED_TRADES_COUNT, usdtCaptor.getValue().size());
+
+        verify(redisProcessingService, atLeastOnce()).getLastInitializedCandleTimeFromCache(anyString());
     }
 
     @Test
@@ -97,8 +97,8 @@ public class ListenerBufferImplTest extends AbstractTest {
         Assert.assertTrue(result);
     }
 
-    private List<TradeDataDto> generateTestListForPair(String currencyPair) {
-        List<TradeDataDto> trades = new ArrayList<>();
+    private List<OrderDataDto> generateTestListForPair(String currencyPair) {
+        List<OrderDataDto> trades = new ArrayList<>();
         int counter = 0;
         while (counter < GENERATED_TRADES_COUNT) {
             counter++;
@@ -107,10 +107,10 @@ public class ListenerBufferImplTest extends AbstractTest {
         return trades;
     }
 
-    public TradeDataDto createTradeWithRandomTime(String currencyPair) {
-        TradeDataDto tradeDataDto = new TradeDataDto();
-        tradeDataDto.setPairName(currencyPair);
-        tradeDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
-        return tradeDataDto;
+    public OrderDataDto createTradeWithRandomTime(String currencyPair) {
+        OrderDataDto orderDataDto = new OrderDataDto();
+        orderDataDto.setCurrencyPairName(currencyPair);
+        orderDataDto.setTradeDate(LocalDateTime.now().plusSeconds(new RandomDataGenerator().nextLong(0, 10000)));
+        return orderDataDto;
     }
 }

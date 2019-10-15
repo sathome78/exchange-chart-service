@@ -26,8 +26,8 @@ public class DataInitializerController {
     }
 
     @PostMapping("/generate/all")
-    public ResponseEntity generateAllData(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-                                          @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+    public ResponseEntity generateAllData(@RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                          @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         log.info("Generate for all pairs - from: {}, to: {}", fromDate, toDate);
 
         initializerService.generate(fromDate, toDate);
@@ -38,8 +38,8 @@ public class DataInitializerController {
     }
 
     @PostMapping("/generate")
-    public ResponseEntity generateDataByCriteria(@RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-                                                 @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+    public ResponseEntity generateDataByCriteria(@RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                                                 @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
                                                  @RequestParam("pairs") List<String> pairs) {
         log.info("Generate for pairs: {} - from: {}, to: {}", pairs.toString(), fromDate, toDate);
 
