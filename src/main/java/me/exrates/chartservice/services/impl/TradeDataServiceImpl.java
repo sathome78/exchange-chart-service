@@ -113,6 +113,11 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         fixOpenRate(models, pairName, interval);
 
+        models = CandleDataConverter.filterModelsByRange(
+                models,
+                TimeUtil.getNearestBackTimeForBackdealInterval(from, interval),
+                TimeUtil.getNearestBackTimeForBackdealInterval(to, interval));
+
         return fillGaps(models, pairName, to, interval);
     }
 

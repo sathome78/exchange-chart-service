@@ -270,4 +270,11 @@ public final class CandleDataConverter {
                 .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
                 .collect(Collectors.toList());
     }
+
+    public static List<CandleModel> filterModelsByRange(List<CandleModel> models, LocalDateTime from, LocalDateTime to) {
+        return models.stream()
+                .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
+                        (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
+                .collect(Collectors.toList());
+    }
 }
