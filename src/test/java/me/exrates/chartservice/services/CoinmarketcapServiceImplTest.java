@@ -233,6 +233,28 @@ public class CoinmarketcapServiceImplTest extends AbstractTest {
     }
 
     @Test
+    public void getData_one_pair_empty_candle_list() {
+        doReturn(Collections.singletonList(CurrencyPairDto.builder()
+                .id(1)
+                .name(TEST_PAIR)
+                .hidden(false)
+                .build()))
+                .when(orderService)
+                .getCurrencyPairsFromCache(anyString());
+        doReturn(Collections.emptyList())
+                .when(redisProcessingService)
+                .get(anyString(), anyString(), any(BackDealInterval.class));
+
+        List<CoinmarketcapApiDto> list = coinmarketcapService.getData(TEST_PAIR, ONE_DAY_INTERVAL);
+
+        assertNotNull(list);
+        assertTrue(list.isEmpty());
+
+        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(anyString());
+        verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
+    }
+
+    @Test
     public void generate_ok() {
         doReturn(Collections.singletonList(CurrencyPairDto.builder()
                 .id(1)
