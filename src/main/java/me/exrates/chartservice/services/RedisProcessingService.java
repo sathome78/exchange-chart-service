@@ -53,4 +53,6 @@ public interface RedisProcessingService {
     void deleteAllDailyDataKeys();
 
     void deleteDailyData(String key, String hashKey);
+
+    Long publishMessage(String channel, String message);
 }

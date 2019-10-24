@@ -1,6 +1,7 @@
 package me.exrates.chartservice.services;
 
 import com.antkorwin.xsync.XSync;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDataDto;
@@ -55,6 +56,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 elasticsearchProcessingService,
                 redisProcessingService,
                 new XSync<>(),
+                new ObjectMapper(),
                 candlesToStoreInCache,
                 supportedIntervals));
     }

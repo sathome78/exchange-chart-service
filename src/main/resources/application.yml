@@ -6,37 +6,45 @@ spring:
   devtools:
     restart:
       enabled: true
+#  rabbitmq:
+#    username: developer
+#    password: eehei4AeJein
+#    host: rabbitmq-dev.service
+#    port: 5672
+#    tradestopic: CHART_DATA_QUEUE_DEV
   rabbitmq:
-    username: developer
-    password: eehei4AeJein
-    host: rabbitmq-dev.service
+    username: guest
+    password: guest
+    host: 127.0.0.1
     port: 5672
-    tradestopic: CHART_DATA_QUEUE_DEV
+    tradestopic: CHART_DATA_QUEUE
 
 #datasource:
 #  driver-class-name: com.mysql.cj.jdbc.Driver
 #  url: jdbc:mysql://localhost:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 #  username: root
-#password: root
+#  password: root
 #datasource:
 #  driver-class-name: com.mysql.cj.jdbc.Driver
 #  url: jdbc:mysql://exdbdev.cedlveyttji9.us-east-2.rds.amazonaws.com:3306/dbdev2?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 #  username: exdevdb
-#password: KQmK82dd
+#  password: KQmK82dd
 #datasource:
 #  driver-class-name: com.mysql.cj.jdbc.Driver
 #  url: jdbc:mysql://birzha-aurora-preprod-cluster.cluster-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 #  username: devprod
-#password: Fh24soaf8sy3
+#  password: Fh24soaf8sy3
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
   url: jdbc:mysql://exprod-3-cluster.cluster-ro-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: okostiukevych
-  password: 943AJNzKGiUsWtqU
+  username: chartservice
+  password: 89tn0sgiGPyLMarmMp23
 
 redis:
-  host: localhost
-  port: 6379
+#  host: localhost
+#  port: 6380
+  host: redis-chart-staging.service
+  port: 6382
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -52,8 +60,10 @@ redis:
     6 HOUR: 1 DAY;
 
 elasticsearch:
-  host: localhost
-  port: 9200
+#  host: localhost
+#  port: 9200
+  host: elastic-chart-staging.service
+  port: 9202
 
 swagger:
   enabled: true
@@ -61,13 +71,16 @@ swagger:
 candles:
   store-in-cache: 300
 
+generator:
+  min-period: 3 #months
+
 scheduled:
   clean-cache: 0 */30 * ? * *
-  update-cache: 0 */5 * ? * *
+  clean-daily-data: 0 */5 * ? * *
 
 server:
   port: 8060
 
 logging:
   level:
-    me.exrates.chartservice: info
+    me.exrates.chartservice: debug
