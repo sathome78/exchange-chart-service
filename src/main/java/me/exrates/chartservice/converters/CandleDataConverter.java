@@ -186,6 +186,7 @@ public final class CandleDataConverter {
                 .low24hr(lowRate)
                 .isFrozen(currencyPairDto.isHidden() ? 1 : 0)
                 .percentChange(getPercentChange(closeRate, openRate))
+                .valueChange(getValueChange(closeRate, openRate))
                 .build();
     }
 
