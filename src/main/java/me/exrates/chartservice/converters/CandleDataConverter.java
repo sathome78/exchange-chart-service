@@ -186,6 +186,7 @@ public final class CandleDataConverter {
                 .low24hr(lowRate)
                 .isFrozen(currencyPairDto.isHidden() ? 1 : 0)
                 .percentChange(getPercentChange(closeRate, openRate))
+                .valueChange(getValueChange(closeRate, openRate))
                 .build();
     }
 
@@ -268,6 +269,13 @@ public final class CandleDataConverter {
                 .map(entry -> CandleDataConverter.reduceToCandle(entry.getValue()))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(CandleModel::getCandleOpenTime))
+                .collect(Collectors.toList());
+    }
+
+    public static List<CandleModel> filterModelsByRange(List<CandleModel> models, LocalDateTime from, LocalDateTime to) {
+        return models.stream()
+                .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
+                        (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
                 .collect(Collectors.toList());
     }
 }

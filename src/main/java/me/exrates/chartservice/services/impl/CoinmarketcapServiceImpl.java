@@ -119,9 +119,10 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
 
             CoinmarketcapApiDto coinmarketcapApiDto = CandleDataConverter.reduceToCoinmarketcapData(models, currencyPairDto);
 
-            if (Objects.nonNull(coinmarketcapApiDto)) {
-                updateCoinmarketcapDailyData(coinmarketcapApiDto);
+            if (Objects.isNull(coinmarketcapApiDto)) {
+                return Collections.emptyList();
             }
+            updateCoinmarketcapDailyData(coinmarketcapApiDto);
 
             return Collections.singletonList(coinmarketcapApiDto);
         }
@@ -144,10 +145,7 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
     private List<CandleModel> getFilteredModels(String pairName, LocalDateTime from, LocalDateTime to) {
         List<CandleModel> models = getCandlesFromRedis(pairName, from.toLocalDate(), to.toLocalDate());
 
-        return models.stream()
-                .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
-                        (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
-                .collect(Collectors.toList());
+        return CandleDataConverter.filterModelsByRange(models, from, to);
     }
 
     private List<CandleModel> getCandlesFromRedis(String pairName, LocalDate fromDate, LocalDate toDate) {
@@ -165,7 +163,6 @@ public class CoinmarketcapServiceImpl implements CoinmarketcapService {
             } catch (Exception ex) {
                 log.error(ex);
             }
-
             fromDate = fromDate.plusDays(1);
         }
         return bufferedModels;

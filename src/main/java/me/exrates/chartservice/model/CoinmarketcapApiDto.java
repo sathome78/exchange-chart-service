@@ -36,4 +36,6 @@ public class CoinmarketcapApiDto {
     private Integer isFrozen;
     @JsonProperty("percent_change")
     private BigDecimal percentChange;
+    @JsonProperty("value_change")
+    private BigDecimal valueChange;
 }

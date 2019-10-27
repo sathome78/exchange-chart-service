@@ -121,11 +121,10 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         fixOpenRate(models, pairName, interval);
 
-        //add filtering orders
-//        models.stream()
-//                .filter(model -> (model.getCandleOpenTime().isAfter(from) || model.getCandleOpenTime().isEqual(from)) &&
-//                        (model.getCandleOpenTime().isBefore(to) || model.getCandleOpenTime().isEqual(to)))
-//                .collect(Collectors.toList());
+        models = CandleDataConverter.filterModelsByRange(
+                models,
+                TimeUtil.getNearestBackTimeForBackdealInterval(from, interval),
+                TimeUtil.getNearestBackTimeForBackdealInterval(to, interval));
 
         return fillGaps(models, pairName, to, interval);
     }
@@ -251,7 +250,7 @@ public class TradeDataServiceImpl implements TradeDataService {
                         .exceptionally(ex -> null)
                         .join();
             });
-        });
+        });ø¬
     }
 
     private void mapAndPublishLastCandle(CandleModel candleModel, String pairName, BackDealInterval interval) {
