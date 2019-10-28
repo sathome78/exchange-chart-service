@@ -4,8 +4,8 @@ import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleDto;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.TradeDataService;
+import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
@@ -38,9 +38,8 @@ public class ChartDataController {
     public ResponseEntity<List<CandleDto>> getRange(@RequestParam String currencyPair,
                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-                                                    @RequestParam IntervalType intervalType,
-                                                    @RequestParam int intervalValue) {
-        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+                                                    @RequestParam String resolution) {
+        final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         List<CandleDto> response = tradeDataService.getCandles(currencyPair, from, to, interval)
                 .stream()
@@ -52,9 +51,8 @@ public class ChartDataController {
 
     @GetMapping("/last")
     public ResponseEntity<CandleDto> getLast(@RequestParam String currencyPair,
-                                             @RequestParam IntervalType intervalType,
-                                             @RequestParam int intervalValue) {
-        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+                                             @RequestParam String resolution) {
+        final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         CandleModel model = tradeDataService.getCandleForCurrentTime(currencyPair, interval);
         if (isNull(model)) {
@@ -66,9 +64,8 @@ public class ChartDataController {
     @GetMapping("/last-date")
     public ResponseEntity<LocalDateTime> getLastCandleTimeBeforeDate(@RequestParam String currencyPair,
                                                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-                                                                     @RequestParam IntervalType intervalType,
-                                                                     @RequestParam int intervalValue) {
-        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+                                                                     @RequestParam String resolution) {
+        final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         return ResponseEntity.ok(tradeDataService.getLastCandleTimeBeforeDate(currencyPair, to, interval));
     }
