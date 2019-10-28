@@ -3,8 +3,8 @@ package me.exrates.chartservice.controller;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CoinmarketcapApiDto;
-import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.CoinmarketcapService;
+import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,9 +30,8 @@ public class CoinmarketcapController {
 
     @GetMapping
     public ResponseEntity<List<CoinmarketcapApiDto>> getData(@RequestParam(required = false) String currencyPair,
-                                                             @RequestParam IntervalType intervalType,
-                                                             @RequestParam int intervalValue) {
-        final BackDealInterval interval = new BackDealInterval(intervalValue, intervalType);
+                                                             @RequestParam String resolution) {
+        final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         return ResponseEntity.ok(coinmarketcapService.getData(currencyPair, interval));
     }
