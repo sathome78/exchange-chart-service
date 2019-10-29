@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -93,6 +94,10 @@ public final class TimeUtil {
         return strValue.equals(StringUtils.EMPTY)
                 ? 1
                 : Integer.valueOf(strValue);
+    }
+
+    public static LocalDateTime getTime(long time) {
+        return LocalDateTime.ofEpochSecond(time, 0, ZoneOffset.UTC);
     }
 
     public static LocalDate generateDate(String dateString) {

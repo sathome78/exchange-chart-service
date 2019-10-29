@@ -7,7 +7,6 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,12 +35,14 @@ public class ChartDataController {
 
     @GetMapping("/range")
     public ResponseEntity<List<CandleDto>> getRange(@RequestParam String currencyPair,
-                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-                                                    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+                                                    @RequestParam Long from,
+                                                    @RequestParam Long to,
                                                     @RequestParam String resolution) {
         final BackDealInterval interval = TimeUtil.getInterval(resolution);
+        final LocalDateTime fromDate = TimeUtil.getTime(from);
+        final LocalDateTime toDate = TimeUtil.getTime(to);
 
-        List<CandleDto> response = tradeDataService.getCandles(currencyPair, from, to, interval)
+        List<CandleDto> response = tradeDataService.getCandles(currencyPair, fromDate, toDate, interval)
                 .stream()
                 .map(CandleDto::toDto)
                 .collect(toList());
@@ -63,10 +64,11 @@ public class ChartDataController {
 
     @GetMapping("/last-date")
     public ResponseEntity<LocalDateTime> getLastCandleTimeBeforeDate(@RequestParam String currencyPair,
-                                                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+                                                                     @RequestParam Long to,
                                                                      @RequestParam String resolution) {
         final BackDealInterval interval = TimeUtil.getInterval(resolution);
+        final LocalDateTime toDate = TimeUtil.getTime(to);
 
-        return ResponseEntity.ok(tradeDataService.getLastCandleTimeBeforeDate(currencyPair, to, interval));
+        return ResponseEntity.ok(tradeDataService.getLastCandleTimeBeforeDate(currencyPair, toDate, interval));
     }
 }
