@@ -6,12 +6,12 @@ spring:
   devtools:
     restart:
       enabled: true
-#  rabbitmq:
-#    username: developer
-#    password: eehei4AeJein
-#    host: rabbitmq-dev.service
-#    port: 5672
-#    tradestopic: CHART_DATA_QUEUE_DEV
+  #  rabbitmq:
+  #    username: developer
+  #    password: eehei4AeJein
+  #    host: rabbitmq-dev.service
+  #    port: 5672
+  #    tradestopic: CHART_DATA_QUEUE_DEV
   rabbitmq:
     username: guest
     password: guest
@@ -47,12 +47,12 @@ redis:
     5 MINUTE: 1;
     15 MINUTE: 2;
     30 MINUTE: 3;
-    1 HOUR: 4;
     60 MINUTE: 4;
-    6 HOUR: 5;
     360 MINUTE: 5;
-    1 DAY: 6;
     1440 MINUTE: 6;
+    1 HOUR: 4;
+    6 HOUR: 5;
+    1 DAY: 6;
 
 elasticsearch:
   host: localhost
