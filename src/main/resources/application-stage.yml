@@ -40,14 +40,11 @@ redis:
     15 MINUTE: 2;
     30 MINUTE: 3;
     1 HOUR: 4;
+    60 MINUTE: 4;
     6 HOUR: 5;
+    360 MINUTE; 5;
     1 DAY: 6;
-  next-interval: >
-    5 MINUTE: 15 MINUTE;
-    15 MINUTE: 30 MINUTE;
-    30 MINUTE: 1 HOUR;
-    1 HOUR: 6 HOUR;
-    6 HOUR: 1 DAY;
+    1440 MINUTE; 6;
 
 elasticsearch:
   host: elastic-chart-staging.service
