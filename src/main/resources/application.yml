@@ -50,9 +50,9 @@ redis:
     1 HOUR: 4;
     60 MINUTE: 4;
     6 HOUR: 5;
-    360 MINUTE; 5;
+    360 MINUTE: 5;
     1 DAY: 6;
-    1440 MINUTE; 6;
+    1440 MINUTE: 6;
 
 elasticsearch:
   host: localhost
