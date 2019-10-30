@@ -250,7 +250,7 @@ public class TradeDataServiceImpl implements TradeDataService {
                         .exceptionally(ex -> null)
                         .join();
             });
-        });ø¬
+        });
     }
 
     private void mapAndPublishLastCandle(CandleModel candleModel, String pairName, BackDealInterval interval) {
