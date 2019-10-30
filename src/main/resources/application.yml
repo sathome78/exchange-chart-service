@@ -41,29 +41,22 @@ datasource:
   password: 89tn0sgiGPyLMarmMp23
 
 redis:
-#  host: localhost
-#  port: 6380
-  host: redis-chart-staging.service
-  port: 6382
+  host: localhost
+  port: 6380
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
     30 MINUTE: 3;
+    60 MINUTE: 4;
+    360 MINUTE: 5;
+    1440 MINUTE: 6;
     1 HOUR: 4;
     6 HOUR: 5;
     1 DAY: 6;
-  next-interval: >
-    5 MINUTE: 15 MINUTE;
-    15 MINUTE: 30 MINUTE;
-    30 MINUTE: 1 HOUR;
-    1 HOUR: 6 HOUR;
-    6 HOUR: 1 DAY;
 
 elasticsearch:
-#  host: localhost
-#  port: 9200
-  host: elastic-chart-staging.service
-  port: 9202
+  host: localhost
+  port: 9200
 
 swagger:
   enabled: true

@@ -4,9 +4,12 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.exrates.chartservice.model.BackDealInterval;
+import me.exrates.chartservice.model.enums.IntervalType;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -79,6 +82,41 @@ public final class TimeUtil {
                 throw new UnsupportedOperationException(String.format("Interval type - %s not supported", interval.getIntervalType()));
             }
         }
+    }
+
+    public static BackDealInterval getInterval(String resolution) {
+        IntervalType type;
+        int value;
+
+        if (resolution.contains("H")) {
+            type = IntervalType.HOUR;
+            value = getValue(resolution, "H");
+        } else if (resolution.contains("D")) {
+            type = IntervalType.DAY;
+            value = getValue(resolution, "D");
+        } else if (resolution.contains("W")) {
+            type = IntervalType.WEEK;
+            value = getValue(resolution, "W");
+        } else if (resolution.contains("M")) {
+            type = IntervalType.MONTH;
+            value = getValue(resolution, "M");
+        } else {
+            type = IntervalType.MINUTE;
+            value = Integer.valueOf(resolution);
+        }
+        return new BackDealInterval(value, type);
+    }
+
+    private static int getValue(String resolution, String type) {
+        String strValue = resolution.replace(type, StringUtils.EMPTY);
+
+        return strValue.equals(StringUtils.EMPTY)
+                ? 1
+                : Integer.valueOf(strValue);
+    }
+
+    public static LocalDateTime getTime(long time) {
+        return LocalDateTime.ofEpochSecond(time, 0, ZoneOffset.UTC);
     }
 
     public static LocalDate generateDate(String dateString) {
