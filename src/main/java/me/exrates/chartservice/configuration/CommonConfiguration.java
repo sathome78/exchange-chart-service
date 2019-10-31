@@ -28,8 +28,6 @@ public class CommonConfiguration {
     public static final String TRADE_SYNC = "tradeSync";
     public static final String BUFFER_SYNC = "bufferSync";
 
-    public static final String CANDLES_TOPIC_PREFIX = "candles.";
-
     @Bean(JSON_MAPPER)
     public ObjectMapper mapper() {
         return new ObjectMapper()

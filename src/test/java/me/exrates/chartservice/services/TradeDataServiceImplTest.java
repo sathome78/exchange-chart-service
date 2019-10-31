@@ -1,7 +1,6 @@
 package me.exrates.chartservice.services;
 
 import com.antkorwin.xsync.XSync;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDataDto;
@@ -44,9 +43,11 @@ import static org.mockito.Mockito.verify;
 public class TradeDataServiceImplTest extends AbstractTest {
 
     @Mock
-    ElasticsearchProcessingService elasticsearchProcessingService;
+    private ElasticsearchProcessingService elasticsearchProcessingService;
     @Mock
-    RedisProcessingService redisProcessingService;
+    private RedisProcessingService redisProcessingService;
+    @Mock
+    private StompMessengerService messengerService;
 
     private TradeDataService tradeDataService;
 
@@ -55,8 +56,8 @@ public class TradeDataServiceImplTest extends AbstractTest {
         tradeDataService = spy(new TradeDataServiceImpl(
                 elasticsearchProcessingService,
                 redisProcessingService,
+                messengerService,
                 new XSync<>(),
-                new ObjectMapper(),
                 candlesToStoreInCache,
                 supportedIntervals));
     }
@@ -338,6 +339,9 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 .lowRate(highRate.divide(BigDecimal.valueOf(2)))
                 .closeRate(getRandomBigDecimal())
                 .openRate(getRandomBigDecimal())
+                .predLastRate(getRandomBigDecimal())
+                .percentChange(getRandomBigDecimal())
+                .valueChange(getRandomBigDecimal())
                 .build();
     }
 

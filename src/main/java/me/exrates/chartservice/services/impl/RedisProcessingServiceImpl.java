@@ -282,13 +282,6 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         jedis.hdel(key, hashKey);
     }
 
-    @Override
-    public Long publishMessage(String channel, String message) {
-        @Cleanup Jedis jedis = getJedis(0);
-
-        return jedis.publish(channel, message);
-    }
-
     /**
      * Get Jedis instance
      */

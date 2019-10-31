@@ -1,16 +1,14 @@
 package me.exrates.chartservice.services.impl;
 
 import com.antkorwin.xsync.XSync;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
-import me.exrates.chartservice.model.CandleDetailedDto;
-import me.exrates.chartservice.model.CandleDto;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.services.StompMessengerService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
@@ -36,8 +34,6 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
-import static me.exrates.chartservice.configuration.CommonConfiguration.CANDLES_TOPIC_PREFIX;
-import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
 import static me.exrates.chartservice.configuration.CommonConfiguration.TRADE_SYNC;
 import static me.exrates.chartservice.utils.TimeUtil.getNearestBackTimeForBackdealInterval;
 
@@ -47,8 +43,8 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
+    private final StompMessengerService messengerService;
     private final XSync<String> xSync;
-    private final ObjectMapper mapper;
 
     private long candlesToStoreInCache;
 
@@ -57,14 +53,14 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
+                                StompMessengerService messengerService,
                                 @Qualifier(TRADE_SYNC) XSync<String> xSync,
-                                @Qualifier(JSON_MAPPER) ObjectMapper mapper,
                                 @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                 @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
+        this.messengerService = messengerService;
         this.xSync = xSync;
-        this.mapper = mapper;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
     }
@@ -82,12 +78,21 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
         if (CollectionUtils.isEmpty(models)) {
-            return null;
+            return getEmptyModel(pairName, candleTime, interval);
         }
         return models.stream()
                 .filter(model -> model.getCandleOpenTime().isEqual(candleTime))
                 .findFirst()
-                .orElse(null);
+                .orElse(getEmptyModel(pairName, candleTime, interval));
+    }
+
+    private CandleModel getEmptyModel(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
+        final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+
+        if (Objects.isNull(previousCandle)) {
+            return null;
+        }
+        return CandleModel.empty(pairName, previousCandle.getCloseRate(), candleTime);
     }
 
     @Override
@@ -231,14 +236,14 @@ public class TradeDataServiceImpl implements TradeDataService {
                         if (Objects.isNull(cachedModel)) {
                             cachedModels.add(newModel);
 
-                            mapAndPublishLastCandle(newModel, pairName, interval);
+                            messengerService.sendLastCandle(newModel, pairName, interval);
                         } else {
-                            mapAndPublishLastCandle(cachedModel, pairName, interval);
+                            messengerService.sendLastCandle(cachedModel, pairName, interval);
                         }
                     } else {
                         cachedModels = Collections.singletonList(newModel);
 
-                        mapAndPublishLastCandle(newModel, pairName, interval);
+                        messengerService.sendLastCandle(newModel, pairName, interval);
                     }
 
                     redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
@@ -251,19 +256,6 @@ public class TradeDataServiceImpl implements TradeDataService {
                         .join();
             });
         });
-    }
-
-    private void mapAndPublishLastCandle(CandleModel candleModel, String pairName, BackDealInterval interval) {
-        CandleDetailedDto dto = new CandleDetailedDto(pairName, interval, CandleDto.toDto(candleModel), candleModel.getLastTradeTime());
-
-        try {
-            final String channel = CANDLES_TOPIC_PREFIX.concat(pairName);
-            final String candleDetailedDtoJson = mapper.writeValueAsString(dto);
-
-            redisProcessingService.publishMessage(channel, candleDetailedDtoJson);
-        } catch (Exception ex) {
-            log.error(ex);
-        }
     }
 
     @Override
