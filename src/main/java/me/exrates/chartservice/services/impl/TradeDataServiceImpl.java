@@ -82,17 +82,23 @@ public class TradeDataServiceImpl implements TradeDataService {
         }
         return models.stream()
                 .filter(model -> model.getCandleOpenTime().isEqual(candleTime))
+                .peek(model -> {
+                    final CandleModel previousModel = getPreviousCandle(pairName, candleTime, interval);
+                    if (Objects.nonNull(previousModel)) {
+                        model.setOpenRate(previousModel.getCloseRate());
+                    }
+                })
                 .findFirst()
                 .orElse(getEmptyModel(pairName, candleTime, interval));
     }
 
     private CandleModel getEmptyModel(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
-        final CandleModel previousCandle = getPreviousCandle(pairName, candleTime, interval);
+        final CandleModel previousModel = getPreviousCandle(pairName, candleTime, interval);
 
-        if (Objects.isNull(previousCandle)) {
+        if (Objects.isNull(previousModel)) {
             return null;
         }
-        return CandleModel.empty(pairName, previousCandle.getCloseRate(), candleTime);
+        return CandleModel.empty(pairName, previousModel.getCloseRate(), candleTime);
     }
 
     @Override
@@ -137,7 +143,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     private void fixOpenRate(List<CandleModel> models, String pairName, BackDealInterval interval) {
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
-        CandleModel previousModel = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
+        final CandleModel previousModel = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
         if (Objects.nonNull(previousModel)) {
             models.get(0).setOpenRate(previousModel.getCloseRate());
         }
@@ -224,6 +230,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
                     List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
 
+                    CandleModel finalModel = newModel;
                     if (!CollectionUtils.isEmpty(cachedModels)) {
                         cachedModels = new ArrayList<>(cachedModels);
 
@@ -235,20 +242,19 @@ public class TradeDataServiceImpl implements TradeDataService {
 
                         if (Objects.isNull(cachedModel)) {
                             cachedModels.add(newModel);
-
-                            messengerService.sendLastCandle(newModel, pairName, interval);
                         } else {
-                            messengerService.sendLastCandle(cachedModel, pairName, interval);
+                            finalModel = cachedModel;
                         }
                     } else {
                         cachedModels = Collections.singletonList(newModel);
-
-                        messengerService.sendLastCandle(newModel, pairName, interval);
                     }
 
                     redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
 
                     defineAndSaveLastInitializedCandleTime(hashKey, cachedModels);
+
+                    //send last candle data to the front end
+                    mapAndSendLastCandle(finalModel, interval);
                 }));
 
                 CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]))
@@ -256,6 +262,17 @@ public class TradeDataServiceImpl implements TradeDataService {
                         .join();
             });
         });
+    }
+
+    private void mapAndSendLastCandle(CandleModel finalModel, BackDealInterval interval) {
+        final String pairName = finalModel.getPairName();
+        final LocalDateTime candleDateTime = finalModel.getCandleOpenTime();
+
+        final CandleModel previousModel = getPreviousCandle(pairName, candleDateTime, interval);
+        if (Objects.nonNull(previousModel)) {
+            finalModel.setOpenRate(previousModel.getCloseRate());
+        }
+        messengerService.sendLastCandle(finalModel, pairName, interval);
     }
 
     @Override

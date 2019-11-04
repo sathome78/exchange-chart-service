@@ -73,6 +73,7 @@ scheduled:
 
 angular:
   allowed-origins: http://localhost:4200
+  sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
 
 server:
   port: 8060

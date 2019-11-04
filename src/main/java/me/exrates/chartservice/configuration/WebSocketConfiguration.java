@@ -14,16 +14,20 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Value("${angular.allowed-origins}")
     private String[] allowedOrigins;
 
+    @Value("${angular.sockjs-lib}")
+    private String sockJSLibUrl;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/chart-socket")
+        registry.addEndpoint("/chart_socket")
                 .setAllowedOrigins(allowedOrigins)
-                .withSockJS();
+                .withSockJS()
+                .setClientLibraryUrl(sockJSLibUrl);
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.setApplicationDestinationPrefixes("/app")
-                .enableSimpleBroker("/queue/", "/topic/");
+        registry.setApplicationDestinationPrefixes("/app", "/user")
+                .enableSimpleBroker("/queue", "/topic", "/app");
     }
 }

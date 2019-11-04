@@ -40,7 +40,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TradeDataServiceImplTest extends AbstractTest {
+public class TradeDataServiceTest extends AbstractTest {
 
     @Mock
     private ElasticsearchProcessingService elasticsearchProcessingService;

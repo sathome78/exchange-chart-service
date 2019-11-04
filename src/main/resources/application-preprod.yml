@@ -48,6 +48,10 @@ scheduled:
   clean-cache: 0 */30 * ? * *
   clean-daily-data: 0 */5 * ? * *
 
+angular:
+  allowed-origins: http://preprod.exapp
+  sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
+
 logging:
   level:
     me.exrates.chartservice: info

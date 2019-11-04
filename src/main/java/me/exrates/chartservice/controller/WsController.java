@@ -33,9 +33,7 @@ public class WsController {
         final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         CandleModel model = tradeDataService.getCandleForCurrentTime(transformedPairName, interval);
-        if (Objects.isNull(model)) {
-            return null;
-        }
-        return CandleDto.toDto(model);
+
+        return Objects.isNull(model) ? null : CandleDto.toDto(model);
     }
 }
