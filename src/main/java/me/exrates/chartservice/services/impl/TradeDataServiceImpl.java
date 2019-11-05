@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -198,7 +197,9 @@ public class TradeDataServiceImpl implements TradeDataService {
             final String id = ElasticsearchGeneratorUtil.generateId(pairName);
 
             boundaryTime = redisProcessingService.getFirstInitializedCandleTimeFromHistory(id);
-
+            if (Objects.isNull(boundaryTime)) {
+                return null;
+            }
             return elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, id);
         }
     }
@@ -218,48 +219,40 @@ public class TradeDataServiceImpl implements TradeDataService {
                 return;
             }
 
-            List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
-
             supportedIntervals.forEach(interval -> {
-                completableFutures.add(CompletableFuture.runAsync(() -> {
-                    final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
-                    newModel.setCandleOpenTime(candleDateTime);
+                final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
+                newModel.setCandleOpenTime(candleDateTime);
 
-                    final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
-                    final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
+                final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
+                final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-                    List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
+                List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
 
-                    CandleModel finalModel = newModel;
-                    if (!CollectionUtils.isEmpty(cachedModels)) {
-                        cachedModels = new ArrayList<>(cachedModels);
+                CandleModel finalModel = newModel;
+                if (!CollectionUtils.isEmpty(cachedModels)) {
+                    cachedModels = new ArrayList<>(cachedModels);
 
-                        CandleModel cachedModel = cachedModels.stream()
-                                .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
-                                .peek(model -> CandleDataConverter.merge(model, newModel))
-                                .findFirst()
-                                .orElse(null);
+                    CandleModel cachedModel = cachedModels.stream()
+                            .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
+                            .peek(model -> CandleDataConverter.merge(model, newModel))
+                            .findFirst()
+                            .orElse(null);
 
-                        if (Objects.isNull(cachedModel)) {
-                            cachedModels.add(newModel);
-                        } else {
-                            finalModel = cachedModel;
-                        }
+                    if (Objects.isNull(cachedModel)) {
+                        cachedModels.add(newModel);
                     } else {
-                        cachedModels = Collections.singletonList(newModel);
+                        finalModel = cachedModel;
                     }
+                } else {
+                    cachedModels = Collections.singletonList(newModel);
+                }
 
-                    redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
+                redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
 
-                    defineAndSaveLastInitializedCandleTime(hashKey, cachedModels);
+                defineAndSaveLastInitializedCandleTime(hashKey, cachedModels);
 
-                    //send last candle data to the front end
-                    mapAndSendLastCandle(finalModel, interval);
-                }));
-
-                CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]))
-                        .exceptionally(ex -> null)
-                        .join();
+                //send last candle data to the front end
+                mapAndSendLastCandle(finalModel, interval);
             });
         });
     }
@@ -333,6 +326,9 @@ public class TradeDataServiceImpl implements TradeDataService {
             final String id = ElasticsearchGeneratorUtil.generateId(pairName);
 
             boundaryTime = redisProcessingService.getFirstInitializedCandleTimeFromHistory(id);
+            if (Objects.isNull(boundaryTime)) {
+                return null;
+            }
 
             LocalDateTime lastCandleTimeBeforeDate = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, id);
             if (Objects.isNull(lastCandleTimeBeforeDate)) {
