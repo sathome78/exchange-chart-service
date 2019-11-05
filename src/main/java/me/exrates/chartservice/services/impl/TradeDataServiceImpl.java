@@ -8,6 +8,7 @@ import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.RedisProcessingService;
+import me.exrates.chartservice.services.StompMessengerService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.ElasticsearchGeneratorUtil;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
@@ -42,6 +43,7 @@ public class TradeDataServiceImpl implements TradeDataService {
 
     private final ElasticsearchProcessingService elasticsearchProcessingService;
     private final RedisProcessingService redisProcessingService;
+    private final StompMessengerService messengerService;
     private final XSync<String> xSync;
 
     private long candlesToStoreInCache;
@@ -51,11 +53,13 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Autowired
     public TradeDataServiceImpl(ElasticsearchProcessingService elasticsearchProcessingService,
                                 RedisProcessingService redisProcessingService,
+                                StompMessengerService messengerService,
                                 @Qualifier(TRADE_SYNC) XSync<String> xSync,
                                 @Value("${candles.store-in-cache:300}") long candlesToStoreInCache,
                                 @Qualifier(ALL_SUPPORTED_INTERVALS_LIST) List<BackDealInterval> supportedIntervals) {
         this.elasticsearchProcessingService = elasticsearchProcessingService;
         this.redisProcessingService = redisProcessingService;
+        this.messengerService = messengerService;
         this.xSync = xSync;
         this.candlesToStoreInCache = candlesToStoreInCache;
         this.supportedIntervals = supportedIntervals;
@@ -74,12 +78,27 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         List<CandleModel> models = redisProcessingService.get(key, hashKey, interval);
         if (CollectionUtils.isEmpty(models)) {
-            return null;
+            return getEmptyModel(pairName, candleTime, interval);
         }
         return models.stream()
                 .filter(model -> model.getCandleOpenTime().isEqual(candleTime))
+                .peek(model -> {
+                    final CandleModel previousModel = getPreviousCandle(pairName, candleTime, interval);
+                    if (Objects.nonNull(previousModel)) {
+                        model.setOpenRate(previousModel.getCloseRate());
+                    }
+                })
                 .findFirst()
-                .orElse(null);
+                .orElse(getEmptyModel(pairName, candleTime, interval));
+    }
+
+    private CandleModel getEmptyModel(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
+        final CandleModel previousModel = getPreviousCandle(pairName, candleTime, interval);
+
+        if (Objects.isNull(previousModel)) {
+            return null;
+        }
+        return CandleModel.empty(pairName, previousModel.getCloseRate(), candleTime);
     }
 
     @Override
@@ -124,7 +143,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     private void fixOpenRate(List<CandleModel> models, String pairName, BackDealInterval interval) {
         models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
 
-        CandleModel previousModel = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
+        final CandleModel previousModel = getPreviousCandle(pairName, models.get(0).getCandleOpenTime(), interval);
         if (Objects.nonNull(previousModel)) {
             models.get(0).setOpenRate(previousModel.getCloseRate());
         }
@@ -199,37 +218,61 @@ public class TradeDataServiceImpl implements TradeDataService {
                 return;
             }
 
+            List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
+
             supportedIntervals.forEach(interval -> {
-                final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
-                newModel.setCandleOpenTime(candleDateTime);
+                completableFutures.add(CompletableFuture.runAsync(() -> {
+                    final LocalDateTime candleDateTime = TimeUtil.getNearestBackTimeForBackdealInterval(newModel.getCandleOpenTime(), interval);
+                    newModel.setCandleOpenTime(candleDateTime);
 
-                final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
-                final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
+                    final String key = RedisGeneratorUtil.generateKey(candleDateTime.toLocalDate());
+                    final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-                List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
+                    List<CandleModel> cachedModels = redisProcessingService.get(key, hashKey, interval);
 
-                if (!CollectionUtils.isEmpty(cachedModels)) {
-                    cachedModels = new ArrayList<>(cachedModels);
+                    CandleModel finalModel = newModel;
+                    if (!CollectionUtils.isEmpty(cachedModels)) {
+                        cachedModels = new ArrayList<>(cachedModels);
 
-                    CandleModel cachedModel = cachedModels.stream()
-                            .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
-                            .peek(model -> CandleDataConverter.merge(model, newModel))
-                            .findFirst()
-                            .orElse(null);
+                        CandleModel cachedModel = cachedModels.stream()
+                                .filter(model -> model.getCandleOpenTime().isEqual(candleDateTime))
+                                .peek(model -> CandleDataConverter.merge(model, newModel))
+                                .findFirst()
+                                .orElse(null);
 
-                    if (Objects.isNull(cachedModel)) {
-                        cachedModels.add(newModel);
+                        if (Objects.isNull(cachedModel)) {
+                            cachedModels.add(newModel);
+                        } else {
+                            finalModel = cachedModel;
+                        }
+                    } else {
+                        cachedModels = Collections.singletonList(newModel);
                     }
-                } else {
-                    cachedModels = Collections.singletonList(newModel);
-                }
 
-                redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
+                    redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
 
-                List<CandleModel> finalCachedModels = cachedModels;
-                CompletableFuture.runAsync(() -> defineAndSaveLastInitializedCandleTime(hashKey, finalCachedModels));
+                    defineAndSaveLastInitializedCandleTime(hashKey, cachedModels);
+
+                    //send last candle data to the front end
+                    mapAndSendLastCandle(finalModel, interval);
+                }));
+
+                CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]))
+                        .exceptionally(ex -> null)
+                        .join();
             });
         });
+    }
+
+    private void mapAndSendLastCandle(CandleModel finalModel, BackDealInterval interval) {
+        final String pairName = finalModel.getPairName();
+        final LocalDateTime candleDateTime = finalModel.getCandleOpenTime();
+
+        final CandleModel previousModel = getPreviousCandle(pairName, candleDateTime, interval);
+        if (Objects.nonNull(previousModel)) {
+            finalModel.setOpenRate(previousModel.getCloseRate());
+        }
+        messengerService.sendLastCandle(finalModel, pairName, interval);
     }
 
     @Override

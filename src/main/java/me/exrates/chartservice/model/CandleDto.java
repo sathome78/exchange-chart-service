@@ -1,13 +1,19 @@
 package me.exrates.chartservice.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.ZoneOffset;
 
-@Data
-@Builder
+@Getter
+@Setter
+@Builder(builderClassName = "Builder")
+@NoArgsConstructor
+@AllArgsConstructor
 public class CandleDto {
 
     private BigDecimal open;

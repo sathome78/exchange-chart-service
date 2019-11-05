@@ -40,12 +40,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TradeDataServiceImplTest extends AbstractTest {
+public class TradeDataServiceTest extends AbstractTest {
 
     @Mock
-    ElasticsearchProcessingService elasticsearchProcessingService;
+    private ElasticsearchProcessingService elasticsearchProcessingService;
     @Mock
-    RedisProcessingService redisProcessingService;
+    private RedisProcessingService redisProcessingService;
+    @Mock
+    private StompMessengerService messengerService;
 
     private TradeDataService tradeDataService;
 
@@ -54,6 +56,7 @@ public class TradeDataServiceImplTest extends AbstractTest {
         tradeDataService = spy(new TradeDataServiceImpl(
                 elasticsearchProcessingService,
                 redisProcessingService,
+                messengerService,
                 new XSync<>(),
                 candlesToStoreInCache,
                 supportedIntervals));
@@ -336,6 +339,9 @@ public class TradeDataServiceImplTest extends AbstractTest {
                 .lowRate(highRate.divide(BigDecimal.valueOf(2)))
                 .closeRate(getRandomBigDecimal())
                 .openRate(getRandomBigDecimal())
+                .predLastRate(getRandomBigDecimal())
+                .percentChange(getRandomBigDecimal())
+                .valueChange(getRandomBigDecimal())
                 .build();
     }
 

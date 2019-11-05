@@ -32,7 +32,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class ListenerBufferImplTest extends AbstractTest {
+public class ListenerBufferTest extends AbstractTest {
 
     private static final int POOL_SIZE = 20;
     private static final int GENERATED_TRADES_COUNT = 5;

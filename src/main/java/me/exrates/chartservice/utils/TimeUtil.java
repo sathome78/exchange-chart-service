@@ -65,6 +65,25 @@ public final class TimeUtil {
         }
     }
 
+    public static String convertToResolution(BackDealInterval interval) {
+        Integer intervalValue = interval.getIntervalValue();
+
+        switch (interval.getIntervalType()) {
+            case MINUTE: {
+                return String.valueOf(intervalValue);
+            }
+            case HOUR: {
+                return String.valueOf(intervalValue * 60);
+            }
+            case DAY: {
+                return intervalValue == 1 ? "D" : String.valueOf(intervalValue).concat("D");
+            }
+            default: {
+                throw new UnsupportedOperationException(String.format("Interval type - %s not supported", interval.getIntervalType()));
+            }
+        }
+    }
+
     public static BackDealInterval getInterval(String resolution) {
         IntervalType type;
         int value;

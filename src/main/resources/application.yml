@@ -6,12 +6,12 @@ spring:
   devtools:
     restart:
       enabled: true
-  #  rabbitmq:
-  #    username: developer
-  #    password: eehei4AeJein
-  #    host: rabbitmq-dev.service
-  #    port: 5672
-  #    tradestopic: CHART_DATA_QUEUE_DEV
+#  rabbitmq:
+#    username: developer
+#    password: eehei4AeJein
+#    host: rabbitmq-dev.service
+#    port: 5672
+#    tradestopic: CHART_DATA_QUEUE_DEV
   rabbitmq:
     username: guest
     password: guest
@@ -70,6 +70,10 @@ generator:
 scheduled:
   clean-cache: 0 */30 * ? * *
   clean-daily-data: 0 */5 * ? * *
+
+angular:
+  allowed-origins: http://localhost:4200
+  sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
 
 server:
   port: 8060
