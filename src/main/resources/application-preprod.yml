@@ -49,7 +49,7 @@ scheduled:
   clean-daily-data: 0 */5 * ? * *
 
 angular:
-  allowed-origins: http://preprod.exapp
+  allowed-origins: http://dev6.exapp
   sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
 
 logging:
