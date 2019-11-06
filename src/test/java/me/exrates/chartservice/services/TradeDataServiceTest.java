@@ -89,7 +89,7 @@ public class TradeDataServiceTest extends AbstractTest {
     @Test
     public void getCandles_validDates() {
         LocalDateTime to = TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_HOUR_INTERVAL);
-        LocalDateTime from = TimeUtil.getNearestBackTimeForBackdealInterval(to.minusHours(CANDLES_TO_STORE + 20), ONE_HOUR_INTERVAL);
+        LocalDateTime from = TimeUtil.getNearestBackTimeForBackdealInterval(to.minusHours(CANDLES_TO_STORE + 200), ONE_HOUR_INTERVAL);
 
         CandleModel firstModel = buildDefaultCandle(from);
         CandleModel secondModel = buildDefaultCandle(from.plusHours(1));
@@ -107,8 +107,8 @@ public class TradeDataServiceTest extends AbstractTest {
 
         assertFalse(models.isEmpty());
 
-        verify(redisProcessingService, atLeast(13)).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
+        verify(redisProcessingService, times(13)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, times(9)).get(anyString(), anyString());
     }
 
     @Test
