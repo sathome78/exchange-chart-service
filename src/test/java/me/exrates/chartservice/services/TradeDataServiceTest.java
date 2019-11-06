@@ -107,8 +107,8 @@ public class TradeDataServiceTest extends AbstractTest {
 
         assertFalse(models.isEmpty());
 
-        verify(redisProcessingService, times(13)).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(elasticsearchProcessingService, times(9)).get(anyString(), anyString());
+        verify(redisProcessingService, atLeast(13)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(elasticsearchProcessingService, atLeast(9)).get(anyString(), anyString());
     }
 
     @Test
