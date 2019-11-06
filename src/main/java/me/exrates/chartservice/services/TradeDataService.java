@@ -13,7 +13,7 @@ public interface TradeDataService {
 
     List<CandleModel> getCandles(String pairName, LocalDateTime from, LocalDateTime to, BackDealInterval interval);
 
-    LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval);
+    Long getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval);
 
     void handleReceivedTrades(String pairname, List<OrderDataDto> ordersData);
 

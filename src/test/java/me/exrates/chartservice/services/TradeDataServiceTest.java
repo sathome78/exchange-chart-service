@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,7 +113,7 @@ public class TradeDataServiceTest extends AbstractTest {
 
     @Test
     public void getLastCandleTimeBeforeDate_fromDateIsNull() {
-        LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, null, M5_INTERVAL);
+        Long lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, null, M5_INTERVAL);
 
         assertNull(lastCandleTimeBeforeDate);
 
@@ -126,10 +127,10 @@ public class TradeDataServiceTest extends AbstractTest {
                 .when(redisProcessingService)
                 .getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
 
-        LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW, M5_INTERVAL);
+        Long lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW, M5_INTERVAL);
 
         assertNotNull(lastCandleTimeBeforeDate);
-        assertEquals(NOW, lastCandleTimeBeforeDate);
+        assertEquals(NOW.toEpochSecond(ZoneOffset.UTC), (long) lastCandleTimeBeforeDate);
 
         verify(redisProcessingService, atLeastOnce()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
@@ -144,10 +145,10 @@ public class TradeDataServiceTest extends AbstractTest {
                 .when(redisProcessingService)
                 .getFirstInitializedCandleTimeFromHistory(anyString());
 
-        LocalDateTime lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW.minusDays(5), M5_INTERVAL);
+        Long lastCandleTimeBeforeDate = tradeDataService.getLastCandleTimeBeforeDate(BTC_USD, NOW.minusDays(5), M5_INTERVAL);
 
         assertNotNull(lastCandleTimeBeforeDate);
-        assertEquals(NOW, lastCandleTimeBeforeDate);
+        assertEquals(NOW.toEpochSecond(ZoneOffset.UTC), (long) lastCandleTimeBeforeDate);
 
         verify(redisProcessingService, never()).getLastCandleTimeBeforeDate(any(LocalDateTime.class), any(LocalDateTime.class), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, atLeastOnce()).getFirstInitializedCandleTimeFromHistory(anyString());

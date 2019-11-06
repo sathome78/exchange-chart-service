@@ -49,9 +49,9 @@ public class ChartDataController {
     }
 
     @GetMapping("/last-date")
-    public ResponseEntity<LocalDateTime> getLastCandleTimeBeforeDate(@RequestParam String currencyPair,
-                                                                     @RequestParam Long to,
-                                                                     @RequestParam String resolution) {
+    public ResponseEntity<Long> getLastCandleTimeBeforeDate(@RequestParam String currencyPair,
+                                                            @RequestParam Long to,
+                                                            @RequestParam String resolution) {
         final BackDealInterval interval = TimeUtil.getInterval(resolution);
         final LocalDateTime toDate = TimeUtil.getTime(to);
 

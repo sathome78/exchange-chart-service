@@ -21,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -180,7 +181,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public LocalDateTime getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval) {
+    public Long getLastCandleTimeBeforeDate(String pairName, LocalDateTime candleDateTime, BackDealInterval interval) {
         if (isNull(candleDateTime)) {
             return null;
         }
@@ -189,10 +190,11 @@ public class TradeDataServiceImpl implements TradeDataService {
 
         LocalDateTime boundaryTime = TimeUtil.getBoundaryTime(candlesToStoreInCache, interval).atTime(0, 0);
 
+        LocalDateTime lastCandleTime;
         if (candleDateTime.isAfter(boundaryTime)) {
             final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
-            return redisProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, hashKey, interval);
+            lastCandleTime = redisProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, hashKey, interval);
         } else {
             final String id = ElasticsearchGeneratorUtil.generateId(pairName);
 
@@ -200,8 +202,9 @@ public class TradeDataServiceImpl implements TradeDataService {
             if (Objects.isNull(boundaryTime)) {
                 return null;
             }
-            return elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, id);
+            lastCandleTime = elasticsearchProcessingService.getLastCandleTimeBeforeDate(candleDateTime, boundaryTime, id);
         }
+        return Objects.nonNull(lastCandleTime) ? lastCandleTime.toEpochSecond(ZoneOffset.UTC) : null;
     }
 
     @Override
