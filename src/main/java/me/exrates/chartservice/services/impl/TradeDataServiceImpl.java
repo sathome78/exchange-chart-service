@@ -137,7 +137,8 @@ public class TradeDataServiceImpl implements TradeDataService {
                 TimeUtil.getNearestBackTimeForBackdealInterval(from, interval),
                 TimeUtil.getNearestBackTimeForBackdealInterval(to, interval));
 
-        return fillGaps(models, pairName, to, interval);
+        return models;
+//        return fillGaps(models, pairName, to, interval);
     }
 
     private void fixOpenRate(List<CandleModel> models, String pairName, BackDealInterval interval) {
