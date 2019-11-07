@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Log4j2
 @Component
@@ -22,6 +24,8 @@ public class RabbitListeners {
     private final ListenerBuffer listenerBuffer;
     private final RabbitListenerEndpointRegistry registry;
     private final Environment environment;
+
+    private final static ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(10);
 
     @Autowired
     public RabbitListeners(ListenerBuffer listenerBuffer,
@@ -36,7 +40,7 @@ public class RabbitListeners {
     public void receiveTrade(OrderDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
 
-        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
+        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
     }
 
     @PreDestroy

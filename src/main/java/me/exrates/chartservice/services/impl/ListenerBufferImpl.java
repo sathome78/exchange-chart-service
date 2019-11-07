@@ -10,6 +10,7 @@ import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,9 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
         CompletableFuture.runAsync(() -> insertDailyData(message));
 
+        StopWatch stopWatch = StopWatch.createStarted();
+        log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Start - pair: {}", message.getCurrencyPairName());
+
         if (isTradeAfterInitializedCandle(message.getCurrencyPairName(), message.getTradeDate())) {
             xSync.execute(message.getCurrencyPairName(), () -> {
                 List<OrderDataDto> ordersData = cacheMap.computeIfAbsent(message.getCurrencyPairName(), k -> new ArrayList<>());
@@ -77,6 +81,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
                 }
             }
         }
+        log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Finish - pair: {} (time: {}s)", message.getCurrencyPairName(), stopWatch.getTime(TimeUnit.SECONDS));
+
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> End processing new data: pair: {}, trade date: {}", message.getCurrencyPairName(), message.getTradeDate());
     }
 
