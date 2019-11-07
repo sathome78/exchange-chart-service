@@ -7,6 +7,7 @@ import me.exrates.chartservice.services.ListenerBuffer;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.services.TradeDataService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
     public void receive(TradeDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Start processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
 
+        StopWatch stopWatch = StopWatch.createStarted();
+        log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Pair: {}", message.getPairName());
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
             xSync.execute(message.getPairName(), () -> {
@@ -70,6 +73,8 @@ public class ListenerBufferImpl implements ListenerBuffer {
                 }
             }
         }
+        log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Pair: {} (Finish time: {}s)", message.getPairName(), stopWatch.getTime(TimeUnit.SECONDS));
+
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> End processing new data: pair: {}, trade date: {}", message.getPairName(), message.getTradeDate());
     }
 
