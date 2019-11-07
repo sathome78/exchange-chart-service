@@ -179,14 +179,13 @@ public class TradeDataServiceImpl implements TradeDataService {
     @Override
     public void handleReceivedTrades(String pairName, List<TradeDataDto> dto) {
         StopWatch stopWatch = StopWatch.createStarted();
-        log.debug("<<< BUFFER (ONLY UPDATE)>>> Pair: {}", pairName);
+        log.debug("<<< BUFFER (ONLY UPDATE)>>> Start - pair: {}", pairName);
 
-//        xSync.execute(pairName, () -> dto.stream()
-//                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-//                .forEach((key, value) -> groupTradesAndSave(pairName, value)));
-        groupTradesAndSave(pairName, dto);
+        xSync.execute(pairName, () -> dto.stream()
+                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
+                .forEach((key, value) -> groupTradesAndSave(pairName, value)));
 
-        log.debug("<<< BUFFER (ONLY UPDATE)>>> Pair: {} (Finish time: {}s)", pairName, stopWatch.getTime(TimeUnit.SECONDS));
+        log.debug("<<< BUFFER (ONLY UPDATE)>>> Finish - pair: {} (time: {}s)", pairName, stopWatch.getTime(TimeUnit.SECONDS));
     }
 
     @Override
