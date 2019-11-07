@@ -191,7 +191,7 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     private void groupTradesAndSave(String pairName, List<TradeDataDto> dto) {
-        xSync.execute(pairName, () -> {
+//        xSync.execute(pairName, () -> {
             CandleModel newCandle = CandleDataConverter.reduceToCandle(dto);
             if (isNull(newCandle)) {
                 return;
@@ -211,7 +211,7 @@ public class TradeDataServiceImpl implements TradeDataService {
                 CandleModel mergedCandle = CandleDataConverter.merge(cachedCandleModel, newCandle);
                 redisProcessingService.insertOrUpdate(mergedCandle, key, interval);
             });
-        });
+//        });
     }
 
     private CandleModel getPreviousCandle(String pairName, LocalDateTime candleTime, BackDealInterval interval) {
