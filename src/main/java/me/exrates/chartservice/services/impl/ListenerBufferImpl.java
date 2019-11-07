@@ -51,18 +51,18 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
         LocalDateTime thisTradeDate = getNearestTimeBeforeForMinInterval(message.getTradeDate());
         if (isTradeAfterInitializedCandle(message.getPairName(), thisTradeDate)) {
-            xSync.execute(message.getPairName(), () -> {
+//            xSync.execute(message.getPairName(), () -> {
                 List<TradeDataDto> trades = cacheMap.computeIfAbsent(message.getPairName(), k -> new ArrayList<>());
                 trades.add(message);
-            });
+//            });
             Semaphore semaphore = getSemaphoreSafe(message.getPairName());
             if (semaphore.tryAcquire()) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
-                    xSync.execute(message.getPairName(), () -> {
-                        List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
-                        tradeDataService.handleReceivedTrades(message.getPairName(), trades);
-                    });
+//                    xSync.execute(message.getPairName(), () -> {
+//                        List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
+                        tradeDataService.handleReceivedTrades(message.getPairName(), cacheMap.remove(message.getPairName()));
+//                    });
                 } catch (Exception ex) {
                     log.error(ex);
                 } finally {
