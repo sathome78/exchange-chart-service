@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -259,7 +260,8 @@ public class TradeDataServiceImpl implements TradeDataService {
 
             redisProcessingService.insertOrUpdate(cachedModels, key, hashKey, interval);
 
-            defineAndSaveLastInitializedCandleTime(hashKey, cachedModels);
+            List<CandleModel> finalCachedModels = cachedModels;
+            CompletableFuture.runAsync(() -> defineAndSaveLastInitializedCandleTime(hashKey, finalCachedModels));
 
             //send last candle data to the front end
             mapAndSendLastCandle(finalModel, interval);
