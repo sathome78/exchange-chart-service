@@ -181,9 +181,10 @@ public class TradeDataServiceImpl implements TradeDataService {
         StopWatch stopWatch = StopWatch.createStarted();
         log.debug("<<< BUFFER (ONLY UPDATE)>>> Pair: {}", pairName);
 
-        xSync.execute(pairName, () -> dto.stream()
-                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
-                .forEach((key, value) -> groupTradesAndSave(pairName, value)));
+//        xSync.execute(pairName, () -> dto.stream()
+//                .collect(Collectors.groupingBy(p -> getNearestTimeBeforeForMinInterval(p.getTradeDate())))
+//                .forEach((key, value) -> groupTradesAndSave(pairName, value)));
+        groupTradesAndSave(pairName, dto);
 
         log.debug("<<< BUFFER (ONLY UPDATE)>>> Pair: {} (Finish time: {}s)", pairName, stopWatch.getTime(TimeUnit.SECONDS));
     }
