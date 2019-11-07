@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
                     TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
                     xSync.execute(message.getPairName(), () -> {
                         List<TradeDataDto> trades = cacheMap.remove(message.getPairName());
-                        tradeDataService.handleReceivedTrades(message.getPairName(), trades);
+                        CompletableFuture.runAsync(() -> tradeDataService.handleReceivedTrades(message.getPairName(), trades));
                     });
                 } catch (Exception ex) {
                     log.error(ex);
