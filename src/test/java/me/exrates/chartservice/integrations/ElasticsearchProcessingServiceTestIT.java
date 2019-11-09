@@ -12,10 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -36,8 +37,8 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
     @Before
     public void setUp() throws Exception {
-        index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
-        id = ElasticsearchGeneratorUtil.generateId(NOW);
+        index = ElasticsearchGeneratorUtil.generateIndex(NOW.toLocalDate());
+        id = ElasticsearchGeneratorUtil.generateId(TEST_PAIR);
     }
 
     @After
@@ -72,7 +73,8 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel candleModel = CandleModel.builder()
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -81,7 +83,9 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insert(candleModel, index);
+        List<CandleModel> models = Collections.singletonList(model);
+
+        processingService.insert(models, index, id);
 
         TimeUnit.SECONDS.sleep(1);
 
@@ -91,20 +95,26 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel insertedCandleModel = processingService.get(index, id);
+        List<CandleModel> insertedModels = processingService.get(index, id);
 
-        assertNotNull(insertedCandleModel);
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getLowRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getVolume()));
-        assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
-        assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
+        assertNotNull(insertedModels);
+        assertFalse(insertedModels.isEmpty());
+
+        CandleModel insertedModel = insertedModels.get(0);
+
+        assertNotNull(insertedModel);
+        assertEquals(TEST_PAIR, insertedModel.getPairName());
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getOpenRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getCloseRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getHighRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getVolume()));
+        assertEquals(NOW, insertedModel.getCandleOpenTime());
 
         TimeUnit.SECONDS.sleep(1);
 
-        candleModel = CandleModel.builder()
+        model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.ZERO)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -113,40 +123,43 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.update(candleModel, index);
+        boolean replaced = Collections.replaceAll(insertedModels, insertedModel, model);
+
+        assertTrue(replaced);
+
+        processingService.update(insertedModels, index, id);
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel updatedCandleModel = processingService.get(index, id);
+        List<CandleModel> updatedModels = processingService.get(index, id);
 
-        assertNotNull(updatedCandleModel);
-        assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.ONE.compareTo(updatedCandleModel.getLowRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getVolume()));
-        assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
-        assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
+        assertNotNull(updatedModels);
+        assertFalse(updatedModels.isEmpty());
 
-        TimeUnit.SECONDS.sleep(1);
+        CandleModel updatedModel = updatedModels.get(0);
 
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, index);
-
-        assertFalse(CollectionUtils.isEmpty(models));
-        assertEquals(1, models.size());
+        assertEquals(TEST_PAIR, updatedModel.getPairName());
+        assertEquals(0, BigDecimal.ZERO.compareTo(updatedModel.getOpenRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getCloseRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getHighRate()));
+        assertEquals(0, BigDecimal.ONE.compareTo(updatedModel.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getVolume()));
+        assertEquals(NOW, updatedModel.getCandleOpenTime());
 
         TimeUnit.SECONDS.sleep(1);
 
-        CandleModel candleModel1 = CandleModel.builder()
+        CandleModel model1 = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW.plusMinutes(5))
+                .candleOpenTime(NOW.minusMinutes(5))
                 .build();
 
-        CandleModel candleModel2 = CandleModel.builder()
+        CandleModel model2 = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -155,25 +168,24 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.bulkInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), index);
+        updatedModels.add(model1);
+        updatedModels.add(model2);
+
+        Map<String, List<CandleModel>> mapOfModels = new HashMap<>();
+        mapOfModels.put(index, updatedModels);
+
+        processingService.bulkInsertOrUpdate(mapOfModels, id);
 
         TimeUnit.SECONDS.sleep(1);
 
-        models = processingService.getAllByIndex(index);
+        models = processingService.get(index, id);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
         TimeUnit.SECONDS.sleep(1);
 
-        models = processingService.getByRange(FROM_DATE, TO_DATE, index);
-
-        assertFalse(CollectionUtils.isEmpty(models));
-        assertEquals(2, models.size());
-
-        TimeUnit.SECONDS.sleep(1);
-
-        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(TO_DATE, index);
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, NOW.minusDays(1), id);
 
         assertNotNull(lastCandleTime);
 
@@ -187,6 +199,6 @@ public class ElasticsearchProcessingServiceTestIT extends AbstractTestIT {
 
         long deletedCount = processingService.deleteDataByIndex(index);
 
-        assertEquals(3L, deletedCount);
+        assertEquals(1L, deletedCount);
     }
 }

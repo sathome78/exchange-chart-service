@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPPORTED_INTERVALS_LIST;
@@ -29,9 +30,10 @@ import static me.exrates.chartservice.configuration.CommonConfiguration.ALL_SUPP
 public abstract class AbstractTest {
 
     static final String TEST_PAIR = "COIN1/COIN2";
+    static final LocalDateTime NOW = LocalDateTime.now();
     static final int CANDLES_TO_STORE = 300;
-    static final String BTC_USD = "btc_usd";
-    static final String BTC_USDT = "btc_usdt";
+    static final String BTC_USD = "BTC/USD";
+    static final String BTC_USDT = "BTC/USDT";
     static final BackDealInterval M5_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
     static final BackDealInterval M15_INTERVAL = new BackDealInterval(15, IntervalType.MINUTE);
     static final BackDealInterval M30_INTERVAL = new BackDealInterval(30, IntervalType.MINUTE);

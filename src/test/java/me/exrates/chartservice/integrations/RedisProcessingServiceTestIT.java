@@ -3,6 +3,7 @@ package me.exrates.chartservice.integrations;
 import me.exrates.chartservice.RetryRule;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
+import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.model.enums.IntervalType;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
@@ -14,14 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RedisProcessingServiceTestIT extends AbstractTestIT {
@@ -39,8 +42,8 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
 
     @Before
     public void setUp() throws Exception {
-        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
-        hashKey = RedisGeneratorUtil.generateHashKey(NOW);
+        key = RedisGeneratorUtil.generateKey(NOW.toLocalDate());
+        hashKey = RedisGeneratorUtil.generateHashKey(TEST_PAIR);
     }
 
     @After
@@ -54,7 +57,8 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
 
         assertFalse(exists);
 
-        CandleModel candleModel = CandleModel.builder()
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -63,24 +67,30 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
+        List<CandleModel> models = Collections.singletonList(model);
+
+        processingService.insertOrUpdate(models, key, hashKey, DEFAULT_INTERVAL);
 
         exists = processingService.exists(key, DEFAULT_INTERVAL);
 
         assertTrue(exists);
 
-        CandleModel insertedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
+        List<CandleModel> insertedModels = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
-        assertNotNull(insertedCandleModel);
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getLowRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(insertedCandleModel.getVolume()));
-        assertEquals(NOW, insertedCandleModel.getCandleOpenTime());
-        assertEquals(Timestamp.valueOf(NOW).getTime(), insertedCandleModel.getTimeInMillis());
+        assertNotNull(insertedModels);
+        assertFalse(insertedModels.isEmpty());
 
-        candleModel = CandleModel.builder()
+        CandleModel insertedModel = insertedModels.get(0);
+
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getOpenRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getCloseRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getHighRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(insertedModel.getVolume()));
+        assertEquals(NOW, insertedModel.getCandleOpenTime());
+
+        model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.ZERO)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -89,34 +99,38 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW)
                 .build();
 
-        processingService.insertOrUpdate(candleModel, key, DEFAULT_INTERVAL);
+        boolean replaced = Collections.replaceAll(insertedModels, insertedModel, model);
 
-        CandleModel updatedCandleModel = processingService.get(key, hashKey, DEFAULT_INTERVAL);
+        assertTrue(replaced);
 
-        assertNotNull(updatedCandleModel);
-        assertEquals(0, BigDecimal.ZERO.compareTo(updatedCandleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getHighRate()));
-        assertEquals(0, BigDecimal.ONE.compareTo(updatedCandleModel.getLowRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(updatedCandleModel.getVolume()));
-        assertEquals(NOW, updatedCandleModel.getCandleOpenTime());
-        assertEquals(Timestamp.valueOf(NOW).getTime(), updatedCandleModel.getTimeInMillis());
+        processingService.insertOrUpdate(insertedModels, key, hashKey, DEFAULT_INTERVAL);
 
-        List<CandleModel> models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
+        List<CandleModel> updatedModels = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(models));
-        assertEquals(1, models.size());
+        assertNotNull(updatedModels);
+        assertFalse(updatedModels.isEmpty());
 
-        CandleModel candleModel1 = CandleModel.builder()
+        CandleModel updatedModel = updatedModels.get(0);
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(updatedModel.getOpenRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getCloseRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getHighRate()));
+        assertEquals(0, BigDecimal.ONE.compareTo(updatedModel.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(updatedModel.getVolume()));
+        assertEquals(NOW, updatedModel.getCandleOpenTime());
+
+        CandleModel model1 = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
-                .candleOpenTime(NOW.plusMinutes(5))
+                .candleOpenTime(NOW.minusMinutes(5))
                 .build();
 
-        CandleModel candleModel2 = CandleModel.builder()
+        CandleModel model2 = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -125,19 +139,20 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(NOW.plusDays(10))
                 .build();
 
-        processingService.bulkInsertOrUpdate(Arrays.asList(candleModel1, candleModel2), key, DEFAULT_INTERVAL);
+        updatedModels.add(model1);
+        updatedModels.add(model2);
 
-        models = processingService.getAllByKey(key, DEFAULT_INTERVAL);
+        Map<String, List<CandleModel>> mapOfModels = new HashMap<>();
+        mapOfModels.put(key, updatedModels);
+
+        processingService.bulkInsertOrUpdate(mapOfModels, hashKey, DEFAULT_INTERVAL);
+
+        models = processingService.get(key, hashKey, DEFAULT_INTERVAL);
 
         assertFalse(CollectionUtils.isEmpty(models));
         assertEquals(3, models.size());
 
-        models = processingService.getByRange(FROM_DATE, TO_DATE, key, DEFAULT_INTERVAL);
-
-        assertFalse(CollectionUtils.isEmpty(models));
-        assertEquals(2, models.size());
-
-        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(TO_DATE, key, DEFAULT_INTERVAL);
+        LocalDateTime lastCandleTime = processingService.getLastCandleTimeBeforeDate(NOW, NOW.minusDays(1), hashKey, DEFAULT_INTERVAL);
 
         assertNotNull(lastCandleTime);
 
@@ -149,25 +164,85 @@ public class RedisProcessingServiceTestIT extends AbstractTestIT {
     }
 
     @Test
-    public void insertAndGetLastInitializedCandleTimeEndToEnd() {
+    public void insertLastInitializedCandleTimeToCacheEndToEnd() {
         LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(key, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(hashKey, dateTimeWithoutNano);
 
-        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(key);
+        LocalDateTime dateTime = processingService.getLastInitializedCandleTimeFromCache(hashKey);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
         dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
 
-        processingService.insertLastInitializedCandleTimeToCache(key, dateTimeWithoutNano);
+        processingService.insertLastInitializedCandleTimeToCache(hashKey, dateTimeWithoutNano);
 
-        dateTime = processingService.getLastInitializedCandleTimeFromCache(key);
+        dateTime = processingService.getLastInitializedCandleTimeFromCache(hashKey);
 
         assertNotNull(dateTime);
         assertEquals(dateTimeWithoutNano, dateTime);
 
-        processingService.deleteKeyByDbIndexAndKey(0, key);
+        processingService.deleteKeyByDbIndexAndKey(0, hashKey);
+    }
+
+    @Test
+    public void insertFirstInitializedCandleTimeToHistoryEndToEnd() {
+        LocalDateTime dateTimeWithoutNano = NOW.withNano(0);
+
+        processingService.insertFirstInitializedCandleTimeToHistory(hashKey, dateTimeWithoutNano);
+
+        LocalDateTime dateTime = processingService.getFirstInitializedCandleTimeFromHistory(hashKey);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        dateTimeWithoutNano = NOW.plusDays(1).withNano(0);
+
+        processingService.insertFirstInitializedCandleTimeToHistory(hashKey, dateTimeWithoutNano);
+
+        dateTime = processingService.getFirstInitializedCandleTimeFromHistory(hashKey);
+
+        assertNotNull(dateTime);
+        assertEquals(dateTimeWithoutNano, dateTime);
+
+        processingService.deleteKeyByDbIndexAndKey(0, hashKey);
+    }
+
+    @Test
+    public void getDailyDataEndToEnd() {
+        DailyDataModel dailyDataModel = DailyDataModel.builder()
+                .candleOpenTime(NOW)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.ONE)
+                .build();
+
+        String key = RedisGeneratorUtil.generateKeyForCoinmarketcapData(TEST_PAIR);
+        String hashKey = RedisGeneratorUtil.generateHashKeyForCoinmarketcapData(NOW);
+
+        DailyDataModel savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNull(savedDailyDataModel);
+
+        processingService.insertDailyData(dailyDataModel, key, hashKey);
+
+        savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNotNull(savedDailyDataModel);
+        assertEquals(NOW, savedDailyDataModel.getCandleOpenTime());
+        assertEquals(BigDecimal.TEN, savedDailyDataModel.getHighestBid());
+        assertEquals(BigDecimal.ONE, savedDailyDataModel.getLowestAsk());
+
+        List<DailyDataModel> list = processingService.getDailyDataByKey(key);
+
+        assertNotNull(list);
+        assertFalse(list.isEmpty());
+        assertEquals(1, list.size());
+
+        processingService.deleteDailyData(key, hashKey);
+
+        savedDailyDataModel = processingService.getDailyData(key, hashKey);
+
+        assertNull(savedDailyDataModel);
     }
 }

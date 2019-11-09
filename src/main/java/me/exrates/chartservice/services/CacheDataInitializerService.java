@@ -7,11 +7,9 @@ import java.util.List;
 
 public interface CacheDataInitializerService {
 
-    void updateCache();
+    void updateCacheByIndexAndId(String index, String id);
 
-    void updateCacheByKey(String key);
-
-    void updateCache(List<CandleModel> models, String key, BackDealInterval interval);
+    void updateCache(List<CandleModel> models, String key, String hashKey, BackDealInterval interval);
 
     void cleanCache();
 

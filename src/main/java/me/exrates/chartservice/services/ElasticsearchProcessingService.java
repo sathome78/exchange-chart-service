@@ -4,6 +4,7 @@ import me.exrates.chartservice.model.CandleModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface ElasticsearchProcessingService {
 
@@ -11,19 +12,15 @@ public interface ElasticsearchProcessingService {
 
     boolean exists(String index, String id);
 
-    CandleModel get(String index, String id);
+    List<CandleModel> get(String index, String id);
 
-    List<CandleModel> getAllByIndex(String index);
+    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime candleDateTime, LocalDateTime boundaryTime, String id);
 
-    List<CandleModel> getByRange(LocalDateTime fromDate, LocalDateTime toDate, String index);
+    void bulkInsertOrUpdate(Map<String, List<CandleModel>> mapOfModels, String id);
 
-    LocalDateTime getLastCandleTimeBeforeDate(LocalDateTime date, String index);
+    void insert(List<CandleModel> models, String index, String id);
 
-    void bulkInsertOrUpdate(List<CandleModel> models, String index);
-
-    void insert(CandleModel model, String index);
-
-    void update(CandleModel model, String index);
+    void update(List<CandleModel> models, String index, String id);
 
     long deleteAllData();
 

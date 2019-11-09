@@ -1,13 +1,28 @@
 package me.exrates.chartservice.services;
 
+import me.exrates.chartservice.model.CurrencyPairDto;
+import me.exrates.chartservice.model.CurrencyRateDto;
 import me.exrates.chartservice.model.OrderDto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderService {
 
-    List<String> getAllCurrencyPairNames();
+    List<CurrencyPairDto> getCurrencyPairsFromCache(String pairName);
 
-    List<OrderDto> getFilteredOrders(LocalDate fromDate, LocalDate toDate, String pairName);
+    List<CurrencyPairDto> getAllCurrencyPairs();
+
+    List<CurrencyPairDto> getCurrencyPairByName(String pairName);
+
+    List<CurrencyRateDto> getAllCurrencyRatesFromCache(String pairName);
+
+    List<CurrencyRateDto> getAllCurrencyRates();
+
+    List<CurrencyRateDto> getCurrencyRateByName(String pairName);
+
+    List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName);
+
+    List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName);
 }

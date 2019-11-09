@@ -1,15 +1,19 @@
 package me.exrates.chartservice.model;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import me.exrates.chartservice.model.serializers.LocalDateTimeSerializer;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
-@Data
-@Builder
+@Getter
+@Setter
+@Builder(builderClassName = "Builder")
+@NoArgsConstructor
+@AllArgsConstructor
 public class CandleDto {
 
     private BigDecimal open;
@@ -17,8 +21,7 @@ public class CandleDto {
     private BigDecimal high;
     private BigDecimal low;
     private BigDecimal volume;
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    private LocalDateTime time;
+    private Long time;
 
     public static CandleDto toDto(CandleModel candleModel) {
         return CandleDto.builder()
@@ -27,7 +30,7 @@ public class CandleDto {
                 .high(candleModel.getHighRate())
                 .low(candleModel.getLowRate())
                 .volume(candleModel.getVolume())
-                .time(candleModel.getCandleOpenTime())
+                .time(candleModel.getCandleOpenTime().toEpochSecond(ZoneOffset.UTC))
                 .build();
     }
 }

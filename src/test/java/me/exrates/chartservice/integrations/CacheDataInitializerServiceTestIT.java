@@ -18,7 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -43,15 +46,21 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
     private CacheDataInitializerService cacheDataInitializerService;
 
     private String index;
+    private String id;
+
     private String key;
+    private String hashKey;
 
     @Rule
     public RetryRule retryRule = new RetryRule(3);
 
     @Before
     public void setUp() throws Exception {
-        index = ElasticsearchGeneratorUtil.generateIndex(TEST_PAIR);
-        key = RedisGeneratorUtil.generateKey(TEST_PAIR);
+        index = ElasticsearchGeneratorUtil.generateIndex(NOW.toLocalDate());
+        id = ElasticsearchGeneratorUtil.generateId(TEST_PAIR);
+
+        key = RedisGeneratorUtil.generateKey(NOW.toLocalDate());
+        hashKey = RedisGeneratorUtil.generateHashKey(TEST_PAIR);
     }
 
     @After
@@ -62,9 +71,11 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         // clear redis cache
 
-        redisProcessingService.deleteKey(index);
+        redisProcessingService.deleteKey(key);
 
-        redisProcessingService.deleteKeyByDbIndexAndKey(0, index);
+        redisProcessingService.deleteKeyByDbIndexAndKey(0, key);
+
+        redisProcessingService.deleteKeyByDbIndexAndKey(15, hashKey);
     }
 
     @Test
@@ -76,69 +87,77 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
         assertNotNull(createdIndex);
         assertEquals(index, createdIndex);
 
-        CandleModel candleModel = CandleModel.builder()
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
                 .lowRate(BigDecimal.TEN)
                 .volume(BigDecimal.TEN)
                 .candleOpenTime(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL))
+                .currencyVolume(BigDecimal.TEN)
+                .percentChange(BigDecimal.ZERO)
+                .valueChange(BigDecimal.ZERO)
+                .predLastRate(BigDecimal.ONE)
                 .build();
 
-        elasticsearchProcessingService.insert(candleModel, index);
+        List<CandleModel> models = Collections.singletonList(model);
+
+        elasticsearchProcessingService.insert(models, index, id);
 
         TimeUnit.SECONDS.sleep(1);
 
         //update redis cache for all available intervals
 
-        cacheDataInitializerService.updateCacheByKey(index);
+        cacheDataInitializerService.updateCacheByIndexAndId(index, id);
 
         TimeUnit.SECONDS.sleep(1);
 
         //check data from redis cache for all intervals
 
-        List<CandleModel> candles = redisProcessingService.getAllByKey(index, FIVE_MINUTE_INTERVAL);
+        models = redisProcessingService.get(index, id, FIVE_MINUTE_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIVE_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        candles = redisProcessingService.getAllByKey(index, FIFTEEN_MINUTE_INTERVAL);
+        models = redisProcessingService.get(index, id, FIFTEEN_MINUTE_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIFTEEN_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, FIFTEEN_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        candles = redisProcessingService.getAllByKey(index, THIRTY_MINUTE_INTERVAL);
+        models = redisProcessingService.get(index, id, THIRTY_MINUTE_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, THIRTY_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, THIRTY_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
 
-        candles = redisProcessingService.getAllByKey(index, ONE_HOUR_INTERVAL);
+        models = redisProcessingService.get(index, id, ONE_HOUR_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_HOUR_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_HOUR_INTERVAL), models.get(0).getCandleOpenTime());
 
-        candles = redisProcessingService.getAllByKey(index, SIX_HOUR_INTERVAL);
+        models = redisProcessingService.get(index, id, SIX_HOUR_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, SIX_HOUR_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, SIX_HOUR_INTERVAL), models.get(0).getCandleOpenTime());
 
-        candles = redisProcessingService.getAllByKey(index, ONE_DAY_INTERVAL);
+        models = redisProcessingService.get(index, id, ONE_DAY_INTERVAL);
 
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_DAY_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW, ONE_DAY_INTERVAL), models.get(0).getCandleOpenTime());
     }
 
     @Test
     public void cleaneCache_ok_with_insert() throws Exception {
         //initialize data in redis cache
 
-        CandleModel candleModel = CandleModel.builder()
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -147,7 +166,11 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL))
                 .build();
 
-        redisProcessingService.insertOrUpdate(candleModel, key, FIVE_MINUTE_INTERVAL);
+        List<CandleModel> models = Collections.singletonList(model);
+
+        key = RedisGeneratorUtil.generateKey(NOW.minusDays(5).toLocalDate());
+
+        redisProcessingService.insertOrUpdate(models, key, hashKey, FIVE_MINUTE_INTERVAL);
 
         //clean redis cache for all available intervals
 
@@ -157,24 +180,19 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //check data from redis cache for five minute interval (should be empty)
 
-        List<CandleModel> candles = redisProcessingService.getAllByKey(key, FIVE_MINUTE_INTERVAL);
+        models = redisProcessingService.get(key, hashKey, FIVE_MINUTE_INTERVAL);
 
-        assertTrue(CollectionUtils.isEmpty(candles));
-
-        //check data from elasticsearch cluster (should not be empty)
-
-        candles = elasticsearchProcessingService.getAllByIndex(key);
-
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), candles.get(0).getCandleOpenTime());
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), models.get(0).getCandleOpenTime());
     }
 
     @Test
     public void cleaneCache_ok_with_update() throws Exception {
         //initialize data in redis cache
 
-        CandleModel candleModel = CandleModel.builder()
+        CandleModel model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.ONE)
                 .closeRate(BigDecimal.ONE)
                 .highRate(BigDecimal.ONE)
@@ -184,9 +202,14 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL))
                 .build();
 
-        elasticsearchProcessingService.insert(candleModel, key);
+        List<CandleModel> models = Collections.singletonList(model);
 
-        candleModel = CandleModel.builder()
+        index = ElasticsearchGeneratorUtil.generateIndex(NOW.minusDays(5).toLocalDate());
+
+        elasticsearchProcessingService.insert(models, index, id);
+
+        model = CandleModel.builder()
+                .pairName(TEST_PAIR)
                 .openRate(BigDecimal.TEN)
                 .closeRate(BigDecimal.TEN)
                 .highRate(BigDecimal.TEN)
@@ -196,7 +219,11 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
                 .candleOpenTime(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL))
                 .build();
 
-        redisProcessingService.insertOrUpdate(candleModel, key, FIVE_MINUTE_INTERVAL);
+        models = Collections.singletonList(model);
+
+        key = RedisGeneratorUtil.generateKey(NOW.minusDays(5).toLocalDate());
+
+        redisProcessingService.insertOrUpdate(models, key, hashKey, FIVE_MINUTE_INTERVAL);
 
         //clean redis cache for all available intervals
 
@@ -206,24 +233,18 @@ public class CacheDataInitializerServiceTestIT extends AbstractTestIT {
 
         //check data from redis cache for five minute interval (should be empty)
 
-        List<CandleModel> candles = redisProcessingService.getAllByKey(key, FIVE_MINUTE_INTERVAL);
+        models = redisProcessingService.get(key, hashKey, FIVE_MINUTE_INTERVAL);
 
-        assertTrue(CollectionUtils.isEmpty(candles));
+        assertFalse(CollectionUtils.isEmpty(models));
+        assertEquals(1, models.size());
 
-        //check data from elasticsearch cluster (should not be empty)
-
-        candles = elasticsearchProcessingService.getAllByIndex(key);
-
-        assertFalse(CollectionUtils.isEmpty(candles));
-        assertEquals(1, candles.size());
-
-        candleModel = candles.get(0);
-        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), candleModel.getCandleOpenTime());
-        assertEquals(NOW.minusMinutes(50), candleModel.getLastTradeTime());
-        assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getOpenRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getCloseRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getHighRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getLowRate()));
-        assertEquals(0, BigDecimal.TEN.compareTo(candleModel.getVolume()));
+        model = models.get(0);
+        assertEquals(TimeUtil.getNearestBackTimeForBackdealInterval(NOW.minusDays(2), FIVE_MINUTE_INTERVAL), model.getCandleOpenTime());
+        assertEquals(NOW.minusMinutes(50), model.getLastTradeTime());
+        assertEquals(0, BigDecimal.TEN.compareTo(model.getOpenRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(model.getCloseRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(model.getHighRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(model.getLowRate()));
+        assertEquals(0, BigDecimal.TEN.compareTo(model.getVolume()));
     }
 }

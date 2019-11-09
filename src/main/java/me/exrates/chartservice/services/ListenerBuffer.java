@@ -1,10 +1,10 @@
 package me.exrates.chartservice.services;
 
-import me.exrates.chartservice.model.TradeDataDto;
+import me.exrates.chartservice.model.OrderDataDto;
 
 public interface ListenerBuffer {
 
-    void receive(TradeDataDto message);
+    void receive(OrderDataDto message);
 
     Boolean isReadyToClose();
 }
