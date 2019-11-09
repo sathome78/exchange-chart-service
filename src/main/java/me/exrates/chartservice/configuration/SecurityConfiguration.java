@@ -12,13 +12,21 @@ public class SecurityConfiguration {
     @Value("${angular.allowed-origins}")
     private String[] allowedOrigins;
 
+    @Value("${angular.allowed-methods}")
+    private String[] allowedMethods;
+
+    @Value("${angular.allowed-headers}")
+    private String[] allowedHeaders;
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/data/**")
-                        .allowedOrigins(allowedOrigins);
+                        .allowedOrigins(allowedOrigins)
+                        .allowedMethods(allowedMethods)
+                        .allowedHeaders(allowedHeaders);
             }
         };
     }

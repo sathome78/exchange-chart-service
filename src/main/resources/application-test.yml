@@ -5,21 +5,21 @@ spring:
     restart:
       enabled: true
   rabbitmq:
-    username: preprod
-    password: eehVBU21x
-    host: rabbitmq-preprod.service
+    username: developer
+    password: eehei4AeJein
+    host: rabbitmq-dev.service
     port: 5672
-    tradestopic: CHART_DATA_QUEUE_PREPROD
+    tradestopic: CHART_DATA_QUEUE_TEST
 
 datasource:
   driver-class-name: com.mysql.cj.jdbc.Driver
-  url: jdbc:mysql://birzha-aurora-preprod-cluster.cluster-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-  username: devprod
-  password: Fh24soaf8sy3
+  url: jdbc:mysql://exprod-3-cluster.cluster-ro-cedlveyttji9.us-east-2.rds.amazonaws.com:3306/birzha?autoReconnect=true&useSSL=false&rewriteBatchedStatements=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+  username: chartservice
+  password: 89tn0sgiGPyLMarmMp23
 
 redis:
-  host: redis-chart-preprod.service
-  port: 6381
+  host: 172.31.19.62
+  port: 6379
   allowed-interval-db-indexes: >
     5 MINUTE: 1;
     15 MINUTE: 2;
@@ -32,8 +32,8 @@ redis:
     1 DAY: 6;
 
 elasticsearch:
-  host: elastic-chart-preprod.service
-  port: 9201
+  host: 172.31.19.62
+  port: 9200
 
 swagger:
   enabled: true
@@ -49,7 +49,7 @@ scheduled:
   clean-daily-data: 0 */5 * ? * *
 
 angular:
-  allowed-origins: http://dev6.exapp
+  allowed-origins: https://qa1.exrates.tech
   allowed-methods: HEAD,GET,POST,PUT,DELETE,PATCH,OPTIONS
   allowed-headers: authorization,content-type,X-Forwarded-For,x-auth-token,Exrates-Rest-Token,GACookies,access-control-request-headers,access-control-request-method,accept,origin,authorization,x-requested-with
   sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
