@@ -6,6 +6,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CoinmarketcapApiDto;
 import me.exrates.chartservice.model.CurrencyPairDto;
+import me.exrates.chartservice.model.ExchangeRatesDto;
 import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.utils.TimeUtil;
@@ -187,6 +188,57 @@ public final class CandleDataConverter {
                 .isFrozen(currencyPairDto.isHidden() ? 1 : 0)
                 .percentChange(getPercentChange(closeRate, openRate))
                 .valueChange(getValueChange(closeRate, openRate))
+                .build();
+    }
+
+    public static ExchangeRatesDto reduceToExchangeRatesData(List<CandleModel> models, CurrencyPairDto currencyPairDto) {
+        if (CollectionUtils.isEmpty(models)) {
+            return null;
+        }
+
+        models.sort(Comparator.comparing(CandleModel::getCandleOpenTime));
+
+        CandleModel firstCandle = models.get(0);
+        final BigDecimal openRate = firstCandle.getOpenRate();
+
+        CandleModel lastCandle = models.get(models.size() - 1);
+        final BigDecimal closeRate = lastCandle.getCloseRate();
+
+        final BigDecimal volume = models.stream()
+                .map(CandleModel::getVolume)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+        final BigDecimal currencyVolume = models.stream()
+                .map(CandleModel::getCurrencyVolume)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+
+        final BigDecimal highRate = models.stream()
+                .map(CandleModel::getHighRate)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+        final BigDecimal lowRate = models.stream()
+                .map(CandleModel::getLowRate)
+                .min(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
+
+        return ExchangeRatesDto.builder()
+                .currencyPairId(currencyPairDto.getId())
+                .currencyPairName(currencyPairDto.getName())
+                .currencyPairPrecision(currencyPairDto.getScale())
+                .lastOrderRate(closeRate.toPlainString())
+                .predLastOrderRate(lastCandle.getPredLastRate().toPlainString())
+                .percentChange(getPercentChange(closeRate, openRate).toPlainString())
+                .valueChange(getValueChange(closeRate, openRate).toPlainString())
+                .market(currencyPairDto.getMatket())
+                .type(currencyPairDto.getType())
+                .volume(volume.toPlainString())
+                .currencyVolume(currencyVolume.toPlainString())
+                .high24hr(highRate.toPlainString())
+                .low24hr(lowRate.toPlainString())
+                .lastOrderRate24hr(openRate.toPlainString())
+                .hidden(currencyPairDto.isHidden())
+                .isTopMarket(currencyPairDto.isTopMarket())
                 .build();
     }
 

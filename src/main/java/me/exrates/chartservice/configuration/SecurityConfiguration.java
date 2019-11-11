@@ -24,9 +24,9 @@ public class SecurityConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/data/**")
-                        .allowedOrigins(allowedOrigins)
-                        .allowedMethods(allowedMethods)
-                        .allowedHeaders(allowedHeaders);
+                        .allowedOrigins(allowedOrigins);
+//                        .allowedMethods(allowedMethods)
+//                        .allowedHeaders(allowedHeaders);
             }
         };
     }

@@ -5,6 +5,7 @@ import me.exrates.chartservice.converters.CandleDataConverter;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CurrencyPairDto;
+import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.services.CacheDataInitializerService;
 import me.exrates.chartservice.services.ElasticsearchProcessingService;
 import me.exrates.chartservice.services.OrderService;
@@ -124,5 +125,17 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
                 });
             }
         });
+    }
+
+    @Override
+    public void cleanDailyData() {
+        redisProcessingService.getDailyDataKeys().forEach(key -> redisProcessingService.getDailyDataByKey(key).stream()
+                .map(DailyDataModel::getCandleOpenTime)
+                .filter(candleOpenTime -> candleOpenTime.isBefore(TimeUtil.getOneDayBeforeNowTime()))
+                .forEach(candleOpenTime -> {
+                    final String hashKey = RedisGeneratorUtil.generateHashKeyForCoinmarketcapData(candleOpenTime);
+
+                    redisProcessingService.deleteDailyData(key, hashKey);
+                }));
     }
 }

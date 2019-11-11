@@ -34,6 +34,8 @@ public abstract class AbstractTest {
     static final int CANDLES_TO_STORE = 300;
     static final String BTC_USD = "BTC/USD";
     static final String BTC_USDT = "BTC/USDT";
+    static final String MARKET = "BTC";
+    static final String TYPE = "MAIN";
     static final BackDealInterval M5_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
     static final BackDealInterval M15_INTERVAL = new BackDealInterval(15, IntervalType.MINUTE);
     static final BackDealInterval M30_INTERVAL = new BackDealInterval(30, IntervalType.MINUTE);

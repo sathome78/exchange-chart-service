@@ -221,7 +221,6 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
 
     //methods for coinmarketcap business logic
 
-
     @Override
     public List<String> getDailyDataKeys() {
         @Cleanup Jedis jedis = getJedis(15);

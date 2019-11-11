@@ -14,4 +14,6 @@ public interface CacheDataInitializerService {
     void cleanCache();
 
     void cleanCache(BackDealInterval interval);
+
+    void cleanDailyData();
 }

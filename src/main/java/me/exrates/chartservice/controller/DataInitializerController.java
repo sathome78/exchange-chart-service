@@ -30,7 +30,7 @@ public class DataInitializerController {
                                           @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         log.info("Generate for all pairs - from: {}, to: {}", fromDate, toDate);
 
-        initializerService.generate(fromDate, toDate);
+        initializerService.generateCandleData(fromDate, toDate);
 
         log.info("Process of generation cache data for: ALL is DONE!");
 
@@ -43,9 +43,20 @@ public class DataInitializerController {
                                                  @RequestParam("pairs") List<String> pairs) {
         log.info("Generate for pairs: {} - from: {}, to: {}", pairs.toString(), fromDate, toDate);
 
-        initializerService.generate(fromDate, toDate, pairs);
+        initializerService.generateCandleData(fromDate, toDate, pairs);
 
         log.info("Process of generation cache data for: {} is DONE!", pairs.toString());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/generate/daily-data")
+    public ResponseEntity generateDailyData() {
+        log.info("Generate daily data for all pairs in 24 hours");
+
+        initializerService.generateDailyData();
+
+        log.info("Process of generation daily data for: ALL is DONE!");
 
         return ResponseEntity.ok().build();
     }

@@ -3,6 +3,7 @@ package me.exrates.chartservice.services;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CurrencyPairDto;
+import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.services.impl.CacheDataInitializerServiceImpl;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import org.junit.Before;
@@ -258,5 +259,28 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
         verify(elasticsearchProcessingService, never()).update(anyList(), anyString(), anyString());
         verify(redisProcessingService, never()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
+    }
+
+    @Test
+    public void cleanDailyData_ok() {
+        doReturn(Collections.singletonList(TEST_PAIR))
+                .when(redisProcessingService)
+                .getDailyDataKeys();
+        doReturn(Collections.singletonList(DailyDataModel.builder()
+                .candleOpenTime(NOW.minusDays(2))
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(redisProcessingService)
+                .getDailyDataByKey(anyString());
+        doNothing()
+                .when(redisProcessingService)
+                .deleteDailyData(anyString(), anyString());
+
+        cacheDataInitializerService.cleanDailyData();
+
+        verify(redisProcessingService, atLeastOnce()).getDailyDataKeys();
+        verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
+        verify(redisProcessingService, atLeastOnce()).deleteDailyData(anyString(), anyString());
     }
 }

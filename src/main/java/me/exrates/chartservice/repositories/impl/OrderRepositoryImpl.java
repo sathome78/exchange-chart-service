@@ -37,9 +37,9 @@ public class OrderRepositoryImpl implements OrderRepository {
                 "cp.name, " +
                 "cp.hidden, " +
                 "cp.market, " +
+                "cp.type, " +
                 "cp.scale, " +
-                "cp.top_market, " +
-                "cp.top_market_volume " +
+                "cp.top_market " +
                 "FROM CURRENCY_PAIR cp";
 
         return slaveJdbcTemplate.query(sql, currencyPairDtoRowMapper());
@@ -53,8 +53,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 "cp.hidden, " +
                 "cp.market, " +
                 "cp.scale, " +
-                "cp.top_market, " +
-                "cp.top_market_volume " +
+                "cp.top_market " +
                 "FROM CURRENCY_PAIR cp " +
                 "WHERE cp.name = :name";
 
@@ -70,9 +69,9 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .name(rs.getString("name"))
                 .hidden(rs.getBoolean("hidden"))
                 .matket(rs.getString("market"))
-                .scale(rs.getBigDecimal("scale"))
+                .type(rs.getString("type"))
+                .scale(rs.getInt("scale"))
                 .topMarket(rs.getBoolean("top_market"))
-                .topMarketVolume(rs.getBigDecimal("top_market_volume"))
                 .build();
     }
 
