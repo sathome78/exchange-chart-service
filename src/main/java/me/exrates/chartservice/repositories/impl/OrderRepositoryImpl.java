@@ -52,6 +52,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 "cp.name, " +
                 "cp.hidden, " +
                 "cp.market, " +
+                "cp.type, " +
                 "cp.scale, " +
                 "cp.top_market " +
                 "FROM CURRENCY_PAIR cp " +
