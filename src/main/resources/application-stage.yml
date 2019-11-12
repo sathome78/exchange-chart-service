@@ -65,8 +65,6 @@ scheduled:
 
 angular:
   allowed-origins: http://dev8.exapp
-  allowed-methods: HEAD,GET,POST,PUT,DELETE,PATCH,OPTIONS
-  allowed-headers: authorization,content-type,X-Forwarded-For,x-auth-token,Exrates-Rest-Token,GACookies,access-control-request-headers,access-control-request-method,accept,origin,authorization,x-requested-with
   sockjs-lib: https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js
 
 logging:
