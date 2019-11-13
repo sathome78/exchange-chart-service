@@ -39,6 +39,10 @@ public class RabbitListeners {
     @RabbitListener(id = "${spring.rabbitmq.tradestopic}", queues = "${spring.rabbitmq.tradestopic}")
     public void receiveTrade(OrderDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Received message: {}", message);
+        //todo: delete this piece of code
+        if (Objects.isNull(message.getTradeDate())) {
+            return;
+        }
 
         CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
     }

@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -96,11 +95,6 @@ public class ListenerBufferImpl implements ListenerBuffer {
     }
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeDateTime) {
-        //todo: delete this piece of code
-        if (Objects.isNull(tradeDateTime)) {
-            return false;
-        }
-
         final LocalDateTime candleDateTime = TimeUtil.getNearestTimeBeforeForMinInterval(tradeDateTime);
         final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
