@@ -2,8 +2,6 @@ package me.exrates.chartservice.services.impl;
 
 import com.antkorwin.xsync.XSync;
 import lombok.extern.log4j.Log4j2;
-import me.exrates.chartservice.converters.CandleDataConverter;
-import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.model.OrderDataDto;
 import me.exrates.chartservice.services.ListenerBuffer;
 import me.exrates.chartservice.services.RedisProcessingService;
@@ -15,13 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -54,8 +50,6 @@ public class ListenerBufferImpl implements ListenerBuffer {
     @Override
     public void receive(OrderDataDto message) {
         log.info("<<< NEW MESSAGE FROM CORE SERVICE >>> Start processing new data: pair: {}", message.getCurrencyPairName());
-
-        CompletableFuture.runAsync(() -> insertDailyData(message));
 
         StopWatch stopWatch = StopWatch.createStarted();
         log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Start - pair: {}", message.getCurrencyPairName());
@@ -102,6 +96,7 @@ public class ListenerBufferImpl implements ListenerBuffer {
     }
 
     private boolean isTradeAfterInitializedCandle(String pairName, LocalDateTime tradeDateTime) {
+        //todo: delete this piece of code
         if (Objects.isNull(tradeDateTime)) {
             return false;
         }
@@ -111,38 +106,5 @@ public class ListenerBufferImpl implements ListenerBuffer {
 
         LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(hashKey);
         return isNull(initTime) || initTime.isBefore(candleDateTime) || initTime.isEqual(candleDateTime);
-    }
-
-    private void insertDailyData(OrderDataDto orderDataDto) {
-        final LocalDateTime candleDateTime = TimeUtil.getNearestTimeBeforeForMinInterval(orderDataDto.getCreateDate());
-
-        final String key = RedisGeneratorUtil.generateKeyForCoinmarketcapData(orderDataDto.getCurrencyPairName());
-        final String hashKey = RedisGeneratorUtil.generateHashKeyForCoinmarketcapData(candleDateTime);
-
-        DailyDataModel dailyData = redisProcessingService.getDailyData(key, hashKey);
-
-        BigDecimal currentHighestBid = null;
-        BigDecimal currentLowestAsk = null;
-        if (Objects.nonNull(dailyData)) {
-            final BigDecimal savedHighestBid = dailyData.getHighestBid();
-            final BigDecimal savedLowestAsk = dailyData.getLowestAsk();
-
-            if (orderDataDto.getOperationTypeId() == 4) {
-                currentHighestBid = CandleDataConverter.getCurrentHighestBid(savedHighestBid, orderDataDto.getExrate());
-                currentLowestAsk = savedLowestAsk;
-            } else if (orderDataDto.getOperationTypeId() == 3) {
-                currentHighestBid = savedHighestBid;
-                currentLowestAsk = CandleDataConverter.getCurrentLowestAsk(savedLowestAsk, orderDataDto.getExrate());
-            }
-        } else {
-            if (orderDataDto.getOperationTypeId() == 4) {
-                currentHighestBid = orderDataDto.getExrate();
-            } else if (orderDataDto.getOperationTypeId() == 3) {
-                currentLowestAsk = orderDataDto.getExrate();
-            }
-        }
-        dailyData = new DailyDataModel(candleDateTime, currentHighestBid, currentLowestAsk);
-
-        redisProcessingService.insertDailyData(dailyData, key, hashKey);
     }
 }

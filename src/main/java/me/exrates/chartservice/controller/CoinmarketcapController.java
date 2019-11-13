@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,16 +33,5 @@ public class CoinmarketcapController {
         final BackDealInterval interval = TimeUtil.getInterval(resolution);
 
         return ResponseEntity.ok(coinmarketcapService.getData(currencyPair, interval));
-    }
-
-    @PostMapping("/generate/daily-data")
-    public ResponseEntity generateDailyData() {
-        log.info("Generate daily data for all pairs in 24 hours");
-
-        coinmarketcapService.generate();
-
-        log.info("Process of generation daily data for: ALL is DONE!");
-
-        return ResponseEntity.ok().build();
     }
 }

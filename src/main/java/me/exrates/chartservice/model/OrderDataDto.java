@@ -25,11 +25,6 @@ public class OrderDataDto {
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime tradeDate;
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    private LocalDateTime createDate;
-    private int statusId;
-    private int operationTypeId;
 
     public OrderDataDto(OrderDto order) {
         this.currencyPairName = order.getCurrencyPairName();
@@ -37,8 +32,5 @@ public class OrderDataDto {
         this.amountBase = order.getAmountBase();
         this.amountConvert = order.getAmountConvert();
         this.tradeDate = order.getDateAcception();
-        this.createDate = order.getDateCreation();
-        this.statusId = order.getStatusId();
-        this.operationTypeId = order.getOperationTypeId();
     }
 }

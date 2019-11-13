@@ -19,7 +19,4 @@ public class OrderDto {
     private BigDecimal amountBase;
     private BigDecimal amountConvert;
     private LocalDateTime dateAcception;
-    private LocalDateTime dateCreation;
-    private int operationTypeId;
-    private int statusId;
 }

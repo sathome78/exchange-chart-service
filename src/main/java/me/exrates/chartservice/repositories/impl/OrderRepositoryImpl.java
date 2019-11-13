@@ -3,6 +3,7 @@ package me.exrates.chartservice.repositories.impl;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.CurrencyRateDto;
+import me.exrates.chartservice.model.DailyDataDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
@@ -117,10 +117,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                 "o.exrate, " +
                 "o.amount_base, " +
                 "o.amount_convert, " +
-                "o.date_acception, " +
-                "o.date_creation, " +
-                "o.operation_type_id, " +
-                "o.status_id " +
+                "o.date_acception " +
                 "FROM EXORDERS o " +
                 "JOIN CURRENCY_PAIR cp ON cp.id = o.currency_pair_id " +
                 "WHERE cp.name = :pairName AND o.status_id = 3 AND (o.date_acception BETWEEN :dateFrom AND :dateTo)";
@@ -130,34 +127,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         params.put("dateFrom", from.atTime(LocalTime.MIN));
         params.put("dateTo", to.minusDays(1).atTime(LocalTime.MAX));
 
-        return slaveJdbcTemplate.query(sql, params, orderDtoRowMapper());
-    }
-
-    @Override
-    public List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName) {
-        final String sql = "SELECT " +
-                "cp.name AS currency_pair_name, " +
-                "o.exrate, " +
-                "o.amount_base, " +
-                "o.amount_convert, " +
-                "o.date_acception, " +
-                "o.date_creation, " +
-                "o.operation_type_id, " +
-                "o.status_id " +
-                "FROM EXORDERS o " +
-                "JOIN CURRENCY_PAIR cp ON cp.id = o.currency_pair_id " +
-                "WHERE cp.name = :pairName AND (o.date_creation BETWEEN :dateFrom AND :dateTo)";
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("pairName", pairName);
-        params.put("dateFrom", from);
-        params.put("dateTo", to);
-
-        return slaveJdbcTemplate.query(sql, params, orderDtoRowMapper());
-    }
-
-    private RowMapper<OrderDto> orderDtoRowMapper() {
-        return (rs, row) -> OrderDto.builder()
+        return slaveJdbcTemplate.query(sql, params, (rs, row) -> OrderDto.builder()
                 .currencyPairName(rs.getString("currency_pair_name"))
                 .exRate(rs.getBigDecimal("exrate"))
                 .amountBase(rs.getBigDecimal("amount_base"))
@@ -165,11 +135,35 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .dateAcception(Objects.nonNull(rs.getTimestamp("date_acception"))
                         ? rs.getTimestamp("date_acception").toLocalDateTime()
                         : null)
-                .dateCreation(Objects.nonNull(rs.getTimestamp("date_creation"))
-                        ? rs.getTimestamp("date_creation").toLocalDateTime()
-                        : null)
-                .operationTypeId(rs.getInt("operation_type_id"))
-                .statusId(rs.getInt("status_id"))
-                .build();
+                .build());
+    }
+
+    @Override
+    public List<DailyDataDto> getDailyData(String pairName) {
+        String whereClause = Objects.nonNull(pairName)
+                ? "WHERE cp.name = :pair_name AND cp.hidden = 0"
+                : "WHERE cp.hidden = 0";
+
+        final String sql = "SELECT " +
+                "cp.name AS currency_pair_name, " +
+                "(SELECT MAX(hborder.exrate) AS highest_bid" +
+                " FROM EXORDERS hborder" +
+                " WHERE hborder.currency_pair_id = cp.id AND hborder.status_id = 2 AND hborder.operation_type_id = 4) AS highest_bid, " +
+                "(SELECT MIN(laorder.exrate) AS lowest_ask" +
+                " FROM EXORDERS laorder" +
+                " WHERE laorder.currency_pair_id = cp.id AND laorder.status_id = 2 AND laorder.operation_type_id = 3) AS lowest_ask " +
+                "FROM CURRENCY_PAIR cp " +
+                whereClause +
+                " GROUP BY cp.id";
+
+        Map<String, Object> params = new HashMap<>();
+        if (Objects.nonNull(pairName)) {
+            params.put("pair_name", pairName);
+        }
+        return slaveJdbcTemplate.query(sql, params, (rs, row) -> DailyDataDto.builder()
+                .currencyPairName(rs.getString("currency_pair_name"))
+                .highestBid(rs.getBigDecimal("highest_bid"))
+                .lowestAsk(rs.getBigDecimal("lowest_ask"))
+                .build());
     }
 }

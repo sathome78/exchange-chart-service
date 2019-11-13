@@ -232,34 +232,6 @@ public final class CandleDataConverter {
         return valueChange;
     }
 
-    public static BigDecimal getCurrentHighestBid(BigDecimal savedHighestBid, BigDecimal newHighestBid) {
-        BigDecimal highestBid;
-        if (Objects.isNull(savedHighestBid) && Objects.isNull(newHighestBid)) {
-            highestBid = null;
-        } else if (Objects.isNull(savedHighestBid)) {
-            highestBid = newHighestBid;
-        } else if (Objects.isNull(newHighestBid)) {
-            highestBid = savedHighestBid;
-        } else {
-            highestBid = savedHighestBid.max(newHighestBid);
-        }
-        return highestBid;
-    }
-
-    public static BigDecimal getCurrentLowestAsk(BigDecimal savedLowestAsk, BigDecimal newLowestAsk) {
-        BigDecimal lowestAsk;
-        if (Objects.isNull(savedLowestAsk) && Objects.isNull(newLowestAsk)) {
-            lowestAsk = null;
-        } else if (Objects.isNull(savedLowestAsk)) {
-            lowestAsk = newLowestAsk;
-        } else if (Objects.isNull(newLowestAsk)) {
-            lowestAsk = savedLowestAsk;
-        } else {
-            lowestAsk = savedLowestAsk.min(newLowestAsk);
-        }
-        return lowestAsk;
-    }
-
     public static List<CandleModel> convert(List<OrderDto> orders) {
         Map<LocalDateTime, List<OrderDataDto>> groupedByTradeDate = orders.stream()
                 .map(OrderDataDto::new)

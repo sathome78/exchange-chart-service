@@ -2,6 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.CurrencyRateDto;
+import me.exrates.chartservice.model.DailyDataDto;
 import me.exrates.chartservice.model.OrderDto;
 
 import java.time.LocalDate;
@@ -24,5 +25,5 @@ public interface OrderService {
 
     List<OrderDto> getClosedOrders(LocalDate from, LocalDate to, String pairName);
 
-    List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName);
+    List<DailyDataDto> getDailyData(String pairName);
 }

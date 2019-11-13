@@ -2,6 +2,7 @@ package me.exrates.chartservice.services;
 
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.CurrencyRateDto;
+import me.exrates.chartservice.model.DailyDataDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import me.exrates.chartservice.services.impl.OrderServiceImpl;
@@ -13,8 +14,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
@@ -236,9 +235,6 @@ public class OrderServiceTest extends AbstractTest {
                 .amountBase(BigDecimal.ONE)
                 .amountConvert(BigDecimal.TEN)
                 .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
-                .dateCreation(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
-                .statusId(3)
-                .operationTypeId(4)
                 .build()))
                 .when(orderRepository)
                 .getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
@@ -255,9 +251,6 @@ public class OrderServiceTest extends AbstractTest {
         assertEquals(BigDecimal.ONE, orderDto.getAmountBase());
         assertEquals(BigDecimal.TEN, orderDto.getAmountConvert());
         assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateAcception());
-        assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateCreation());
-        assertEquals(3, orderDto.getStatusId());
-        assertEquals(4, orderDto.getOperationTypeId());
 
         verify(orderRepository, atLeastOnce()).getClosedOrders(any(LocalDate.class), any(LocalDate.class), anyString());
     }
@@ -276,49 +269,39 @@ public class OrderServiceTest extends AbstractTest {
     }
 
     @Test
-    public void getAllOrders_ok() {
-        doReturn(Collections.singletonList(OrderDto.builder()
+    public void getDailyData_ok() {
+        doReturn(Collections.singletonList(DailyDataDto.builder()
                 .currencyPairName(TEST_PAIR)
-                .exRate(BigDecimal.TEN)
-                .amountBase(BigDecimal.ONE)
-                .amountConvert(BigDecimal.TEN)
-                .dateAcception(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
-                .dateCreation(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES))
-                .statusId(3)
-                .operationTypeId(4)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.ONE)
                 .build()))
                 .when(orderRepository)
-                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+                .getDailyData(anyString());
 
-        List<OrderDto> orders = orderService.getAllOrders(FROM_DATE.atTime(LocalTime.MIN), TO_DATE.atTime(LocalTime.MAX), TEST_PAIR);
+        List<DailyDataDto> dailyDataList = orderService.getDailyData(TEST_PAIR);
 
-        assertFalse(CollectionUtils.isEmpty(orders));
-        assertEquals(1, orders.size());
+        assertFalse(CollectionUtils.isEmpty(dailyDataList));
+        assertEquals(1, dailyDataList.size());
 
-        OrderDto orderDto = orders.get(0);
+        DailyDataDto dailyData = dailyDataList.get(0);
 
-        assertEquals(TEST_PAIR, orderDto.getCurrencyPairName());
-        assertEquals(BigDecimal.TEN, orderDto.getExRate());
-        assertEquals(BigDecimal.ONE, orderDto.getAmountBase());
-        assertEquals(BigDecimal.TEN, orderDto.getAmountConvert());
-        assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateAcception());
-        assertEquals(NOW.atTime(0, 0).plus(10, ChronoUnit.MINUTES), orderDto.getDateCreation());
-        assertEquals(3, orderDto.getStatusId());
-        assertEquals(4, orderDto.getOperationTypeId());
+        assertEquals(TEST_PAIR, dailyData.getCurrencyPairName());
+        assertEquals(BigDecimal.TEN, dailyData.getHighestBid());
+        assertEquals(BigDecimal.ONE, dailyData.getLowestAsk());
 
-        verify(orderRepository, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(orderRepository, atLeastOnce()).getDailyData(anyString());
     }
 
     @Test
-    public void getAllOrders_empty_orders_list() {
+    public void getDailyData_empty_dailydata_list() {
         doReturn(Collections.emptyList())
                 .when(orderRepository)
-                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+                .getDailyData(anyString());
 
-        List<OrderDto> orders = orderService.getAllOrders(FROM_DATE.atTime(LocalTime.MIN), TO_DATE.atTime(LocalTime.MAX), TEST_PAIR);
+        List<DailyDataDto> dailyDataList = orderService.getDailyData(TEST_PAIR);
 
-        assertTrue(CollectionUtils.isEmpty(orders));
+        assertTrue(CollectionUtils.isEmpty(dailyDataList));
 
-        verify(orderRepository, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
+        verify(orderRepository, atLeastOnce()).getDailyData(anyString());
     }
 }

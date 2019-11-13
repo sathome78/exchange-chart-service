@@ -46,7 +46,6 @@ generator:
 
 scheduled:
   clean-cache: 0 */30 * ? * *
-  clean-daily-data: 0 */5 * ? * *
 
 angular:
   allowed-origins: http://dev6.exapp

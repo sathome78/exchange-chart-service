@@ -7,9 +7,5 @@ import java.util.List;
 
 public interface CoinmarketcapService {
 
-    void cleanDailyData();
-
-    void generate();
-
     List<CoinmarketcapApiDto> getData(String pairName, BackDealInterval interval);
 }

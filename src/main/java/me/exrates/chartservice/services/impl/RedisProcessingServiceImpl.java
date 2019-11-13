@@ -7,7 +7,6 @@ import lombok.Cleanup;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
-import me.exrates.chartservice.model.DailyDataModel;
 import me.exrates.chartservice.services.RedisProcessingService;
 import me.exrates.chartservice.utils.RedisGeneratorUtil;
 import me.exrates.chartservice.utils.TimeUtil;
@@ -23,12 +22,10 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.JSON_MAPPER;
@@ -219,69 +216,6 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         return TimeUtil.generateDateTime(jedis.hget(key, FIRST));
     }
 
-    //methods for coinmarketcap business logic
-
-
-    @Override
-    public List<String> getDailyDataKeys() {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        return new ArrayList<>(jedis.keys(ALL));
-    }
-
-    @Override
-    public void insertDailyData(DailyDataModel dataModel, String key, String hashKey) {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        String valueString = getSourceString(dataModel);
-        if (isNull(valueString)) {
-            return;
-        }
-
-        Long result = jedis.hset(key, hashKey, valueString);
-
-        if (result != 0 && result != 1) {
-            log.warn("Process of inserting or updating are corrupted");
-        }
-    }
-
-    @Override
-    public DailyDataModel getDailyData(String key, String hashKey) {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        if (!jedis.hexists(key, hashKey)) {
-            return null;
-        }
-        return getDailyDataModel(jedis.hget(key, hashKey));
-    }
-
-    @Override
-    public List<DailyDataModel> getDailyDataByKey(String key) {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        if (!jedis.exists(key)) {
-            return Collections.emptyList();
-        }
-        return jedis.hgetAll(key).values().stream()
-                .map(this::getDailyDataModel)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void deleteAllDailyDataKeys() {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        jedis.del(ALL);
-    }
-
-    @Override
-    public void deleteDailyData(String key, String hashKey) {
-        @Cleanup Jedis jedis = getJedis(15);
-
-        jedis.hdel(key, hashKey);
-    }
-
     /**
      * Get Jedis instance
      */
@@ -301,30 +235,10 @@ public class RedisProcessingServiceImpl implements RedisProcessingService {
         }
     }
 
-    private String getSourceString(final DailyDataModel dataModel) {
-        try {
-            return mapper.writeValueAsString(dataModel);
-        } catch (JsonProcessingException ex) {
-            log.error("Problem with writing daily data model object into string", ex);
-
-            return null;
-        }
-    }
-
     private List<CandleModel> getModels(final String sourceString) {
         try {
             return mapper.readValue(sourceString, new TypeReference<List<CandleModel>>() {
             });
-        } catch (IOException ex) {
-            log.error("Problem with getting response from redis", ex);
-
-            return null;
-        }
-    }
-
-    private DailyDataModel getDailyDataModel(final String sourceString) {
-        try {
-            return mapper.readValue(sourceString, DailyDataModel.class);
         } catch (IOException ex) {
             log.error("Problem with getting response from redis", ex);
 

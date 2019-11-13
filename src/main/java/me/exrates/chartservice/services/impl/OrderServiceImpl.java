@@ -3,6 +3,7 @@ package me.exrates.chartservice.services.impl;
 import lombok.extern.log4j.Log4j2;
 import me.exrates.chartservice.model.CurrencyPairDto;
 import me.exrates.chartservice.model.CurrencyRateDto;
+import me.exrates.chartservice.model.DailyDataDto;
 import me.exrates.chartservice.model.OrderDto;
 import me.exrates.chartservice.repositories.OrderRepository;
 import me.exrates.chartservice.services.OrderService;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -85,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<OrderDto> getAllOrders(LocalDateTime from, LocalDateTime to, String pairName) {
-        return orderRepository.getAllOrders(from, to, pairName);
+    public List<DailyDataDto> getDailyData(String pairName) {
+        return orderRepository.getDailyData(pairName);
     }
 }

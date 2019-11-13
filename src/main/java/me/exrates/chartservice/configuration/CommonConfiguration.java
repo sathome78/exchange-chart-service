@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 public class CommonConfiguration {
 
     public static final BackDealInterval DEFAULT_INTERVAL = new BackDealInterval(5, IntervalType.MINUTE);
-    public static final BackDealInterval ONE_DAY_INTERVAL = new BackDealInterval(1, IntervalType.DAY);
 
     public static final String JSON_MAPPER = "jsonMapper";
 

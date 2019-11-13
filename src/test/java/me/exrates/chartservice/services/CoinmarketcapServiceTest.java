@@ -4,8 +4,7 @@ import me.exrates.chartservice.model.BackDealInterval;
 import me.exrates.chartservice.model.CandleModel;
 import me.exrates.chartservice.model.CoinmarketcapApiDto;
 import me.exrates.chartservice.model.CurrencyPairDto;
-import me.exrates.chartservice.model.DailyDataModel;
-import me.exrates.chartservice.model.OrderDto;
+import me.exrates.chartservice.model.DailyDataDto;
 import me.exrates.chartservice.services.impl.CoinmarketcapServiceImpl;
 import me.exrates.chartservice.utils.TimeUtil;
 import org.junit.Before;
@@ -13,8 +12,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -47,29 +43,6 @@ public class CoinmarketcapServiceTest extends AbstractTest {
     }
 
     @Test
-    public void cleanDailyData_ok() {
-        doReturn(Collections.singletonList(TEST_PAIR))
-                .when(redisProcessingService)
-                .getDailyDataKeys();
-        doReturn(Collections.singletonList(DailyDataModel.builder()
-                .candleOpenTime(NOW.minusDays(2))
-                .highestBid(BigDecimal.TEN)
-                .lowestAsk(BigDecimal.TEN)
-                .build()))
-                .when(redisProcessingService)
-                .getDailyDataByKey(anyString());
-        doNothing()
-                .when(redisProcessingService)
-                .deleteDailyData(anyString(), anyString());
-
-        coinmarketcapService.cleanDailyData();
-
-        verify(redisProcessingService, atLeastOnce()).getDailyDataKeys();
-        verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
-        verify(redisProcessingService, atLeastOnce()).deleteDailyData(anyString(), anyString());
-    }
-
-    @Test
     public void getData_all_pairs() {
         doReturn(Collections.singletonList(CurrencyPairDto.builder()
                 .id(1)
@@ -78,6 +51,13 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
+        doReturn(Collections.singletonList(DailyDataDto.builder()
+                .currencyPairName(TEST_PAIR)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(orderService)
+                .getDailyData(null);
         doReturn(Collections.singletonList(CandleModel.builder()
                 .pairName(BTC_USD)
                 .volume(new BigDecimal(1))
@@ -92,13 +72,6 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(redisProcessingService)
                 .get(anyString(), anyString(), any(BackDealInterval.class));
-        doReturn(Collections.singletonList(DailyDataModel.builder()
-                .candleOpenTime(NOW)
-                .highestBid(new BigDecimal(6000))
-                .lowestAsk(new BigDecimal(5000))
-                .build()))
-                .when(redisProcessingService)
-                .getDailyDataByKey(anyString());
 
         List<CoinmarketcapApiDto> list = coinmarketcapService.getData(null, ONE_DAY_INTERVAL);
 
@@ -107,8 +80,8 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertEquals(1, list.size());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getDailyData(null);
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
     }
 
     @Test
@@ -116,6 +89,13 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         doReturn(Collections.emptyList())
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
+        doReturn(Collections.singletonList(DailyDataDto.builder()
+                .currencyPairName(TEST_PAIR)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(orderService)
+                .getDailyData(null);
 
         List<CoinmarketcapApiDto> list = coinmarketcapService.getData(null, ONE_DAY_INTERVAL);
 
@@ -123,8 +103,8 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertTrue(list.isEmpty());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getDailyData(null);
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, never()).getDailyDataByKey(anyString());
     }
 
     @Test
@@ -136,6 +116,13 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
+        doReturn(Collections.singletonList(DailyDataDto.builder()
+                .currencyPairName(TEST_PAIR)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(orderService)
+                .getDailyData(null);
         doReturn(Collections.emptyList())
                 .when(redisProcessingService)
                 .get(anyString(), anyString(), any(BackDealInterval.class));
@@ -146,8 +133,8 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertTrue(list.isEmpty());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getDailyData(null);
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, never()).getDailyDataByKey(anyString());
     }
 
     @Test
@@ -159,6 +146,9 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(orderService)
                 .getCurrencyPairsFromCache(null);
+        doReturn(Collections.emptyList())
+                .when(orderService)
+                .getDailyData(null);
         doReturn(Collections.singletonList(CandleModel.builder()
                 .pairName(BTC_USD)
                 .volume(new BigDecimal(1))
@@ -173,9 +163,6 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(redisProcessingService)
                 .get(anyString(), anyString(), any(BackDealInterval.class));
-        doReturn(Collections.emptyList())
-                .when(redisProcessingService)
-                .getDailyDataByKey(anyString());
 
         List<CoinmarketcapApiDto> list = coinmarketcapService.getData(null, ONE_DAY_INTERVAL);
 
@@ -186,8 +173,8 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertNull(list.get(0).getLowestAsk());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
+        verify(orderService, atLeastOnce()).getDailyData(null);
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
     }
 
     @Test
@@ -199,6 +186,13 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(orderService)
                 .getCurrencyPairsFromCache(anyString());
+        doReturn(Collections.singletonList(DailyDataDto.builder()
+                .currencyPairName(TEST_PAIR)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(orderService)
+                .getDailyData(anyString());
         doReturn(Collections.singletonList(CandleModel.builder()
                 .pairName(BTC_USD)
                 .volume(new BigDecimal(1))
@@ -213,13 +207,6 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(redisProcessingService)
                 .get(anyString(), anyString(), any(BackDealInterval.class));
-        doReturn(Collections.singletonList(DailyDataModel.builder()
-                .candleOpenTime(NOW)
-                .highestBid(new BigDecimal(6000))
-                .lowestAsk(new BigDecimal(5000))
-                .build()))
-                .when(redisProcessingService)
-                .getDailyDataByKey(anyString());
 
         List<CoinmarketcapApiDto> list = coinmarketcapService.getData(TEST_PAIR, ONE_DAY_INTERVAL);
 
@@ -228,8 +215,8 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertEquals(1, list.size());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(anyString());
+        verify(orderService, atLeastOnce()).getDailyData(anyString());
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
-        verify(redisProcessingService, atLeastOnce()).getDailyDataByKey(anyString());
     }
 
     @Test
@@ -241,6 +228,13 @@ public class CoinmarketcapServiceTest extends AbstractTest {
                 .build()))
                 .when(orderService)
                 .getCurrencyPairsFromCache(anyString());
+        doReturn(Collections.singletonList(DailyDataDto.builder()
+                .currencyPairName(TEST_PAIR)
+                .highestBid(BigDecimal.TEN)
+                .lowestAsk(BigDecimal.TEN)
+                .build()))
+                .when(orderService)
+                .getDailyData(anyString());
         doReturn(Collections.emptyList())
                 .when(redisProcessingService)
                 .get(anyString(), anyString(), any(BackDealInterval.class));
@@ -251,70 +245,7 @@ public class CoinmarketcapServiceTest extends AbstractTest {
         assertTrue(list.isEmpty());
 
         verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(anyString());
+        verify(orderService, atLeastOnce()).getDailyData(anyString());
         verify(redisProcessingService, atLeastOnce()).get(anyString(), anyString(), any(BackDealInterval.class));
-    }
-
-    @Test
-    public void generate_ok() {
-        doReturn(Collections.singletonList(CurrencyPairDto.builder()
-                .id(1)
-                .name(TEST_PAIR)
-                .hidden(false)
-                .build()))
-                .when(orderService)
-                .getCurrencyPairsFromCache(null);
-        doReturn(Collections.singletonList(OrderDto.builder()
-                .currencyPairName(TEST_PAIR)
-                .exRate(BigDecimal.TEN)
-                .amountBase(BigDecimal.ONE)
-                .amountConvert(BigDecimal.TEN)
-                .dateAcception(NOW.plus(10, ChronoUnit.MINUTES))
-                .dateCreation(NOW.plus(10, ChronoUnit.MINUTES))
-                .operationTypeId(4)
-                .build()))
-                .when(orderService)
-                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-        doNothing()
-                .when(redisProcessingService)
-                .insertDailyData(any(DailyDataModel.class), anyString(), anyString());
-
-        coinmarketcapService.generate();
-
-        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
-        verify(orderService, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-        verify(redisProcessingService, atLeastOnce()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
-    }
-
-    @Test
-    public void generate_empty_currencies_list() {
-        doReturn(Collections.emptyList())
-                .when(orderService)
-                .getCurrencyPairsFromCache(null);
-
-        coinmarketcapService.generate();
-
-        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
-        verify(orderService, never()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-        verify(redisProcessingService, never()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
-    }
-
-    @Test
-    public void generate_empty_orders_list() {
-        doReturn(Collections.singletonList(CurrencyPairDto.builder()
-                .id(1)
-                .name(TEST_PAIR)
-                .hidden(false)
-                .build()))
-                .when(orderService)
-                .getCurrencyPairsFromCache(null);
-        doReturn(Collections.emptyList())
-                .when(orderService)
-                .getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-
-        coinmarketcapService.generate();
-
-        verify(orderService, atLeastOnce()).getCurrencyPairsFromCache(null);
-        verify(orderService, atLeastOnce()).getAllOrders(any(LocalDateTime.class), any(LocalDateTime.class), anyString());
-        verify(redisProcessingService, never()).insertDailyData(any(DailyDataModel.class), anyString(), anyString());
     }
 }

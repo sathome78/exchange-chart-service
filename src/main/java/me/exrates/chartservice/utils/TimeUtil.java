@@ -15,7 +15,6 @@ import java.time.temporal.ChronoUnit;
 
 import static java.util.Objects.isNull;
 import static me.exrates.chartservice.configuration.CommonConfiguration.DEFAULT_INTERVAL;
-import static me.exrates.chartservice.configuration.CommonConfiguration.ONE_DAY_INTERVAL;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.NONE)
@@ -94,12 +93,6 @@ public final class TimeUtil {
         } else if (resolution.contains("D")) {
             type = IntervalType.DAY;
             value = getValue(resolution, "D");
-        } else if (resolution.contains("W")) {
-            type = IntervalType.WEEK;
-            value = getValue(resolution, "W");
-        } else if (resolution.contains("M")) {
-            type = IntervalType.MONTH;
-            value = getValue(resolution, "M");
         } else {
             type = IntervalType.MINUTE;
             value = Integer.valueOf(resolution);
@@ -151,11 +144,5 @@ public final class TimeUtil {
         LocalDateTime currentDateTime = LocalDateTime.now();
 
         return currentDateTime.minusMinutes(candlesToStoreInCache * TimeUtil.convertToMinutes(interval)).toLocalDate();
-    }
-
-    public static LocalDateTime getOneDayBeforeNowTime() {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-
-        return currentDateTime.minusMinutes(TimeUtil.convertToMinutes(ONE_DAY_INTERVAL));
     }
 }
