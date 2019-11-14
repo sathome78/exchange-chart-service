@@ -45,7 +45,8 @@ public class RabbitListeners {
         }
 
 //        EXECUTOR_SERVICE.submit(() -> listenerBuffer.receive(message));
-        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+//        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
     }
 
     @PreDestroy

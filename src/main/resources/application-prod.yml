@@ -9,6 +9,10 @@ spring:
     password: Urahci3n
     host: rabbitmq-prod.service
     port: 5672
+    listener:
+      simple:
+        concurrency: 3
+        max-concurrency: 10
     tradestopic: CHART_DATA_QUEUE_PROD
 
 datasource:
