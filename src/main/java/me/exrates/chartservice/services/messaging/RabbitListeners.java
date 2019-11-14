@@ -25,7 +25,7 @@ public class RabbitListeners {
     private final RabbitListenerEndpointRegistry registry;
     private final Environment environment;
 
-    private final static ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(8);
+    private final static ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(6);
 
     @Autowired
     public RabbitListeners(ListenerBuffer listenerBuffer,
