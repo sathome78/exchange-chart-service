@@ -12,7 +12,7 @@ spring:
     listener:
       simple:
         concurrency: 3
-        max-concurrency: 10
+        max-concurrency: 7
     tradestopic: CHART_DATA_QUEUE_PREPROD
 
 datasource:
