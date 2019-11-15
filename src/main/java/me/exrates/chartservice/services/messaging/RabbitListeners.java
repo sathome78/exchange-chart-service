@@ -43,7 +43,8 @@ public class RabbitListeners {
         if (Objects.isNull(message.getTradeDate())) {
             return;
         }
-        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+//        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+        listenerBuffer.receive(message);
     }
 
     @PreDestroy
