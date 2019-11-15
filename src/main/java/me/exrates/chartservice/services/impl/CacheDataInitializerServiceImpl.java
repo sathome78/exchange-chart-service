@@ -81,9 +81,7 @@ public class CacheDataInitializerServiceImpl implements CacheDataInitializerServ
         final LocalDate keyDate = TimeUtil.generateDate(key);
         final LocalDate boundaryTime = TimeUtil.getBoundaryTime(candlesToStoreInCache, interval);
 
-        if (!redisProcessingService.exists(key, hashKey, interval)
-                && Objects.nonNull(keyDate)
-                && (boundaryTime.isEqual(keyDate) || boundaryTime.isBefore(keyDate))) {
+        if (Objects.nonNull(keyDate) && (boundaryTime.isEqual(keyDate) || boundaryTime.isBefore(keyDate))) {
             redisProcessingService.insertOrUpdate(models, key, hashKey, interval);
         }
     }

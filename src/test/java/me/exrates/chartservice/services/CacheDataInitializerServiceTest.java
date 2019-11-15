@@ -81,9 +81,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         doNothing()
                 .when(tradeDataService)
                 .defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        doReturn(false)
-                .when(redisProcessingService)
-                .exists(anyString(), anyString(), any(BackDealInterval.class));
         doNothing()
                 .when(redisProcessingService)
                 .insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
@@ -93,7 +90,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, after(100)).defineAndSaveFirstInitializedCandleTime(anyString(), anyList());
         verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, times(6)).exists(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, times(6)).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
@@ -111,7 +107,6 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, after(100)).defineAndSaveFirstInitializedCandleTime(anyString(), anyList());
         verify(tradeDataService, never()).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, never()).exists(anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, never()).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
