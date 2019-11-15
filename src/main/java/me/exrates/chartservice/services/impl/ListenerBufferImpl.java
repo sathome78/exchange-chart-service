@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,25 +55,26 @@ public class ListenerBufferImpl implements ListenerBuffer {
         log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Start - pair: {}", message.getCurrencyPairName());
 
         if (isTradeAfterInitializedCandle(message.getCurrencyPairName(), message.getTradeDate())) {
-            xSync.execute(message.getCurrencyPairName(), () -> {
-                List<OrderDataDto> ordersData = cacheMap.computeIfAbsent(message.getCurrencyPairName(), k -> new ArrayList<>());
-                ordersData.add(message);
-            });
-            Semaphore semaphore = getSemaphoreSafe(message.getCurrencyPairName());
-            if (semaphore.tryAcquire()) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
-
-                    xSync.execute(message.getCurrencyPairName(), () -> {
-                        List<OrderDataDto> ordersData = cacheMap.remove(message.getCurrencyPairName());
-                        tradeDataService.handleReceivedTrades(message.getCurrencyPairName(), ordersData);
-                    });
-                } catch (Exception ex) {
-                    log.error(ex);
-                } finally {
-                    semaphore.release();
-                }
-            }
+//            xSync.execute(message.getCurrencyPairName(), () -> {
+//                List<OrderDataDto> ordersData = cacheMap.computeIfAbsent(message.getCurrencyPairName(), k -> new ArrayList<>());
+//                ordersData.add(message);
+//            });
+//            Semaphore semaphore = getSemaphoreSafe(message.getCurrencyPairName());
+//            if (semaphore.tryAcquire()) {
+//                try {
+//                    TimeUnit.MILLISECONDS.sleep(BUFFER_DELAY);
+//
+//                    xSync.execute(message.getCurrencyPairName(), () -> {
+//                        List<OrderDataDto> ordersData = cacheMap.remove(message.getCurrencyPairName());
+//                        tradeDataService.handleReceivedTrades(message.getCurrencyPairName(), ordersData);
+//                    });
+//                } catch (Exception ex) {
+//                    log.error(ex);
+//                } finally {
+//                    semaphore.release();
+//                }
+//            }
+            tradeDataService.handleReceivedTrades(message.getCurrencyPairName(), Collections.singletonList(message));
         }
         log.debug("<<< BUFFER (RECEIVE AND UPDATE)>>> Finish - pair: {} (time: {}s)", message.getCurrencyPairName(), stopWatch.getTime(TimeUnit.SECONDS));
 
