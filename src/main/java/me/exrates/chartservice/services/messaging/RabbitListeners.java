@@ -25,7 +25,7 @@ public class RabbitListeners {
     private final RabbitListenerEndpointRegistry registry;
     private final Environment environment;
 
-    private final static ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(10);
+//    private final static ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(10);
 
     @Autowired
     public RabbitListeners(ListenerBuffer listenerBuffer,
@@ -43,7 +43,8 @@ public class RabbitListeners {
         if (Objects.isNull(message.getTradeDate())) {
             return;
         }
-        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+//        CompletableFuture.runAsync(() -> listenerBuffer.receive(message), EXECUTOR_SERVICE);
+        CompletableFuture.runAsync(() -> listenerBuffer.receive(message));
     }
 
     @PreDestroy
