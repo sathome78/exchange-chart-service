@@ -9,10 +9,6 @@ spring:
     password: eehei4AeJein
     host: rabbitmq-dev.service
     port: 5672
-#    listener:
-#      simple:
-#        concurrency: 3
-#        max-concurrency: 7
     tradestopic: CHART_DATA_QUEUE_DEV
 
 datasource:

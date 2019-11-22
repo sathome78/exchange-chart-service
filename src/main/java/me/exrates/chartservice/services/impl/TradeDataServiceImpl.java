@@ -212,16 +212,8 @@ public class TradeDataServiceImpl implements TradeDataService {
     }
 
     @Override
-    public void handleReceivedTrades(String pairName, List<OrderDataDto> ordersData) {
-        StopWatch stopWatch = StopWatch.createStarted();
-        log.debug("<<< BUFFER (ONLY UPDATE)>>> Start - pair: {}", pairName);
-
-        xSync.execute(pairName, () -> ordersData.stream()
-                .collect(Collectors.groupingBy(dto -> TimeUtil.getNearestTimeBeforeForMinInterval(dto.getTradeDate())))
-                .values()
-                .forEach(trades -> groupTradesAndSave(pairName, trades)));
-
-        log.debug("<<< BUFFER (ONLY UPDATE)>>> Finish - pair: {} (time: {}s)", pairName, stopWatch.getTime(TimeUnit.SECONDS));
+    public void handleReceivedTrade(String pairName, OrderDataDto orderData) {
+        xSync.execute(pairName, () -> groupTradesAndSave(pairName, Collections.singletonList(orderData)));
     }
 
     private void groupTradesAndSave(String pairName, List<OrderDataDto> ordersData) {

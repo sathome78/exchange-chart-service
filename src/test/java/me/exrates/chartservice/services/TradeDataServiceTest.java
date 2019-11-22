@@ -158,13 +158,6 @@ public class TradeDataServiceTest extends AbstractTest {
     @Test
     public void handleReceivedTrades() {
         LocalDateTime baseTradeTime = LocalDateTime.of(2019, 7, 18, 16, 54);
-        BigDecimal group1HighRate = BigDecimal.valueOf(6500);
-        BigDecimal group1LowRRate = BigDecimal.valueOf(2000);
-
-        List<OrderDataDto> trades = new ArrayList<>();
-        trades.add(buildTradeData(baseTradeTime.plusSeconds(4), BigDecimal.valueOf(1), BigDecimal.valueOf(5000), BTC_USD));
-        trades.add(buildTradeData(baseTradeTime.plusSeconds(2), BigDecimal.valueOf(0.5), group1HighRate, BTC_USD));
-        trades.add(buildTradeData(baseTradeTime, BigDecimal.valueOf(2), group1LowRRate, BTC_USD));
 
         LocalDateTime time0Candle = TimeUtil.getNearestBackTimeForBackdealInterval(baseTradeTime, M5_INTERVAL);
         LocalDateTime lastTradeTime = baseTradeTime.minusMinutes(5);
@@ -257,7 +250,9 @@ public class TradeDataServiceTest extends AbstractTest {
                 .when(redisProcessingService)
                 .get(eq(RedisGeneratorUtil.generateKey(time5Candle.toLocalDate())), eq(RedisGeneratorUtil.generateHashKey(BTC_USD)), eq(ONE_DAY_INTERVAL));
 
-        tradeDataService.handleReceivedTrades(BTC_USD, trades);
+        OrderDataDto orderData = buildTradeData(baseTradeTime.plusSeconds(4), BigDecimal.valueOf(1), BigDecimal.valueOf(5000), BTC_USD);
+
+        tradeDataService.handleReceivedTrade(BTC_USD, orderData);
 
         verify(redisProcessingService, times(supportedIntervals.size())).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
         verify(redisProcessingService, times(supportedIntervals.size())).get(anyString(), anyString(), any(BackDealInterval.class));
