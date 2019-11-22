@@ -19,8 +19,6 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Objects.isNull;
-
 @Log4j2
 @Component
 @DependsOn({"cacheDataInitService"})
@@ -64,7 +62,7 @@ public class RabbitListeners {
         final String hashKey = RedisGeneratorUtil.generateHashKey(pairName);
 
         LocalDateTime initTime = redisProcessingService.getLastInitializedCandleTimeFromCache(hashKey);
-        return isNull(initTime) || initTime.isBefore(candleDateTime) || initTime.isEqual(candleDateTime);
+        return Objects.isNull(initTime) || initTime.isBefore(candleDateTime) || initTime.isEqual(candleDateTime);
     }
 
     @PreDestroy
