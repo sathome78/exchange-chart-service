@@ -21,15 +21,16 @@ redis:
   host: redis-chart-preprod.service
   port: 6381
   allowed-interval-db-indexes: >
-    5 MINUTE: 1;
-    15 MINUTE: 2;
-    30 MINUTE: 3;
-    60 MINUTE: 4;
-    360 MINUTE: 5;
-    1440 MINUTE: 6;
-    1 HOUR: 4;
-    6 HOUR: 5;
-    1 DAY: 6;
+    1 MINUTE: 1;
+    5 MINUTE: 2;
+    15 MINUTE: 3;
+    30 MINUTE: 4;
+    60 MINUTE: 5;
+    360 MINUTE: 6;
+    1440 MINUTE: 7;
+    1 HOUR: 5;
+    6 HOUR: 6;
+    1 DAY: 7;
 
 elasticsearch:
   host: elastic-chart-preprod.service
@@ -42,7 +43,7 @@ candles:
   store-in-cache: 300
 
 generator:
-  min-period: 3 #months
+  min-period: 2 #months
 
 scheduled:
   clean-cache: 0 */30 * ? * *

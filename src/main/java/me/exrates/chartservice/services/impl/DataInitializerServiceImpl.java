@@ -36,7 +36,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
     private final CacheDataInitializerService cacheDataInitializerService;
 
     @Autowired
-    public DataInitializerServiceImpl(@Value("${generator.min-period:3}") long minPeriod,
+    public DataInitializerServiceImpl(@Value("${generator.min-period:2}") long minPeriod,
                                       ElasticsearchProcessingService elasticsearchProcessingService,
                                       OrderService orderService,
                                       CacheDataInitializerService cacheDataInitializerService) {
@@ -84,21 +84,21 @@ public class DataInitializerServiceImpl implements DataInitializerService {
             final Map<String, List<CandleModel>> mapOfModels = getTransformedData(minFrom, minTo, pair);
             final String id = ElasticsearchGeneratorUtil.generateId(pair);
 
-            log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
             if (!CollectionUtils.isEmpty(mapOfModels)) {
+                log.debug("<<< GENERATOR >>> Start save candles in elasticsearch cluster");
                 elasticsearchProcessingService.bulkInsertOrUpdate(mapOfModels, id);
-            }
-            log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
+                log.debug("<<< GENERATOR >>> End save candles in elasticsearch cluster");
 
-            mapOfModels.keySet().forEach(index -> {
-                log.debug("<<< GENERATOR >>> Start update cache");
-                cacheDataInitializerService.updateCacheByIndexAndId(index, id);
-                log.debug("<<< GENERATOR >>> End update cache");
-            });
+                mapOfModels.keySet().forEach(index -> {
+                    log.debug("<<< GENERATOR >>> Start update cache");
+                    cacheDataInitializerService.updateCacheByIndexAndId(index, id);
+                    log.debug("<<< GENERATOR >>> End update cache");
+                });
+            }
         } catch (Exception ex) {
             log.error("<<< GENERATOR >>> Process of generation data was failed for pair: {} [Period: {} - {}]", pair, minFrom, minTo, ex);
         }
-        log.info("<<< GENERATOR >>> End generate data for pair: {}. Period: {} - {}. Time: {} s", pair, minFrom, minTo, stopWatch.getTime(TimeUnit.SECONDS));
+        log.info("<<< GENERATOR >>> End generate data for pair: {}. Period: {} - {}. Time: {}s", pair, minFrom, minTo, stopWatch.getTime(TimeUnit.SECONDS));
     }
 
     private Map<String, List<CandleModel>> getTransformedData(LocalDate fromDate, LocalDate toDate, String pair) {
@@ -122,7 +122,7 @@ public class DataInitializerServiceImpl implements DataInitializerService {
 
                     log.debug("<<< GENERATOR >>> Start transform orders to candles");
                     List<CandleModel> models = CandleDataConverter.convert(value);
-                    log.debug("<<< GENERATOR >>> End transform orders to candles, number of 5 minute candles is: {}", models.size());
+                    log.debug("<<< GENERATOR >>> End transform orders to candles, number of 1 minute candles is: {}", models.size());
 
                     final String index = ElasticsearchGeneratorUtil.generateIndex(key);
 

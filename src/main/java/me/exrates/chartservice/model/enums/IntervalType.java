@@ -8,7 +8,7 @@ import java.time.temporal.TemporalUnit;
 @Getter
 public enum IntervalType {
 
-    MINUTE(ChronoUnit.MINUTES, 5, 15, 30),
+    MINUTE(ChronoUnit.MINUTES, 1, 5, 15, 30),
     HOUR(ChronoUnit.HOURS, 1, 6),
     DAY(ChronoUnit.DAYS, 1);
 

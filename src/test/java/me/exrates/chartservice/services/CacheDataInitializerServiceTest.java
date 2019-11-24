@@ -90,7 +90,7 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
         verify(elasticsearchProcessingService, atLeastOnce()).get(anyString(), anyString());
         verify(tradeDataService, after(100)).defineAndSaveFirstInitializedCandleTime(anyString(), anyList());
         verify(tradeDataService, after(100)).defineAndSaveLastInitializedCandleTime(anyString(), anyList());
-        verify(redisProcessingService, times(6)).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
+        verify(redisProcessingService, times(7)).insertOrUpdate(anyList(), anyString(), anyString(), any(BackDealInterval.class));
     }
 
     @Test
@@ -148,9 +148,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getCurrencyPairsFromCache(null);
-        verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(orderService, times(7)).getCurrencyPairsFromCache(null);
+        verify(redisProcessingService, times(7)).getAllKeys(any(BackDealInterval.class));
+        verify(redisProcessingService, times(4)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, atLeastOnce()).insert(anyList(), anyString(), anyString());
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
@@ -196,9 +196,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getCurrencyPairsFromCache(null);
-        verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(orderService, times(7)).getCurrencyPairsFromCache(null);
+        verify(redisProcessingService, times(7)).getAllKeys(any(BackDealInterval.class));
+        verify(redisProcessingService, times(4)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, atLeastOnce()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
         verify(redisProcessingService, atLeastOnce()).deleteDataByHashKey(anyString(), anyString(), any(BackDealInterval.class));
@@ -218,8 +218,8 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getCurrencyPairsFromCache(null);
-        verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
+        verify(orderService, times(7)).getCurrencyPairsFromCache(null);
+        verify(redisProcessingService, times(7)).getAllKeys(any(BackDealInterval.class));
         verify(redisProcessingService, never()).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
@@ -246,9 +246,9 @@ public class CacheDataInitializerServiceTest extends AbstractTest {
 
         cacheDataInitializerService.cleanCache();
 
-        verify(orderService, times(6)).getCurrencyPairsFromCache(null);
-        verify(redisProcessingService, times(6)).getAllKeys(any(BackDealInterval.class));
-        verify(redisProcessingService, times(3)).get(anyString(), anyString(), any(BackDealInterval.class));
+        verify(orderService, times(7)).getCurrencyPairsFromCache(null);
+        verify(redisProcessingService, times(7)).getAllKeys(any(BackDealInterval.class));
+        verify(redisProcessingService, times(4)).get(anyString(), anyString(), any(BackDealInterval.class));
         verify(elasticsearchProcessingService, never()).exists(anyString(), anyString());
         verify(elasticsearchProcessingService, never()).insert(anyList(), anyString(), anyString());
         verify(elasticsearchProcessingService, never()).update(anyList(), anyString(), anyString());
